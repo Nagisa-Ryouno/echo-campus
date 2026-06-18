@@ -1,21 +1,553 @@
 <template>
   <div class="user-profile-page">
-    <van-nav-bar title="用户主页" left-arrow @click-left="$router.back()" />
-    <div class="user-profile-content">
-      <p class="placeholder-text">他人主页</p>
-      <p class="placeholder-hint">头像 · 昵称 · 回声号 · 关注数 · 粉丝数</p>
-      <p class="placeholder-hint">仅展示对方允许查看的内容</p>
-      <p class="placeholder-hint">（批次 3 搭建）</p>
+    <!-- 顶部导航栏 -->
+    <div class="profile-nav">
+      <van-icon name="arrow-left" size="20" @click="$router.back()" class="back-icon" />
+      <h2 class="nav-title">{{ profileUser?.nickname || '用户' }}</h2>
+      <div style="width:20px" />
+    </div>
+
+    <!-- 用户信息卡片 -->
+    <div class="user-card">
+      <div class="user-card-top">
+        <div
+          class="profile-avatar"
+          :style="{ backgroundColor: profileUser?.avatarColor || '#ccc' }"
+        >
+          <span class="profile-avatar-text">
+            {{ profileUser?.nickname?.charAt(0) || '?' }}
+          </span>
+        </div>
+        <div class="user-card-info">
+          <div class="uname-row">
+            <span class="uname">{{ profileUser?.nickname || '未知用户' }}</span>
+            <span class="gender-tag" :class="profileUser?.gender || 'male'">
+              {{ profileUser?.gender === 'female' ? '♀' : '♂' }}
+            </span>
+          </div>
+          <div class="uecho">回声号：{{ profileUser?.echoId || '---' }}</div>
+          <div class="uschool" v-if="showSchoolToVisitor">
+            学校：{{ profileUser?.school }}
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="action-btns">
+        <button
+          class="action-btn follow-btn"
+          :class="{ followed: isFollowed }"
+          @click="onFollow"
+        >
+          <van-icon :name="isFollowed ? 'success' : 'add-o'" size="15" />
+          <span>{{ isFollowed ? '已关注' : '关注' }}</span>
+        </button>
+        <button class="action-btn chat-btn" @click="onChat">
+          <van-icon name="chat-o" size="15" />
+          <span>发私信</span>
+        </button>
+      </div>
+
+      <!-- 计数行 -->
+      <div class="counts-row">
+        <div class="count-item">
+          <span class="count-num">{{ profileUser?.followCount || 0 }}</span>
+          <span class="count-label">关注</span>
+        </div>
+        <div class="count-divider" />
+        <div class="count-item">
+          <span class="count-num">{{ profileUser?.fanCount || 0 }}</span>
+          <span class="count-label">粉丝</span>
+        </div>
+        <div class="count-divider" />
+        <div class="count-item">
+          <span class="count-num">{{ profileUser?.postCount || 0 }}</span>
+          <span class="count-label">发帖</span>
+        </div>
+      </div>
+
+      <!-- 个人简介 -->
+      <div class="bio-section" v-if="profileUser?.bio">
+        <span class="bio-text">{{ profileUser.bio }}</span>
+      </div>
+
+      <!-- 统一标签区：年龄 + 兴趣标签 -->
+      <div class="tags-row">
+        <span class="unified-tag">{{ profileUser?.age }}岁</span>
+        <span v-for="tag in profileUser?.tags || []" :key="tag" class="unified-tag">{{ tag }}</span>
+      </div>
+    </div>
+
+    <!-- 内容 Tab -->
+    <div class="content-tabs">
+      <div class="tabs-inner">
+        <div
+          v-for="tab in contentTabs"
+          :key="tab.key"
+          class="content-tab"
+          :class="{ active: activeTab === tab.key }"
+          @click="activeTab = tab.key"
+        >
+          <span>{{ tab.label }}</span>
+          <span class="tab-count">{{ tab.count }}</span>
+        </div>
+      </div>
+      <div class="tab-search" @click="$router.push(`/profile-search?from=user&uid=${uid}`)">
+        <van-icon name="search" size="17" color="#999" />
+      </div>
+    </div>
+
+    <!-- 帖子 -->
+    <div class="profile-posts" v-if="activeTab === 'posts'">
+      <div v-if="visiblePosts.length" class="post-grid">
+        <div
+          v-for="post in visiblePosts"
+          :key="post.id"
+          class="grid-post-card"
+          @click="$router.push(`/post/${post.id}`)"
+        >
+          <div class="grid-post-img" v-if="post.images?.[0]">
+            <img :src="post.images[0]" alt="" />
+          </div>
+          <div class="grid-post-body">
+            <div class="grid-post-text">{{ post.content }}</div>
+            <div class="grid-post-meta">
+              <span class="grid-post-tag">{{ post.categoryTag }}</span>
+              <span class="grid-post-counts">
+                <van-icon name="like-o" size="12" />{{ post.likeCount }}
+                <van-icon name="chat-o" size="12" />{{ post.commentCount }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-else class="empty-content">
+        <van-icon name="lock" size="36" color="#dcdfe6" />
+        <p>暂无可见内容</p>
+        <p class="empty-sub">对方设置了隐私保护</p>
+      </div>
+    </div>
+
+    <!-- 评论过的 -->
+    <div class="profile-posts" v-if="activeTab === 'comments'">
+      <div v-if="commentedPosts.length" class="post-grid">
+        <div
+          v-for="post in commentedPosts"
+          :key="post.id"
+          class="grid-post-card"
+          @click="$router.push(`/post/${post.id}`)"
+        >
+          <div class="grid-post-img" v-if="post.images?.[0]">
+            <img :src="post.images[0]" alt="" />
+          </div>
+          <div class="grid-post-body">
+            <div class="grid-post-text">{{ post.content }}</div>
+            <div class="grid-post-meta">
+              <span class="grid-post-tag">{{ post.categoryTag }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-else class="empty-content">
+        <p>暂无可见内容</p>
+      </div>
+    </div>
+
+    <!-- 收藏的 -->
+    <div class="profile-posts" v-if="activeTab === 'collects'">
+      <div class="empty-content">
+        <van-icon name="lock" size="36" color="#dcdfe6" />
+        <p>收藏夹仅自己可见</p>
+      </div>
+    </div>
+
+    <!-- 赞过 -->
+    <div class="profile-posts" v-if="activeTab === 'likes'">
+      <div class="empty-content">
+        <van-icon name="lock" size="36" color="#dcdfe6" />
+        <p>赞过内容仅自己可见</p>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useAppStore } from '@/stores/app.js'
+import { showToast } from 'vant'
+
+const route = useRoute()
+const router = useRouter()
+const store = useAppStore()
+
+const activeTab = ref('posts')
+const uid = computed(() => route.params.uid)
+
+const profileUser = computed(() => {
+  if (uid.value === 'demo' || !uid.value) return store.users[1] || store.currentUser
+  return store.getUserById(uid.value)
+})
+
+const isFollowed = computed(() => {
+  if (!profileUser.value) return false
+  return store.isFollowing(profileUser.value.id)
+})
+
+// 学校可见性：public 所有人可见 / school_only 仅同校可见 / hidden 完全隐藏
+const showSchoolToVisitor = computed(() => {
+  if (!profileUser.value) return false
+  const setting = profileUser.value.showSchool
+  if (setting === 'public') return true
+  if (setting === 'hidden') return false
+  if (setting === 'school_only') {
+    return store.currentUser?.school === profileUser.value.school
+  }
+  return false
+})
+
+// 可见帖子（过滤私密和匿名）
+const visiblePosts = computed(() => {
+  if (!profileUser.value) return []
+  return store.posts.filter(p =>
+    p.authorId === profileUser.value.id &&
+    p.visibility !== 'private' &&
+    !p.isAnon
+  )
+})
+
+const commentedPosts = computed(() => {
+  if (!profileUser.value) return []
+  return store.getUserCommentedPosts(profileUser.value.id)
+})
+
+const contentTabs = computed(() => [
+  { key: 'posts', label: '帖子', count: visiblePosts.value.length },
+  { key: 'comments', label: '评论', count: commentedPosts.value.length },
+  { key: 'collects', label: '收藏', count: 0 },
+  { key: 'likes', label: '赞过', count: 0 }
+])
+
+function onFollow() {
+  if (!profileUser.value) return
+  store.toggleFollow(profileUser.value.id)
+  showToast(isFollowed.value ? '已取消关注' : '已关注')
+}
+
+function onChat() {
+  if (!profileUser.value) return
+  showToast(`与 ${profileUser.value.nickname} 的私聊（原型占位）`)
+}
 </script>
 
 <style scoped>
-.user-profile-page { min-height:100%; background:var(--echo-bg); }
-.user-profile-content { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 20px; }
-.placeholder-text { font-size:18px; color:var(--echo-text); font-weight:600; }
-.placeholder-hint { font-size:13px; color:var(--echo-text-hint); margin-top:8px; }
+.user-profile-page {
+  min-height: 100%;
+  background: var(--echo-bg);
+  padding-bottom: 20px;
+}
+
+/* ===== 顶部导航 ===== */
+.profile-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  position: sticky;
+  top: 0;
+  background: var(--echo-white);
+  z-index: 100;
+}
+.back-icon { cursor: pointer; }
+.nav-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--echo-text);
+}
+
+/* ===== 用户信息卡片 ===== */
+.user-card {
+  background: var(--echo-white);
+  margin: 0 12px;
+  border-radius: 16px;
+  padding: 16px 16px 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+.user-card-top {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.profile-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.profile-avatar-text {
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+}
+.user-card-info { flex: 1; min-width: 0; }
+.uname-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.uname {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--echo-text);
+}
+.gender-tag {
+  font-size: 12px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.gender-tag.male { background: #3498db; }
+.gender-tag.female { background: #e74c3c; }
+.uecho {
+  font-size: 12px;
+  color: var(--echo-text-secondary);
+  margin-top: 2px;
+}
+.uschool {
+  font-size: 12px;
+  color: var(--echo-text-secondary);
+  margin-top: 2px;
+}
+
+/* 操作按钮 */
+.action-btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.follow-btn {
+  background: var(--echo-primary);
+  color: #fff;
+}
+.follow-btn.followed {
+  background: var(--echo-bg);
+  color: var(--echo-text-secondary);
+}
+.chat-btn {
+  background: var(--echo-bg);
+  color: var(--echo-text);
+}
+.action-btn:active { transform: scale(0.96); }
+
+/* 计数行 */
+.counts-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  margin-top: 16px;
+  padding: 0 8px;
+}
+.count-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.count-num { font-size: 18px; font-weight: 700; color: var(--echo-text); }
+.count-label { font-size: 11px; color: var(--echo-text-secondary); }
+.count-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--echo-border);
+}
+
+/* 简介 */
+.bio-section {
+  margin-top: 14px;
+  padding: 12px;
+  background: var(--echo-bg);
+  border-radius: 8px;
+}
+.bio-text { font-size: 13px; color: var(--echo-text-secondary); line-height: 1.5; }
+
+/* ===== 统一标签区：年龄 + 兴趣标签，浅绿背景 + 深绿文字 ===== */
+.tags-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.unified-tag {
+  font-size: 12px;
+  color: #2e7d32;
+  background: #e8f5e9;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ===== 内容 Tab ===== */
+.content-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 12px;
+  margin-top: 10px;
+  background: var(--echo-white);
+  border-top: 1px solid var(--echo-border);
+  border-bottom: 1px solid var(--echo-border);
+  position: sticky;
+  top: 44px;
+  z-index: 50;
+}
+.tabs-inner {
+  display: flex;
+  flex: 1;
+}
+.content-tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px 0;
+  font-size: 13px;
+  color: var(--echo-text-secondary);
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+.content-tab.active {
+  color: var(--echo-primary);
+  font-weight: 600;
+}
+.content-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  background: var(--echo-primary);
+  border-radius: 2px;
+}
+.tab-count {
+  font-size: 11px;
+  color: var(--echo-text-hint);
+}
+.tab-search {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+  margin-left: 2px;
+  transition: background 0.15s;
+}
+.tab-search:active { background: var(--echo-bg); }
+
+/* ===== 帖子列表 ===== */
+.profile-posts { padding: 10px 12px; }
+.post-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.grid-post-card {
+	background: var(--echo-white);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  display: flex;
+}
+.grid-post-card:active { transform: scale(0.985); }
+.grid-post-img {
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.grid-post-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.grid-post-body {
+  flex: 1;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+.grid-post-text {
+  font-size: 13px;
+  color: var(--echo-text);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.grid-post-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+.grid-post-tag {
+  font-size: 11px;
+  color: var(--echo-primary);
+  background: var(--echo-primary-light);
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+.grid-post-counts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--echo-text-hint);
+}
+
+/* ===== 空状态 ===== */
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 0;
+  color: var(--echo-text-hint);
+  font-size: 13px;
+  gap: 4px;
+}
+.empty-sub { font-size: 11px; color: var(--echo-text-hint); margin-top: 0; }
 </style>

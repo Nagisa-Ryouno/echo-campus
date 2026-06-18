@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { mockPosts, channels, channelTagMap, allCategoryTags, getPostsByChannel, getPostsByCategoryTag, getPostById } from '@/mock/posts.js'
 import { mockUsers, currentUser as defaultUser } from '@/mock/users.js'
 import { mockComments, getCommentsByPostId, getRepliesByCommentId, getTopLevelComments } from '@/mock/comments.js'
+import { notifications, chatList, anonSessions, systemNotices, getAnonUnreadCount } from '@/mock/messages.js'
 
 export const useAppStore = defineStore('app', () => {
   // ===== 用户状态 =====
@@ -248,6 +249,81 @@ export const useAppStore = defineStore('app', () => {
     if (screen) screen.style.removeProperty('overflow')
   }
 
+  // ===== 消息 & 通知 =====
+  const likedNotifs = ref([...notifications.receivedLikes])
+  const commentAtNotifs = ref([...notifications.commentsAndAt])
+  const followerNotifs = ref([...notifications.newFollowers])
+  const chatListData = ref([...chatList])
+  const anonSessionData = ref([...anonSessions])
+  const sysNotices = ref([...systemNotices])
+  const plusMenuVisible = ref(false)
+
+  // 未读计数
+  const unreadLikeCount = computed(() =>
+    likedNotifs.value.filter(n => !n.read).length
+  )
+  const unreadCommentAtCount = computed(() =>
+    commentAtNotifs.value.filter(n => !n.read).length
+  )
+  const unreadFollowerCount = computed(() =>
+    followerNotifs.value.filter(n => !n.read).length
+  )
+  const unreadAnonCount = computed(() => getAnonUnreadCount())
+  const unreadChatCount = computed(() =>
+    chatListData.value.reduce((sum, c) => sum + c.unread, 0)
+  )
+
+  // 分类通知一键已读（在各独立子页面调用）
+  function markAllLikesRead() {
+    likedNotifs.value.forEach(n => { n.read = true })
+  }
+  function markAllCommentsRead() {
+    commentAtNotifs.value.forEach(n => { n.read = true })
+  }
+  function markAllFansRead() {
+    followerNotifs.value.forEach(n => { n.read = true })
+  }
+
+  // 标记某个聊天已读
+  function markChatRead(chatId) {
+    const chat = chatListData.value.find(c => c.id === chatId)
+    if (chat) chat.unread = 0
+  }
+
+  // 获取用户发的帖子
+  function getUserPosts(uid) {
+    return posts.value.filter(p => p.authorId === uid && p.visibility !== 'private')
+  }
+
+  // 获取用户评论过的帖子
+  function getUserCommentedPosts(uid) {
+    const userCommentPostIds = [...new Set(
+      allComments.value.filter(c => c.authorId === uid && !c.isAnon).map(c => c.postId)
+    )]
+    return posts.value.filter(p => userCommentPostIds.includes(p.id) && p.visibility !== 'private')
+  }
+
+  // 获取用户收藏的帖子
+  function getUserCollectedPosts() {
+    return posts.value.filter(p => collectedPosts.value.has(p.id))
+  }
+
+  // 获取用户赞过的帖子
+  function getUserLikedPosts() {
+    return posts.value.filter(p => likedPosts.value.has(p.id))
+  }
+
+  // 浏览记录（自己可见）
+  const browseHistory = ref([
+    { postId: 'p002', title: 'Zotero 文献管理全攻略，让论文写作不再痛苦', time: '1小时前' },
+    { postId: 'p012', title: '大一新生，离家三千公里…', time: '3小时前' },
+    { postId: 'p006', title: '周末有没有打篮球的？组个局', time: '昨天 18:30' },
+    { postId: 'p009', title: '本周五校园音乐节节目单出炉！', time: '昨天 15:00' }
+  ])
+
+  // 主页内容 Tab
+  const profileActiveTab = ref('posts')
+
   return {
     // 用户
     isLoggedIn, currentUser, users,
@@ -279,6 +355,21 @@ export const useAppStore = defineStore('app', () => {
     drafts, saveDraft, removeDraft, createPost,
 
     // 滚动锁
-    lockPhoneScroll, unlockPhoneScroll
+    lockPhoneScroll, unlockPhoneScroll,
+
+    // 消息 & 通知
+    likedNotifs, commentAtNotifs, followerNotifs,
+    chatListData, anonSessionData, sysNotices,
+    plusMenuVisible,
+    unreadLikeCount, unreadCommentAtCount, unreadFollowerCount,
+    unreadAnonCount, unreadChatCount,
+    markAllLikesRead, markAllCommentsRead, markAllFansRead, markChatRead,
+
+    // 用户内容
+    getUserPosts, getUserCommentedPosts, getUserCollectedPosts, getUserLikedPosts,
+    browseHistory,
+
+    // 个人设置
+    profileActiveTab
   }
 })

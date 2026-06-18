@@ -56,6 +56,24 @@ const routes = [
     meta: { title: '匿名消息', tabBar: false }
   },
   {
+    path: '/message/likes',
+    name: 'NotificationLikes',
+    component: () => import('@/views/message/notification/NotificationLikes.vue'),
+    meta: { title: '收到喜欢', tabBar: false }
+  },
+  {
+    path: '/message/comments',
+    name: 'NotificationComments',
+    component: () => import('@/views/message/notification/NotificationComments.vue'),
+    meta: { title: '评论与@', tabBar: false }
+  },
+  {
+    path: '/message/fans',
+    name: 'NotificationFans',
+    component: () => import('@/views/message/notification/NotificationFans.vue'),
+    meta: { title: '新增粉丝', tabBar: false }
+  },
+  {
     path: '/profile/me',
     name: 'MyProfile',
     component: () => import('@/views/profile/MyProfile.vue'),
@@ -78,6 +96,12 @@ const routes = [
     name: 'Search',
     component: () => import('@/views/search/SearchPage.vue'),
     meta: { title: '搜索', tabBar: false }
+  },
+  {
+    path: '/profile-search',
+    name: 'ProfileSearch',
+    component: () => import('@/views/profile/ProfileSearchPage.vue'),
+    meta: { title: '个人主页搜索', tabBar: false }
   },
   {
     path: '/circle',

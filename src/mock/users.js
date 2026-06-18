@@ -66,7 +66,7 @@ export const mockUsers = [
     fanCount: 567,
     postCount: 124,
     reputation: 2300,
-    showSchool: 'public'
+    showSchool: 'school_only'
   },
   {
     id: 'u5',
@@ -83,7 +83,7 @@ export const mockUsers = [
     fanCount: 98,
     postCount: 21,
     reputation: 420,
-    showSchool: 'public'
+    showSchool: 'hidden'
   },
   {
     id: 'u6',
@@ -100,7 +100,7 @@ export const mockUsers = [
     fanCount: 234,
     postCount: 56,
     reputation: 980,
-    showSchool: 'public'
+    showSchool: 'hidden'
   },
   {
     id: 'u7',
@@ -117,7 +117,7 @@ export const mockUsers = [
     fanCount: 389,
     postCount: 73,
     reputation: 1240,
-    showSchool: 'public'
+    showSchool: 'school_only'
   },
   {
     id: 'u8',
