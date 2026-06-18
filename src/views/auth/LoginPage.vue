@@ -14,8 +14,8 @@
 
         <van-field
           v-model="form.email"
-          label="邮箱"
-          placeholder="请输入校园邮箱"
+          label="账号"
+          placeholder="请输入校声号/校园邮箱"
         />
 
         <van-field
