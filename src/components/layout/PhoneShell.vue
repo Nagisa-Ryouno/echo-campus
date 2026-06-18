@@ -78,6 +78,11 @@ defineProps({
 /* 内容滚动区域 */
 .phone-screen {
   flex: 1;
+  height: 0;
+
+  display: flex;
+  flex-direction: column;
+
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;

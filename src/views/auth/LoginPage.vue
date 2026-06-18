@@ -1,17 +1,44 @@
 <template>
   <div class="login-page">
-    <van-nav-bar title="登录" left-arrow @click-left="$router.back()" />
+    <div class="floating-back" @click="$router.back()">
+      ←
+    </div>
+
     <div class="login-body">
       <div class="login-form">
         <div class="login-icon">
           <div class="login-avatar">校</div>
         </div>
+
         <h2 class="login-welcome">欢迎回来</h2>
-        <van-field v-model="form.email" label="邮箱" placeholder="请输入校园邮箱" />
-        <van-field v-model="form.password" label="密码" type="password" placeholder="请输入密码" />
-        <van-button round block type="primary" style="margin-top:32px" @click="handleLogin">登录</van-button>
+
+        <van-field
+          v-model="form.email"
+          label="邮箱"
+          placeholder="请输入校园邮箱"
+        />
+
+        <van-field
+          v-model="form.password"
+          label="密码"
+          type="password"
+          placeholder="请输入密码"
+        />
+
+        <van-button
+          round
+          block
+          type="primary"
+          style="margin-top:32px"
+          @click="handleLogin"
+        >
+          登录
+        </van-button>
+
         <div class="login-links">
-          <span @click="$router.push('/register')">没有账号？去注册</span>
+          <span @click="$router.push('/register')">
+            没有账号？去注册
+          </span>
         </div>
       </div>
     </div>
@@ -31,19 +58,25 @@ function handleLogin() {
 
 <style scoped>
 .login-page {
-  min-height: 100%;
+  flex: 1;
+  height: 100%;
+
   display: flex;
   flex-direction: column;
+
   background: var(--echo-bg);
 }
 
 .login-body {
   flex: 1;
+
   display: flex;
   flex-direction: column;
+
   align-items: center;
   justify-content: center;
-  padding: 0 20px 40px;
+
+  padding: 20px;
 }
 
 .login-form {
@@ -84,5 +117,28 @@ function handleLogin() {
   font-size: 13px;
   color: var(--echo-primary);
   cursor: pointer;
+}
+
+.floating-back {
+  position: absolute;
+  top: 18px;
+  left: 16px;
+
+  width: 36px;
+  height: 36px;
+
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 20px;
+  color: var(--echo-text);
+
+  z-index: 10;
+
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 </style>

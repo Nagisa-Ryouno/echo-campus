@@ -1,6 +1,8 @@
 <template>
   <div class="register-page">
-    <van-nav-bar title="注册" left-arrow @click-left="$router.back()" />
+    <div class="floating-back" @click="$router.back()">
+    ←
+    </div>
     <div class="register-body">
       <div class="register-form">
         <div class="register-icon">
@@ -31,9 +33,12 @@ function handleRegister() {
 
 <style scoped>
 .register-page {
-  min-height: 100%;
+  flex: 1;
+  height: 100%;
+
   display: flex;
   flex-direction: column;
+
   background: var(--echo-bg);
 }
 
@@ -76,5 +81,28 @@ function handleRegister() {
   font-weight: 600;
   color: var(--echo-text);
   margin-bottom: 24px;
+}
+
+.floating-back {
+  position: absolute;
+  top: 18px;
+  left: 16px;
+
+  width: 36px;
+  height: 36px;
+
+  border-radius: 50%;
+  background: rgba(255,255,255,0.9);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 20px;
+  color: var(--echo-text);
+
+  z-index: 10;
+
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 </style>
