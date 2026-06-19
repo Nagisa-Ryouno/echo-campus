@@ -1,23 +1,39 @@
 <template>
   <div class="search-page">
-    <!-- 搜索栏 -->
-    <div class="search-header">
-      <div class="search-input-wrap">
-        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input
-          ref="inputRef"
-          v-model="keyword"
-          type="text"
-          class="search-input"
-          placeholder="搜索用户、帖子、话题"
-          @keyup.enter="doSearch"
-          @input="onInput"
-        />
-        <span v-if="keyword" class="search-clear" @click="keyword = ''; results = null">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </span>
+    <!-- 紧凑定点块：搜索栏 + 结果 Tab -->
+    <div class="search-sticky-wrap" :class="{ 'is-scrolled': isScrolled }">
+      <div class="search-header">
+        <div class="search-input-wrap">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input
+            ref="inputRef"
+            v-model="keyword"
+            type="text"
+            class="search-input"
+            placeholder="搜索用户、帖子、话题"
+            @keyup.enter="doSearch"
+            @input="onInput"
+          />
+          <span v-if="keyword" class="search-clear" @click="keyword = ''; results = null">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </span>
+        </div>
+        <span class="search-cancel" @click="$router.back()">取消</span>
       </div>
-      <span class="search-cancel" @click="$router.back()">取消</span>
+
+      <!-- 结果 Tab（仅在搜索后有结果时显示） -->
+      <div v-if="results" class="result-tabs">
+        <div
+          v-for="tab in resultTabs"
+          :key="tab.key"
+          class="result-tab"
+          :class="{ active: activeResultTab === tab.key }"
+          @click="activeResultTab = tab.key"
+        >
+          {{ tab.label }}
+          <span v-if="getResultCount(tab.key) > 0" class="result-count">{{ getResultCount(tab.key) }}</span>
+        </div>
+      </div>
     </div>
 
     <!-- 搜索历史 / 热门搜索 -->
@@ -54,21 +70,8 @@
       </div>
     </div>
 
-    <!-- 搜索结果 -->
+    <!-- 搜索结果列表 -->
     <div v-if="results" class="search-results">
-      <!-- Tab 切换 -->
-      <div class="result-tabs">
-        <div
-          v-for="tab in resultTabs"
-          :key="tab.key"
-          class="result-tab"
-          :class="{ active: activeResultTab === tab.key }"
-          @click="activeResultTab = tab.key"
-        >
-          {{ tab.label }}
-          <span v-if="getResultCount(tab.key) > 0" class="result-count">{{ getResultCount(tab.key) }}</span>
-        </div>
-      </div>
 
       <!-- 用户结果 -->
       <div v-if="activeResultTab === 'users'" class="result-list">
@@ -136,9 +139,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
+import { useScrollCollapse } from '@/composables/useScrollCollapse.js'
 
 const router = useRouter()
 const store = useAppStore()
+
+const { isScrolled } = useScrollCollapse(6)
 
 const keyword = ref('')
 const results = ref(null)
@@ -240,27 +246,40 @@ onMounted(() => {
   background: var(--echo-bg);
 }
 
-/* ===== 搜索栏 ===== */
-.search-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--echo-white);
+/* ===== 紧凑粘性锚定块（搜索栏 + 结果 Tab）===== */
+.search-sticky-wrap {
   position: sticky;
   top: 0;
   z-index: 100;
+  background: var(--echo-white);
+  max-width: 375px;
+  box-sizing: border-box;
+  box-shadow: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.search-sticky-wrap.is-scrolled {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+/* ===== 搜索栏（紧凑）===== */
+.search-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--echo-white);
 }
 
 .search-input-wrap {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: var(--echo-bg);
   border-radius: var(--echo-radius-full);
-  padding: 0 14px;
-  height: 38px;
+  padding: 0 12px;
+  height: 34px;
   border: 1.5px solid transparent;
   transition: all var(--echo-transition-fast);
 }
@@ -407,15 +426,12 @@ onMounted(() => {
   display: flex;
   background: var(--echo-white);
   border-bottom: 1px solid var(--echo-border);
-  position: sticky;
-  top: 58px;
-  z-index: 50;
 }
 
 .result-tab {
   flex: 1;
   text-align: center;
-  padding: 12px 0;
+  padding: 8px 0;
   font-size: var(--echo-text-base);
   color: var(--echo-text-secondary);
   cursor: pointer;

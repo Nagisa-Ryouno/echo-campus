@@ -418,11 +418,10 @@ function onBack() {
   font-weight: 500;
 }
 
-/* 表单 */
+/* 表单（不创建独立滚动上下文，跟随 phone-screen 滚动） */
 .create-body {
   flex: 1;
-  overflow-y: auto;
-  padding-bottom: 80px;
+  padding-bottom: 8px;
 }
 
 .form-section {

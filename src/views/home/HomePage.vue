@@ -1,87 +1,81 @@
 <template>
   <div class="home-page">
-    <!-- ===== 固定头部区域（sticky）===== -->
-    <div class="sticky-header-wrap">
-      <!-- 顶部搜索栏 -->
-      <div class="home-header">
-        <h1 class="home-title">校声</h1>
-        <div class="home-search" @click="$router.push('/search')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        </div>
+    <!-- ===== 标题栏：普通流，用户一滚动就自然离开 ===== -->
+    <div class="home-header">
+      <h1 class="home-title">校声</h1>
+      <div class="home-search" @click="$router.push('/search')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </div>
+    </div>
 
-      <!-- 五大频道切换 -->
-      <div class="channel-tabs">
+    <!-- ===== 频道栏：紧凑 sticky（唯一粘性元素）===== -->
+    <div class="channel-tabs-sticky" :class="{ 'is-scrolled': isScrolled }">
+      <div
+        v-for="ch in store.channelLabels"
+        :key="ch.key"
+        class="channel-tab"
+        :class="{ 'channel-tab--active': store.activeChannel === ch.key }"
+        @click="onChannelSwitch(ch.key)"
+      >
+        <span class="channel-tab-text">{{ ch.label }}</span>
+        <span v-if="store.activeChannel === ch.key" class="channel-tab-bar"></span>
+      </div>
+    </div>
+
+    <!-- ===== 子标签 / 关注栏：紧随频道栏在普通流中，自然滚走 ===== -->
+    <!-- 遇见频道 → 无标签栏 -->
+    <!-- 关注频道 → 已关注用户头像横滑 -->
+    <div v-if="store.activeChannel === 'follow'" class="follow-avatars-bar">
+      <div class="follow-avatars-scroll">
         <div
-          v-for="ch in store.channelLabels"
-          :key="ch.key"
-          class="channel-tab"
-          :class="{ 'channel-tab--active': store.activeChannel === ch.key }"
-          @click="onChannelSwitch(ch.key)"
+          class="follow-avatar-item"
+          :class="{ 'follow-avatar-item--active': followFilterUid === null }"
+          @click="followFilterUid = null"
         >
-          <span class="channel-tab-text">{{ ch.label }}</span>
-          <span v-if="store.activeChannel === ch.key" class="channel-tab-bar"></span>
+          <div class="follow-avatar-ring">
+            <span class="follow-avatar-all-text">全部</span>
+          </div>
         </div>
-      </div>
-
-      <!-- 小频道区域：不同频道展示不同内容 -->
-      <!-- 遇见频道 → 无标签栏 -->
-      <!-- 关注频道 → 已关注用户头像横滑 -->
-      <div v-if="store.activeChannel === 'follow'" class="follow-avatars-bar">
-        <div class="follow-avatars-scroll">
-          <!-- 全部 -->
-          <div
-            class="follow-avatar-item"
-            :class="{ 'follow-avatar-item--active': followFilterUid === null }"
-            @click="followFilterUid = null"
-          >
-            <div class="follow-avatar-ring">
-              <span class="follow-avatar-all-text">全部</span>
+        <div
+          v-for="user in store.followedUsers"
+          :key="user.id"
+          class="follow-avatar-item"
+          :class="{ 'follow-avatar-item--active': followFilterUid === user.id }"
+          @click="followFilterUid = followFilterUid === user.id ? null : user.id"
+        >
+          <div class="follow-avatar-ring">
+            <div
+              class="follow-avatar-img"
+              :style="{ background: user.avatarColor }"
+            >
+              {{ user.nickname.slice(0, 1) }}
             </div>
           </div>
-          <!-- 已关注用户头像（有红点模拟未读） -->
-          <div
-            v-for="user in store.followedUsers"
-            :key="user.id"
-            class="follow-avatar-item"
-            :class="{ 'follow-avatar-item--active': followFilterUid === user.id }"
-            @click="followFilterUid = followFilterUid === user.id ? null : user.id"
-          >
-            <div class="follow-avatar-ring">
-              <div
-                class="follow-avatar-img"
-                :style="{ background: user.avatarColor }"
-              >
-                {{ user.nickname.slice(0, 1) }}
-              </div>
-            </div>
-            <span class="follow-avatar-name">{{ user.nickname.length > 3 ? user.nickname.slice(0, 3) + '…' : user.nickname }}</span>
-          </div>
-          <!-- 关注管理 -->
-          <div class="follow-avatar-item follow-avatar-manage" @click="onFollowManage">
-            <div class="follow-avatar-ring follow-avatar-ring--manage">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-            </div>
+          <span class="follow-avatar-name">{{ user.nickname.length > 3 ? user.nickname.slice(0, 3) + '…' : user.nickname }}</span>
+        </div>
+        <div class="follow-avatar-item follow-avatar-manage" @click="onFollowManage">
+          <div class="follow-avatar-ring follow-avatar-ring--manage">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- 推荐 / 同城 / 我的学校 → 小标签横向滑动 -->
-      <div v-else-if="store.currentChannelTags.length > 0" class="sub-tags-area">
-        <div class="sub-tags-scroll" ref="tagsScrollRef">
-          <div
-            v-for="tag in store.visibleTags"
-            :key="tag"
-            class="sub-tag"
-            :class="{ 'sub-tag--active': store.activeCategoryTag === tag }"
-            @click="store.setCategoryTag(tag)"
-          >
-            {{ tag }}
-          </div>
+    <!-- 推荐 / 同城 / 我的学校 → 小标签横向滑动 -->
+    <div v-else-if="store.currentChannelTags.length > 0" class="sub-tags-area">
+      <div class="sub-tags-scroll" ref="tagsScrollRef">
+        <div
+          v-for="tag in store.visibleTags"
+          :key="tag"
+          class="sub-tag"
+          :class="{ 'sub-tag--active': store.activeCategoryTag === tag }"
+          @click="store.setCategoryTag(tag)"
+        >
+          {{ tag }}
         </div>
-        <div class="sub-tags-expand" @click="openTagPanel">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
+      </div>
+      <div class="sub-tags-expand" @click="openTagPanel">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
     </div>
 
@@ -250,9 +244,13 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
+import { useScrollCollapse } from '@/composables/useScrollCollapse.js'
 
 const router = useRouter()
 const store = useAppStore()
+
+// 滚动监听：用于频道栏阴影切换
+const { isScrolled } = useScrollCollapse(6)
 
 // ===== 频道切换（同步标签池）=====
 const channelDisplayName = computed(() => {
@@ -354,22 +352,13 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
 }
 
-/* ===== 固定头部 ===== */
-.sticky-header-wrap {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: var(--echo-white);
-  max-width: 375px;
-  box-sizing: border-box;
-}
-
-/* ===== 顶部搜索栏 ===== */
+/* ===== 标题栏：普通流，用户滚动即离开 ===== */
 .home-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px 8px;
+  padding: 12px 16px 10px;
+  background: var(--echo-white);
 }
 
 .home-title {
@@ -397,11 +386,24 @@ onBeforeUnmount(() => {
   transform: scale(0.95);
 }
 
-/* ===== 五大频道 ===== */
-.channel-tabs {
+/* ===== 频道栏：紧凑 sticky（唯一粘性区域，仅 ~42px）===== */
+.channel-tabs-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   display: flex;
-  padding: 0 8px;
+  background: var(--echo-white);
   border-bottom: 1px solid var(--echo-border);
+  max-width: 375px;
+  box-sizing: border-box;
+  /* 未滚动时无阴影 */
+  box-shadow: none;
+  transition: box-shadow 0.2s ease;
+}
+
+/* 滚动后添加轻微阴影，作为视觉分层 */
+.channel-tabs-sticky.is-scrolled {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .channel-tab {
@@ -409,7 +411,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px 0 8px;
+  padding: 9px 0 7px;
   cursor: pointer;
   position: relative;
   transition: all 0.2s;
@@ -418,7 +420,7 @@ onBeforeUnmount(() => {
 }
 
 .channel-tab-text {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--echo-text-secondary);
   font-weight: 500;
   transition: all 0.2s;
@@ -433,7 +435,7 @@ onBeforeUnmount(() => {
 .channel-tab-bar {
   position: absolute;
   bottom: 0;
-  width: 24px;
+  width: 22px;
   height: 3px;
   border-radius: 2px;
   background: var(--echo-primary);

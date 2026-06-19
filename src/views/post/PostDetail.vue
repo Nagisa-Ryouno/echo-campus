@@ -326,8 +326,7 @@ function goUserProfile(uid) {
 .post-detail-page {
   min-height: 100%;
   background: var(--echo-bg);
-  display: flex;
-  flex-direction: column;
+  padding-bottom: 80px;
 }
 
 /* 顶部 */
@@ -340,6 +339,7 @@ function goUserProfile(uid) {
   position: sticky;
   top: 0;
   z-index: 10;
+  box-shadow: 0 1px 0 var(--echo-border);
 }
 
 .detail-back {
@@ -367,11 +367,9 @@ function goUserProfile(uid) {
   font-size: 14px;
 }
 
-/* 正文容器 */
+/* 正文容器（不创建独立滚动上下文，跟随 phone-screen 滚动） */
 .detail-body {
-  flex: 1;
-  overflow-y: auto;
-  padding-bottom: 80px;
+  padding-bottom: 8px;
 }
 
 /* 作者信息 */
@@ -658,13 +656,16 @@ function goUserProfile(uid) {
   font-weight: 500;
 }
 
-/* 底部输入 */
+/* 底部输入（粘性锚定在 phone-screen 底部） */
 .detail-footer {
+  position: sticky;
+  bottom: 0;
   background: var(--echo-white);
   border-top: 1px solid var(--echo-border);
   padding: 8px 12px;
   padding-bottom: max(8px, env(safe-area-inset-bottom));
   z-index: 10;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
 }
 
 .comment-input-area {

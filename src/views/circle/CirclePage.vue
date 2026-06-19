@@ -1,6 +1,6 @@
 <template>
   <div class="circle-page">
-    <!-- 顶部栏 -->
+    <!-- 返回+标题栏：普通流，自然滚走 -->
     <div class="circle-header">
       <div class="nav-back" @click="$router.back()">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -8,8 +8,8 @@
       <h2 class="circle-title">我的圈子</h2>
     </div>
 
-    <!-- Tab 切换 -->
-    <div class="circle-tabs">
+    <!-- Tab 栏：紧凑 sticky（唯一粘性元素）-->
+    <div class="circle-tabs-sticky" :class="{ 'is-scrolled': isScrolled }">
       <div
         v-for="tab in tabs"
         :key="tab.key"
@@ -89,6 +89,9 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { useScrollCollapse } from '@/composables/useScrollCollapse.js'
+
+const { isScrolled } = useScrollCollapse(6)
 
 const activeTab = ref('joined')
 
@@ -217,16 +220,13 @@ function onJoin(circleId) {
   background: var(--echo-bg);
 }
 
-/* ===== 头部 ===== */
+/* ===== 返回+标题栏：普通流，滚动即离开 ===== */
 .circle-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 10px 16px;
   background: var(--echo-white);
-  position: sticky;
-  top: 0;
-  z-index: 100;
 }
 
 .nav-back {
@@ -251,20 +251,28 @@ function onJoin(circleId) {
   color: var(--echo-text);
 }
 
-/* ===== Tab ===== */
-.circle-tabs {
+/* ===== Tab 栏：紧凑 sticky（唯一粘性元素，仅 ~40px）===== */
+.circle-tabs-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   display: flex;
   background: var(--echo-white);
   border-bottom: 1px solid var(--echo-border);
-  position: sticky;
-  top: 56px;
-  z-index: 50;
+  max-width: 375px;
+  box-sizing: border-box;
+  box-shadow: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.circle-tabs-sticky.is-scrolled {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .circle-tab {
   flex: 1;
   text-align: center;
-  padding: 12px 0;
+  padding: 10px 0;
   font-size: var(--echo-text-base);
   color: var(--echo-text-secondary);
   cursor: pointer;

@@ -1,6 +1,6 @@
 <template>
   <div class="discover-page">
-    <!-- 顶部标题栏 -->
+    <!-- 标题栏：普通流，用户一滚动就自然离开 -->
     <div class="discover-header">
       <h1 class="discover-title">发现</h1>
       <div class="discover-search-btn" @click="$router.push('/search')">
@@ -8,8 +8,8 @@
       </div>
     </div>
 
-    <!-- 内容切换 Tab -->
-    <div class="discover-tabs">
+    <!-- Tab 栏：紧凑 sticky（唯一粘性元素）-->
+    <div class="discover-tabs-sticky" :class="{ 'is-scrolled': isScrolled }">
       <div
         v-for="tab in tabs"
         :key="tab.key"
@@ -82,8 +82,16 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               {{ item.commentCount }}
             </span>
-            <span class="hot-post-action hot-post-action--heat" v-if="activeTab === 'hot' || activeTab === 'campus_hot'">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 16.98c-1.77 2.65-4.93 4.5-8.5 4.5-5.52 0-10-4.48-10-10S4.48 1.5 10 1.5c3.57 0 6.73 1.85 8.5 4.5"/></svg>
+            <!-- 热度图标 — 火焰 SVG，热榜 Tab 下显示内焰填充 -->
+            <span
+              class="hot-post-action hot-post-action--heat"
+              :class="{ 'hot-post-action--heat-active': isHeatTab }"
+              v-if="isHeatTab"
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2.5C9.5 6.5 7 10.5 7 14.8C7 18 9.2 21.5 12 21.5C14.8 21.5 17 18 17 14.8C17 10.5 14.5 6.5 12 2.5Z" />
+                <path class="flame-core" d="M10 16.2C10 15.1 10.9 14.5 12 14.5C13.1 14.5 14 15.1 14 16.2" fill="currentColor" stroke="none" />
+              </svg>
               {{ calcHeat(item) }}
             </span>
           </div>
@@ -97,9 +105,12 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
+import { useScrollCollapse } from '@/composables/useScrollCollapse.js'
 
 const router = useRouter()
 const store = useAppStore()
+
+const { isScrolled } = useScrollCollapse(6)
 
 const tabs = [
   { key: 'hot', label: '热门' },
@@ -109,6 +120,10 @@ const tabs = [
 ]
 
 const activeTab = ref('hot')
+
+const isHeatTab = computed(() =>
+  ['hot', 'campus_hot', 'topic_hot'].includes(activeTab.value)
+)
 
 function switchTab(key) {
   activeTab.value = key
@@ -170,18 +185,13 @@ function goTag(tag) {
   padding-bottom: 8px;
 }
 
-/* ===== 顶部标题栏 ===== */
+/* ===== 标题栏：普通流，滚动即离开 ===== */
 .discover-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px 8px;
+  padding: 12px 16px 10px;
   background: var(--echo-white);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  max-width: 375px;
-  box-sizing: border-box;
 }
 
 .discover-title {
@@ -209,17 +219,22 @@ function goTag(tag) {
   transform: scale(0.95);
 }
 
-/* ===== Tab 切换栏 ===== */
-.discover-tabs {
+/* ===== Tab 栏：紧凑 sticky（唯一粘性元素，仅 ~40px）===== */
+.discover-tabs-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   display: flex;
   background: var(--echo-white);
-  padding: 0 12px;
-  position: sticky;
-  top: 52px;
-  z-index: 99;
+  border-bottom: 1px solid var(--echo-border);
   max-width: 375px;
   box-sizing: border-box;
-  border-bottom: 1px solid var(--echo-border);
+  box-shadow: none;
+  transition: box-shadow 0.2s ease;
+}
+
+.discover-tabs-sticky.is-scrolled {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
 .discover-tab {
@@ -227,7 +242,7 @@ function goTag(tag) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 0 10px;
+  padding: 10px 0 8px;
   cursor: pointer;
   position: relative;
   font-size: 14px;
@@ -394,6 +409,23 @@ function goTag(tag) {
 
 .hot-post-action--heat {
   color: var(--echo-accent);
+  font-weight: 500;
+}
+
+/* 火焰内焰 — 默认半透明 */
+.hot-post-action--heat .flame-core {
+  opacity: 0.35;
+  transition: opacity 0.3s ease;
+}
+
+/* 热榜 Tab 下火焰更醒目 */
+.hot-post-action--heat-active {
+  color: #e85d2c;
+  font-weight: 600;
+}
+
+.hot-post-action--heat-active .flame-core {
+  opacity: 0.55;
 }
 
 /* ===== 空状态 ===== */

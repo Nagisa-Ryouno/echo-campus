@@ -9,42 +9,46 @@
           :name="plusMenuVisible ? 'cross' : 'plus'"
           size="20"
           class="plus-icon"
-          @click="plusMenuVisible = !plusMenuVisible"
+          @click="plusMenuVisible ? closePlusMenu() : openPlusMenu()"
         />
       </div>
     </div>
 
-    <!-- 加号展开菜单 -->
-    <transition name="plus-slide">
-      <div v-if="plusMenuVisible" class="plus-menu" @click.stop>
-        <div class="plus-menu-grid">
-          <div class="plus-menu-item" @click="onPlusAction('group')">
-            <div class="plus-menu-icon" style="background:#e8f5ee;">
-              <van-icon name="friends-o" size="22" color="#4caf7d" />
+    <!-- 加号展开菜单（弹层，锁定背景滚动）-->
+    <Teleport to="#phone-screen">
+      <transition name="plus-fade">
+        <div v-if="plusMenuVisible" class="plus-menu-overlay" @click.self="closePlusMenu">
+          <div class="plus-menu-sheet">
+            <div class="plus-menu-grid">
+              <div class="plus-menu-item" @click="onPlusAction('group')">
+                <div class="plus-menu-icon" style="background:#e8f5ee;">
+                  <van-icon name="friends-o" size="22" color="#4caf7d" />
+                </div>
+                <span>创建圈子</span>
+              </div>
+              <div class="plus-menu-item" @click="onPlusAction('square')">
+                <div class="plus-menu-icon" style="background:#fff3e0;">
+                  <van-icon name="fire-o" size="22" color="#ff6b35" />
+                </div>
+                <span>圈子广场</span>
+              </div>
+              <div class="plus-menu-item" @click="onPlusAction('addFriend')">
+                <div class="plus-menu-icon" style="background:#e3f2fd;">
+                  <van-icon name="user-o" size="22" color="#3498db" />
+                </div>
+                <span>添加好友</span>
+              </div>
+              <div class="plus-menu-item" @click="onPlusAction('scan')">
+                <div class="plus-menu-icon" style="background:#f3e5f5;">
+                  <van-icon name="scan" size="22" color="#9b59b6" />
+                </div>
+                <span>扫一扫</span>
+              </div>
             </div>
-            <span>创建圈子</span>
-          </div>
-          <div class="plus-menu-item" @click="onPlusAction('square')">
-            <div class="plus-menu-icon" style="background:#fff3e0;">
-              <van-icon name="fire-o" size="22" color="#ff6b35" />
-            </div>
-            <span>圈子广场</span>
-          </div>
-          <div class="plus-menu-item" @click="onPlusAction('addFriend')">
-            <div class="plus-menu-icon" style="background:#e3f2fd;">
-              <van-icon name="user-o" size="22" color="#3498db" />
-            </div>
-            <span>添加好友</span>
-          </div>
-          <div class="plus-menu-item" @click="onPlusAction('scan')">
-            <div class="plus-menu-icon" style="background:#f3e5f5;">
-              <van-icon name="scan" size="22" color="#9b59b6" />
-            </div>
-            <span>扫一扫</span>
           </div>
         </div>
-      </div>
-    </transition>
+      </transition>
+    </Teleport>
 
     <!-- 通知分类入口 —— 无外层卡片，图标块 + 下方文字，角标在图标块右下角叠加 -->
     <div class="notif-entries">
@@ -147,7 +151,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
 import { showToast } from 'vant'
@@ -156,6 +160,21 @@ const router = useRouter()
 const store = useAppStore()
 
 const plusMenuVisible = ref(false)
+
+function openPlusMenu() {
+  plusMenuVisible.value = true
+  store.lockPhoneScroll()
+}
+
+function closePlusMenu() {
+  plusMenuVisible.value = false
+  store.unlockPhoneScroll()
+}
+
+// 组件卸载时恢复滚动
+onBeforeUnmount(() => {
+  store.unlockPhoneScroll()
+})
 
 function onChatClick(chat) {
   store.markChatRead(chat.id)
@@ -167,7 +186,7 @@ function onChatClick(chat) {
 }
 
 function onPlusAction(type) {
-  plusMenuVisible.value = false
+  closePlusMenu()
   const actions = {
     group: '创建群聊（原型占位）',
     square: '群聊广场（原型占位）',
@@ -215,13 +234,23 @@ function badgeText(count) {
   transition: transform 0.2s;
 }
 
-/* ===== 加号菜单 ===== */
-.plus-menu {
+/* ===== 加号菜单弹层 ===== */
+.plus-menu-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 500;
+  display: flex;
+  max-width: 375px;
+  box-sizing: border-box;
+}
+.plus-menu-sheet {
+  width: 100%;
+  max-width: 375px;
   background: var(--echo-white);
   border-radius: 0 0 16px 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  position: relative;
-  z-index: 99;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  box-sizing: border-box;
 }
 .plus-menu-grid {
   display: grid;
@@ -249,15 +278,30 @@ function badgeText(count) {
   align-items: center;
   justify-content: center;
 }
-.plus-slide-enter-active { animation: plusIn 0.2s ease; }
-.plus-slide-leave-active { animation: plusOut 0.15s ease; }
-@keyframes plusIn {
-  from { opacity: 0; max-height: 0; }
-  to { opacity: 1; max-height: 120px; }
+/* 弹层过渡动画 */
+.plus-fade-enter-active { animation: plusFadeIn 0.25s ease; }
+.plus-fade-leave-active { animation: plusFadeOut 0.2s ease; }
+@keyframes plusFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-@keyframes plusOut {
-  from { opacity: 1; max-height: 120px; }
-  to { opacity: 0; max-height: 0; }
+@keyframes plusFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.plus-fade-enter-active .plus-menu-sheet {
+  animation: plusSlideDown 0.25s ease;
+}
+.plus-fade-leave-active .plus-menu-sheet {
+  animation: plusSlideUp 0.2s ease;
+}
+@keyframes plusSlideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes plusSlideUp {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(-100%); opacity: 0; }
 }
 
 /* ===== 通知分类入口 —— 无外层卡片，图标块在上 + 文字在下 ===== */
