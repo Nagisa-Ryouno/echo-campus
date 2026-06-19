@@ -11,6 +11,10 @@
       @click="onTabClick(item)"
     >
       <div class="tabbar-icon" v-html="item.icon"></div>
+      <!-- 消息红点 -->
+      <div v-if="item.key === 'message' && totalUnread > 0" class="tabbar-badge">
+        {{ totalUnread > 99 ? '99+' : totalUnread }}
+      </div>
       <span class="tabbar-label">{{ item.label }}</span>
     </div>
   </div>
@@ -19,9 +23,11 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useAppStore } from '@/stores/app.js'
 
 const router = useRouter()
 const route = useRoute()
+const store = useAppStore()
 
 const tabs = [
   {
@@ -56,6 +62,11 @@ const tabs = [
   }
 ]
 
+const totalUnread = computed(() =>
+  store.unreadChatCount + store.unreadLikeCount +
+  store.unreadCommentAtCount + store.unreadFollowerCount + store.unreadAnonCount
+)
+
 const current = computed(() => {
   const name = route.name
   const map = {
@@ -73,11 +84,7 @@ const current = computed(() => {
 const showTabBar = computed(() => route.meta.tabBar !== false)
 
 function onTabClick(tab) {
-  if (tab.key === 'publish') {
-    router.push(tab.route)
-  } else {
-    router.push(tab.route)
-  }
+  router.push(tab.route)
 }
 
 defineExpose({ showTabBar })
@@ -93,6 +100,7 @@ defineExpose({ showTabBar })
   align-items: center;
   justify-content: space-around;
   padding-bottom: 4px;
+  position: relative;
 }
 
 .tabbar-item {
@@ -102,9 +110,10 @@ defineExpose({ showTabBar })
   justify-content: center;
   gap: 1px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--echo-transition-normal);
   flex: 1;
   min-width: 0;
+  position: relative;
 }
 
 .tabbar-icon {
@@ -112,13 +121,14 @@ defineExpose({ showTabBar })
   align-items: center;
   justify-content: center;
   color: var(--echo-text-hint);
-  transition: color 0.2s ease;
+  transition: color var(--echo-transition-normal);
+  position: relative;
 }
 
 .tabbar-label {
   font-size: 10px;
   color: var(--echo-text-hint);
-  transition: color 0.2s ease;
+  transition: color var(--echo-transition-normal);
 }
 
 .tabbar-item--active .tabbar-icon {
@@ -145,5 +155,25 @@ defineExpose({ showTabBar })
 
 .tabbar-item--publish .tabbar-label {
   margin-top: 2px;
+}
+
+/* 消息红点 */
+.tabbar-badge {
+  position: absolute;
+  top: -2px;
+  right: calc(50% - 24px);
+  min-width: 16px;
+  height: 16px;
+  line-height: 16px;
+  text-align: center;
+  padding: 0 4px;
+  background: var(--echo-danger);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 2px solid var(--echo-white);
+  box-shadow: 0 1px 4px rgba(231, 76, 60, 0.4);
+  z-index: 2;
 }
 </style>

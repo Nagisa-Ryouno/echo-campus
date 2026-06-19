@@ -324,6 +324,28 @@ export const useAppStore = defineStore('app', () => {
   // 主页内容 Tab
   const profileActiveTab = ref('posts')
 
+  // ===== 隐私设置 =====
+  const schoolVisibility = ref('public')
+  const searchByName = ref(true)
+  const searchByEchoId = ref(true)
+  const searchScope = ref('everyone')
+  const allowRecommend = ref(true)
+  const commentPermission = ref('everyone')
+  const messagePermission = ref('everyone')
+  const followPermission = ref('everyone')
+  const defaultVisibility = ref('everyone')
+  const schoolOnlyContent = ref(false)
+  const allowAnonPost = ref(true)
+  const allowAnonComment = ref(true)
+
+  // 隐私标签映射
+  const visibilityLabels = { public: '所有人可见', school_only: '仅本校可见', hidden: '完全隐藏' }
+  const scopeLabels = { everyone: '所有人可搜索', school_only: '仅本校可搜索', nobody: '不允许被搜索' }
+  const commentLabels = { everyone: '所有人可评论', followers: '仅关注者可评论', mutual: '仅互关者可评论', nobody: '不允许评论' }
+  const messageLabels = { everyone: '所有人可私信', followers: '仅关注者可私信', mutual: '仅互关者可私信', nobody: '不接受私信' }
+  const followLabels = { everyone: '所有人可关注', require_approval: '关注需验证', nobody: '不允许陌生人关注' }
+  const publishLabels = { private: '完全私密', followers: '仅关注者可见', everyone: '所有人可见' }
+
   return {
     // 用户
     isLoggedIn, currentUser, users,
@@ -368,6 +390,15 @@ export const useAppStore = defineStore('app', () => {
     // 用户内容
     getUserPosts, getUserCommentedPosts, getUserCollectedPosts, getUserLikedPosts,
     browseHistory,
+
+    // 隐私设置
+    schoolVisibility, searchByName, searchByEchoId,
+    searchScope, allowRecommend,
+    commentPermission, messagePermission, followPermission,
+    defaultVisibility, schoolOnlyContent,
+    allowAnonPost, allowAnonComment,
+    visibilityLabels, scopeLabels,
+    commentLabels, messageLabels, followLabels, publishLabels,
 
     // 个人设置
     profileActiveTab

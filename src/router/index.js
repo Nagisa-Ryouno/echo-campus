@@ -16,8 +16,20 @@ const routes = [
   {
     path: '/register',
     name: 'Register',
-    component: () => import('@/views/auth/RegisterPage.vue'),
+    component: () => import('@/views/auth/RegisterMethodPage.vue'),
     meta: { title: '注册', tabBar: false }
+  },
+  {
+    path: '/register/email',
+    name: 'EmailRegister',
+    component: () => import('@/views/auth/EmailRegisterPage.vue'),
+    meta: { title: '邮箱注册', tabBar: false }
+  },
+  {
+    path: '/register/student-id',
+    name: 'StudentIdVerify',
+    component: () => import('@/views/auth/StudentIdVerifyPage.vue'),
+    meta: { title: '学生证审核', tabBar: false }
   },
   {
     path: '/home',
@@ -90,6 +102,36 @@ const routes = [
     name: 'Settings',
     component: () => import('@/views/settings/SettingsPage.vue'),
     meta: { title: '设置', tabBar: false }
+  },
+  {
+    path: '/settings/privacy',
+    name: 'PrivacySettings',
+    component: () => import('@/views/settings/PrivacySettingsPage.vue'),
+    meta: { title: '隐私设置', tabBar: false }
+  },
+  {
+    path: '/settings/privacy/school',
+    name: 'SchoolVisibility',
+    component: () => import('@/views/settings/SchoolVisibilityPage.vue'),
+    meta: { title: '学校信息可见性', tabBar: false }
+  },
+  {
+    path: '/settings/privacy/search',
+    name: 'SearchRecommend',
+    component: () => import('@/views/settings/SearchRecommendPage.vue'),
+    meta: { title: '搜索与推荐', tabBar: false }
+  },
+  {
+    path: '/settings/privacy/interaction',
+    name: 'InteractionPermissions',
+    component: () => import('@/views/settings/InteractionPermissionsPage.vue'),
+    meta: { title: '互动权限', tabBar: false }
+  },
+  {
+    path: '/settings/privacy/content',
+    name: 'ContentPublish',
+    component: () => import('@/views/settings/ContentPublishPage.vue'),
+    meta: { title: '内容发布权限', tabBar: false }
   },
   {
     path: '/search',

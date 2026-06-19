@@ -1,36 +1,116 @@
+/* ========================================
+   Echo Campus 全局设计系统 v2.0
+   统一视觉语言 + 动画体系 + 状态规范
+   ======================================== */
+
+/* ===== CSS Reset ===== */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* ===== 设计令牌 ===== */
 :root {
+  /* 品牌色 */
   --echo-primary: #4caf7d;
   --echo-primary-light: #e8f5ee;
   --echo-primary-dark: #2e8b57;
+
+  /* 强调色 */
   --echo-accent: #ff6b35;
+  --echo-accent-light: #fff3e8;
+
+  /* 语义色 */
+  --echo-danger: #e74c3c;
+  --echo-warning: #f39c12;
+  --echo-success: #27ae60;
+  --echo-info: #3498db;
+
+  /* 背景 */
   --echo-bg: #f5f7fa;
-  --echo-white: #ffffff;
+  --echo-bg-card: #ffffff;
+  --echo-bg-input: #f8f9fb;
+  --echo-bg-hover: #f0f4f8;
+
+  /* 文字 */
   --echo-text: #2c3e50;
   --echo-text-secondary: #7f8c8d;
   --echo-text-hint: #bdc3c7;
+
+  /* 边框 */
   --echo-border: #eceff1;
-  --echo-danger: #e74c3c;
-  --echo-warning: #f39c12;
-  --echo-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  --echo-radius: 12px;
+  --echo-border-focus: #4caf7d;
+  --echo-divider: #f0f2f5;
+
+  /* 阴影 */
+  --echo-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --echo-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --echo-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --echo-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --echo-shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.16);
+
+  /* 圆角 */
+  --echo-radius-xs: 6px;
   --echo-radius-sm: 8px;
+  --echo-radius: 12px;
+  --echo-radius-lg: 16px;
+  --echo-radius-xl: 20px;
+  --echo-radius-full: 9999px;
+
+  /* 间距 (基于 4px) */
+  --echo-space-1: 4px;
+  --echo-space-2: 8px;
+  --echo-space-3: 12px;
+  --echo-space-4: 16px;
+  --echo-space-5: 20px;
+  --echo-space-6: 24px;
+  --echo-space-8: 32px;
+  --echo-space-10: 40px;
+  --echo-space-12: 48px;
+
+  /* 字体 */
+  --echo-font: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --echo-font-mono: 'SF Mono', 'Consolas', 'Monaco', monospace;
+
+  /* 字号 */
+  --echo-text-2xs: 10px;
+  --echo-text-xs: 11px;
+  --echo-text-sm: 12px;
+  --echo-text-base: 14px;
+  --echo-text-md: 15px;
+  --echo-text-lg: 16px;
+  --echo-text-xl: 18px;
+  --echo-text-2xl: 22px;
+  --echo-text-3xl: 26px;
+
+  /* 字重 */
+  --echo-weight-normal: 400;
+  --echo-weight-medium: 500;
+  --echo-weight-semibold: 600;
+  --echo-weight-bold: 700;
+
+  /* 过渡 */
+  --echo-transition-fast: 0.15s ease;
+  --echo-transition-normal: 0.2s ease;
+  --echo-transition-slow: 0.3s ease;
+  --echo-transition-spring: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* 动效曲线 */
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out-quint: cubic-bezier(0.83, 0, 0.17, 1);
 }
 
+/* ===== 全局基础 ===== */
 body {
-  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-family: var(--echo-font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: #f0f2f5;
   color: var(--echo-text);
   overflow-x: hidden;
-  margin: 0;
-  padding: 0;
+  line-height: 1.5;
 }
 
 a {
@@ -41,4 +121,272 @@ a {
 ::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+/* ===== 通用组件样式 ===== */
+
+/* 按钮基类 */
+.echo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--echo-radius-sm);
+  font-family: var(--echo-font);
+  font-size: var(--echo-text-md);
+  font-weight: var(--echo-weight-semibold);
+  cursor: pointer;
+  transition: all var(--echo-transition-fast);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.echo-btn:active {
+  transform: scale(0.97);
+}
+
+.echo-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.echo-btn--primary {
+  background: var(--echo-primary);
+  color: #fff;
+}
+
+.echo-btn--primary:active:not(:disabled) {
+  background: var(--echo-primary-dark);
+}
+
+.echo-btn--accent {
+  background: var(--echo-accent);
+  color: #fff;
+}
+
+.echo-btn--outline {
+  background: transparent;
+  border: 1.5px solid var(--echo-primary);
+  color: var(--echo-primary);
+}
+
+.echo-btn--ghost {
+  background: var(--echo-bg);
+  color: var(--echo-text-secondary);
+}
+
+.echo-btn--danger {
+  background: var(--echo-danger);
+  color: #fff;
+}
+
+/* 输入框基类 */
+.echo-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--echo-border);
+  border-radius: var(--echo-radius-sm);
+  font-family: var(--echo-font);
+  font-size: var(--echo-text-md);
+  color: var(--echo-text);
+  background: var(--echo-bg-card);
+  outline: none;
+  transition: all var(--echo-transition-fast);
+}
+
+.echo-input:focus {
+  border-color: var(--echo-border-focus);
+  box-shadow: 0 0 0 3px rgba(76, 175, 125, 0.1);
+}
+
+.echo-input::placeholder {
+  color: var(--echo-text-hint);
+}
+
+/* 卡片基类 */
+.echo-card {
+  background: var(--echo-bg-card);
+  border-radius: var(--echo-radius);
+  overflow: hidden;
+}
+
+.echo-card--shadow {
+  box-shadow: var(--echo-shadow-xs);
+}
+
+.echo-card--bordered {
+  border: 1px solid var(--echo-border);
+}
+
+/* 标签基类 */
+.echo-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--echo-radius-full);
+  font-size: var(--echo-text-xs);
+  font-weight: var(--echo-weight-medium);
+  white-space: nowrap;
+}
+
+.echo-tag--green {
+  background: var(--echo-primary-light);
+  color: var(--echo-primary);
+}
+
+.echo-tag--orange {
+  background: var(--echo-accent-light);
+  color: var(--echo-accent);
+}
+
+.echo-tag--gray {
+  background: var(--echo-bg);
+  color: var(--echo-text-secondary);
+}
+
+/* ===== 红点/Badge 规范 ===== */
+.echo-badge {
+  position: absolute;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  padding: 0 5px;
+  background: var(--echo-danger);
+  color: #fff;
+  font-size: var(--echo-text-2xs);
+  font-weight: var(--echo-weight-bold);
+  border-radius: 10px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(231, 76, 60, 0.4);
+}
+
+.echo-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--echo-danger);
+  border: 2px solid #fff;
+}
+
+/* ===== 空状态规范 ===== */
+.echo-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 20px;
+  color: var(--echo-text-hint);
+}
+
+.echo-empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+.echo-empty-text {
+  font-size: var(--echo-text-md);
+  margin-bottom: 4px;
+}
+
+.echo-empty-hint {
+  font-size: var(--echo-text-sm);
+  opacity: 0.7;
+}
+
+/* ===== 加载骨架屏 ===== */
+.echo-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: var(--echo-radius-xs);
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ===== 页面过渡动画 ===== */
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 0.25s var(--ease-out-expo);
+}
+
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
+}
+
+/* 滑动过渡（用于二级页） */
+.page-slide-enter-active,
+.page-slide-leave-active {
+  transition: all 0.3s var(--ease-out-expo);
+}
+
+.page-slide-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.page-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+/* ===== 底部弹出面板通用动画 ===== */
+.panel-slide-enter-active,
+.panel-slide-leave-active {
+  transition: all 0.3s var(--ease-out-expo);
+}
+
+.panel-slide-enter-from,
+.panel-slide-leave-to {
+  opacity: 0;
+}
+
+.panel-slide-enter-from .sheet,
+.panel-slide-leave-to .sheet {
+  transform: translateY(100%);
+}
+
+/* ===== 列表入场动画（stagger）===== */
+.list-enter-active {
+  transition: all 0.4s var(--ease-out-expo);
+}
+
+.list-leave-active {
+  transition: all 0.25s var(--ease-out-expo);
+}
+
+.list-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.list-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* ===== 弹性缩放反馈 ===== */
+.scale-press {
+  transition: transform var(--echo-transition-fast);
+}
+
+.scale-press:active {
+  transform: scale(0.95);
+}
+
+/* ===== 工具类 ===== */
+.echo-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--echo-divider);
+}
+
+.echo-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
