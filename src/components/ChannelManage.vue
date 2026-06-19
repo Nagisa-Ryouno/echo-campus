@@ -2,11 +2,10 @@
   <Teleport to="#phone-screen">
     <transition name="channel-manage-fade">
       <div v-if="visible" class="cm-overlay" @click.self="onClose">
-        <!-- ═══ 全屏容器 ═══ -->
-        <div class="cm-container">
-
-          <!-- ===== 顶部导航栏 ===== -->
+        <div class="cm-container" @click.stop>
+          <!-- 导航栏增加顶部安全内边距，远离状态栏 -->
           <div class="cm-nav">
+            <!-- 扩大关闭按钮可点击区域，填满整格 -->
             <div class="cm-nav-left" @click="onClose">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/>
@@ -19,7 +18,6 @@
             </button>
           </div>
 
-          <!-- ===== 我的频道板块 ===== -->
           <div class="cm-section">
             <div class="cm-section-header">
               <div class="cm-section-title-row">
@@ -42,18 +40,9 @@
                 @click="onMyChannelClick(tag)"
               >
                 <span class="cm-tag-text">{{ tag }}</span>
-                <!-- 编辑态：右上角删除叉号 -->
                 <div v-if="editing" class="cm-tag-remove" @click.stop="removeChannel(tag, idx)">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </div>
-                <!-- 拖拽指示器（编辑态显示） -->
-                <div v-if="editing" class="cm-tag-drag-hint">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                    <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
-                    <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
-                    <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
                   </svg>
                 </div>
               </div>
@@ -63,7 +52,6 @@
             </div>
           </div>
 
-          <!-- ===== 推荐频道板块 ===== -->
           <div class="cm-section cm-section--recommend">
             <div class="cm-section-header">
               <div class="cm-section-title-row">
@@ -89,7 +77,6 @@
               已添加所有推荐频道
             </div>
           </div>
-
         </div>
       </div>
     </transition>
@@ -97,7 +84,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useAppStore } from '@/stores/app.js'
 import { showToast } from 'vant'
 
@@ -106,39 +93,33 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'select-channel'])
-
 const store = useAppStore()
 const editing = ref(false)
-const dragStartIdx = ref(-1)  // 拖拽起始索引
-// 当前大频道名称
+const dragStartIdx = ref(-1)
+
 const channelDisplayName = computed(() => {
   const ch = store.channelLabels.find(c => c.key === store.activeChannel)
   return ch ? ch.label : ''
 })
 
-// ── 我的频道列表（来自当前频道的 visibleTags / userTags）──
-// 初始化时从 store 的 userTags 中取"已激活"的标签作为我的频道
-// 推荐列表 = 当前频道完整标签池 - 我的频道
 const allPoolTags = computed(() => {
   return store.currentChannelTags.length > 0
     ? [...store.currentChannelTags]
-    : [...(store.userTags.value || [])]
+    : [...(store.userTags || [])]
 })
 
-// 我的频道（用户已选择的标签）
 const myChannels = ref([])
-
-// 推荐频道（未选择的标签）
 const recommendedChannels = computed(() => {
   const mySet = new Set(myChannels.value)
   return allPoolTags.value.filter(t => !mySet.has(t))
 })
 
-// 当面板打开时，初始化我的频道列表
-watch(() => props.visible, (val) => {
+// 打开面板强制初始化，nextTick 确保DOM渲染完成
+watch(() => props.visible, async (val) => {
   if (val) {
-    // 从 store 的可见标签初始化"我的频道"
-    myChannels.value = [...(store.visibleTags || [])]
+    await nextTick()
+    // 强制从仓库读取最新可见标签
+    myChannels.value = JSON.parse(JSON.stringify(store.visibleTags || []))
     editing.value = false
     store.lockPhoneScroll()
   } else {
@@ -146,24 +127,22 @@ watch(() => props.visible, (val) => {
   }
 })
 
-// ── 编辑状态切换 ──
+// 切换编辑状态
 function toggleEdit() {
   editing.value = !editing.value
 }
 
-// ── 拖拽排序 ──
+// 拖拽逻辑
 function onDragStart(idx, event) {
   if (!editing.value) { event.preventDefault(); return }
   dragStartIdx.value = idx
   event.dataTransfer.effectAllowed = 'move'
 }
-
 function onDragOver(idx, event) {
   if (!editing.value) return
   event.preventDefault()
   event.dataTransfer.dropEffect = 'move'
 }
-
 function onDrop(idx, event) {
   if (!editing.value) return
   event.preventDefault()
@@ -175,89 +154,77 @@ function onDrop(idx, event) {
   myChannels.value = list
   dragStartIdx.value = -1
 }
-
 function onDragEnd() {
   dragStartIdx.value = -1
 }
 
-// ── 点击我的频道（浏览态 → 进入频道；编辑态不响应点击跳转）──
+// 浏览态点击跳转，编辑态禁止
 function onMyChannelClick(tag) {
   if (editing.value) return
-  // 选择该频道并关闭管理界面
   store.setCategoryTag(tag)
   emit('select-channel', tag)
   onClose()
 }
 
-// ── 从我的频道移除 ──
+// 移除频道
 function removeChannel(tag, idx) {
   myChannels.value.splice(idx, 1)
 }
 
-// ── 添加到我的频道 ──
+// 添加频道
 function addChannel(tag) {
   if (!tag || myChannels.value.includes(tag)) return
   myChannels.value.push(tag)
 }
 
-// ── 关闭面板（同步结果回 store）──
+// 关闭面板：同步数据+重置状态
 function onClose() {
-  // 将最终的 myChannels 同步回 store
+  console.log('触发关闭弹窗')
   syncToStore()
   editing.value = false
   emit('close')
 }
 
-// 同步用户的频道选择到 store
+// 同步本地频道数据到全局仓库（修复hiddenTags不可遍历报错）
 function syncToStore() {
-  // 计算被移除的标签（原来在 visibleTags 中但不在 myChannels 中的）
+  // 兜底：保证hiddenTags一定是数组
+  if (!Array.isArray(store.hiddenTags.value)) {
+    store.hiddenTags.value = []
+  }
   const previousVisible = new Set(store.visibleTags || [])
   const currentMySet = new Set(myChannels.value)
 
-  // 被隐藏的 = 之前可见但现在不在我的频道里
+  // 新增隐藏标签
+  const newHidden = []
   for (const t of previousVisible) {
-    if (!currentMySet.has(t)) {
-      if (!store.hiddenTags.value.includes(t)) {
-        store.hiddenTags.value = [...store.hiddenTags.value, t]
-      }
+    if (!currentMySet.has(t) && !store.hiddenTags.value.includes(t)) {
+      newHidden.push(t)
     }
   }
+  store.hiddenTags.value = [...store.hiddenTags.value, ...newHidden]
 
-  // 被恢复显示的 = 现在在我的频道里但之前在 hiddenTags 里的
-  for (const t of myChannels.value) {
-    if (store.hiddenTags.value.includes(t)) {
-      store.hiddenTags.value = store.hiddenTags.value.filter(h => h !== t)
-    }
-  }
+  // 从隐藏列表移除已添加的标签
+  store.hiddenTags.value = store.hiddenTags.value.filter(t => !currentMySet.has(t))
+  // 同步当前可见频道
+  store.visibleTags = [...myChannels.value]
 }
 </script>
 
 <style scoped>
-/* ══════════════════════════════════════════════ */
-/* 全屏覆盖层（浅灰半透明 + 毛玻璃）     */
-/* 使用 position:fixed 而非 absolute：      */
-/* phone-body 有 transform:translateZ(0)    */
-/* 会创建新的 fixed 包含块，确保覆盖整屏   */
-/* ══════════════════════════════════════════════ */
 .cm-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 375px;
+  inset: 0;
+  width: 100%;
   height: 100%;
-  margin: auto;
   background: rgba(240, 242, 245, 0.95);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  z-index: 600;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
   overflow: hidden;
-  /* 状态栏安全区域：44px */
-  padding-top: 44px;
+  padding-top: max(44px, env(safe-area-inset-top));
 }
 
 .cm-container {
@@ -268,7 +235,6 @@ function syncToStore() {
   -webkit-overflow-scrolling: touch;
 }
 
-/* ═══ 顶部导航栏 ═══ */
 .cm-nav {
   display: flex;
   align-items: center;
@@ -285,24 +251,24 @@ function syncToStore() {
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
+/* 强制按钮可点击，消除浏览器点击穿透bug */
 .cm-nav-left {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--echo-text-secondary);
-  cursor: pointer;
+  cursor: pointer !important;
+  pointer-events: auto !important;
   border-radius: 50%;
   transition: background 0.15s;
   -webkit-tap-highlight-color: transparent;
 }
-
 .cm-nav-left:active {
   background: rgba(0, 0, 0, 0.06);
 }
 
-/* 导航栏右侧编辑按钮 */
 .cm-nav-right-btn {
   font-size: 13px;
   color: var(--echo-primary);
@@ -316,11 +282,9 @@ function syncToStore() {
   transition: all 0.2s;
   -webkit-tap-highlight-color: transparent;
 }
-
 .cm-nav-right-btn:active {
   opacity: 0.7;
 }
-
 .cm-nav-right-btn--active {
   background: rgba(76, 175, 125, 0.14);
   color: var(--echo-primary);
@@ -333,43 +297,36 @@ function syncToStore() {
   letter-spacing: 0.3px;
 }
 
-/* ═══ 板块通用 ═══ */
 .cm-section {
-  padding: 4px 16px 16px;
+  padding: 12px 16px 16px;
 }
-
 .cm-section--recommend {
   margin-top: 8px;
   padding-top: 16px;
   border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
-
 .cm-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 14px;
+  min-height: 24px;
 }
-
 .cm-section-title-row {
   display: flex;
   align-items: baseline;
   gap: 10px;
 }
-
 .cm-section-title {
   font-size: 17px;
   font-weight: 700;
   color: var(--echo-text);
 }
-
 .cm-section-subtitle {
   font-size: 12px;
   color: var(--echo-text-hint);
   font-weight: 400;
 }
-
-
 
 .cm-grid {
   display: grid;
@@ -377,7 +334,6 @@ function syncToStore() {
   gap: 10px 8px;
 }
 
-/* ═══ 标签 ═══ */
 .cm-tag {
   display: flex;
   align-items: center;
@@ -391,43 +347,25 @@ function syncToStore() {
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
 }
-
 .cm-tag:active {
   transform: scale(0.95);
 }
-
-/* 我的频道标签 */
 .cm-tag--mine {
   background: rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(0, 0, 0, 0.08);
   color: var(--echo-text);
 }
-
 .cm-tag--mine:hover {
   background: rgba(0, 0, 0, 0.07);
   border-color: rgba(0, 0, 0, 0.14);
 }
-
-/* 拖拽提示图标（编辑态显示） */
-.cm-tag-drag-hint {
-  position: absolute;
-  bottom: 3px;
-  right: 5px;
-  color: var(--echo-text-hint);
-  opacity: 0.45;
-  pointer-events: none;
-}
-
-/* 编辑态下标签微调 */
 .cm-tag--editing {
-  padding-right: 20px;
+  padding-right: 12px;
   cursor: grab;
 }
-
 .cm-tag--editing:active {
   cursor: grabbing;
 }
-
 .cm-tag-text {
   white-space: nowrap;
   overflow: hidden;
@@ -435,8 +373,6 @@ function syncToStore() {
   max-width: 100%;
   text-align: center;
 }
-
-/* 删除叉号 */
 .cm-tag-remove {
   position: absolute;
   top: 3px;
@@ -444,8 +380,7 @@ function syncToStore() {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: rgba(255, 80, 80, 0.85);
-  color: #fff;
+  background: rgba(255, 80, 80, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -453,44 +388,35 @@ function syncToStore() {
   transition: transform 0.15s;
   flex-shrink: 0;
 }
-
 .cm-tag-remove:active {
   transform: scale(1.2);
 }
-
-/* 推荐频道标签 */
 .cm-tag--recommend {
   background: transparent;
   border: 1px dashed rgba(0, 0, 0, 0.12);
   color: var(--echo-text-secondary);
   gap: 3px;
 }
-
 .cm-tag--recommend:active {
   background: rgba(76, 175, 125, 0.08);
   border-style: solid;
   border-color: var(--echo-primary);
   color: var(--echo-primary);
 }
-
 .cm-tag-plus {
   flex-shrink: 0;
   opacity: 0.6;
 }
-
 .cm-tag--recommend:active .cm-tag-plus {
   opacity: 1;
 }
-
-/* ═══ 空状态 ═══ */
 .cm-empty-hint {
   text-align: center;
-  padding: 32px 0 16px;
+  padding: 20px 0 8px;
   font-size: 13px;
   color: var(--echo-text-hint);
 }
 
-/* ═══ 过渡动画 ═══ */
 .channel-manage-fade-enter-active {
   transition: opacity 0.28s ease;
 }
