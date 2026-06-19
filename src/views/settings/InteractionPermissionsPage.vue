@@ -13,10 +13,6 @@
       <!-- 权限摘要 -->
       <div class="perm-summary">
         <div class="summary-row">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--echo-primary)" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          <span>评论：<strong>{{ store.commentLabels[store.commentPermission] }}</strong></span>
-        </div>
-        <div class="summary-row">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--echo-primary)" stroke-width="2"><path d="M22 17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>
           <span>私信：<strong>{{ store.messageLabels[store.messagePermission] }}</strong></span>
         </div>
@@ -26,26 +22,21 @@
         </div>
       </div>
 
-      <!-- ======= 第一块：评论权限 ======= -->
+      <!-- ======= 评论权限：固定说明（不可修改）======= -->
       <div class="section-label">评论权限</div>
-      <div class="option-card">
-        <div
-          v-for="opt in commentOptions"
-          :key="opt.value"
-          class="option-item"
-          :class="{ selected: store.commentPermission === opt.value }"
-          @click="store.commentPermission = opt.value"
-        >
-          <div class="option-body">
-            <div class="option-radio" :class="{ active: store.commentPermission === opt.value }">
-              <div v-if="store.commentPermission === opt.value" class="radio-dot"></div>
-            </div>
-            <span class="option-label">{{ opt.label }}</span>
-          </div>
+      <div class="notice-card">
+        <div class="notice-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--echo-primary)" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div class="notice-body">
+          <div class="notice-title">评论权限默认开放</div>
+          <div class="notice-desc">所有用户均可评论，不能关闭。这是为了避免用户发布引战内容后，其他人无法通过评论进行正常反馈和制衡。</div>
         </div>
       </div>
 
-      <!-- ======= 第二块：私信权限 ======= -->
+      <!-- ======= 第一块：私信权限 ======= -->
       <div class="section-label" style="margin-top: 20px;">私信权限</div>
       <div class="option-card">
         <div
@@ -64,7 +55,7 @@
         </div>
       </div>
 
-      <!-- ======= 第三块：关注权限 ======= -->
+      <!-- ======= 第二块：关注权限 ======= -->
       <div class="section-label" style="margin-top: 20px;">关注权限</div>
       <div class="option-card">
         <div
@@ -83,7 +74,7 @@
         </div>
       </div>
 
-      <!-- ======= 补充项 ======= -->
+      <!-- ======= 更多设置 ======= -->
       <div class="section-label" style="margin-top: 20px;">更多设置</div>
       <div class="option-card">
         <div class="option-item">
@@ -93,51 +84,21 @@
             </svg>
             <span class="option-label">允许匿名用户给我发消息</span>
           </div>
-          <van-switch v-model="allowAnonMsg" size="22" active-color="var(--echo-primary)" />
-        </div>
-        <div class="option-item">
-          <div class="option-body">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--echo-text-secondary)" stroke-width="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-            <span class="option-label">允许陌生人查看我的主页</span>
-          </div>
-          <van-switch v-model="allowStrangerViewProfile" size="22" active-color="var(--echo-primary)" />
-        </div>
-        <div class="option-item">
-          <div class="option-body">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--echo-text-secondary)" stroke-width="2">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
-            <span class="option-label">允许陌生人查看我的动态</span>
-          </div>
-          <van-switch v-model="allowStrangerViewPosts" size="22" active-color="var(--echo-primary)" />
+          <van-switch v-model="store.allowAnonMessage" size="22" active-color="var(--echo-primary)" />
         </div>
       </div>
 
       <!-- 底部说明 -->
       <p class="page-footer">
-        互动权限会影响别人对你的评论、私信、关注行为。被限制的用户将无法发起对应互动。
+        互动权限会影响别人对你的私信、关注行为。评论权限为平台默认开放，不可关闭。
       </p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
 import { useAppStore } from '@/stores/app.js'
 const store = useAppStore()
-
-const allowAnonMsg = ref(true)
-const allowStrangerViewProfile = ref(true)
-const allowStrangerViewPosts = ref(true)
-
-const commentOptions = [
-  { value: 'everyone', label: '所有人可评论' },
-  { value: 'followers', label: '仅关注者可评论' },
-  { value: 'mutual', label: '仅互关者可评论' },
-  { value: 'nobody', label: '不允许评论' }
-]
 
 const messageOptions = [
   { value: 'everyone', label: '所有人可私信' },
@@ -190,6 +151,35 @@ const followOptions = [
   font-size: var(--echo-text-sm); color: var(--echo-text-secondary);
 }
 .summary-row strong { color: var(--echo-text); font-weight: var(--echo-weight-semibold); }
+
+/* 评论权限固定提示卡片 */
+.notice-card {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: #f0fdf4;
+  border-radius: var(--echo-radius);
+  border: 1px solid #c8e6c9;
+}
+.notice-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: var(--echo-white);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.notice-body { flex: 1; min-width: 0; }
+.notice-title {
+  font-size: var(--echo-text-md);
+  font-weight: var(--echo-weight-semibold);
+  color: var(--echo-text);
+  margin-bottom: 4px;
+}
+.notice-desc {
+  font-size: var(--echo-text-xs);
+  color: var(--echo-text-secondary);
+  line-height: 1.5;
+}
 
 /* 分组标签 */
 .section-label {

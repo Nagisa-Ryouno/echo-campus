@@ -70,28 +70,27 @@
           </div>
           <div class="entry-body">
             <div class="entry-title">互动权限</div>
-            <div class="entry-desc">控制别人如何与你互动，包括评论、私信、关注</div>
+            <div class="entry-desc">控制私信、关注等互动行为的权限</div>
           </div>
           <div class="entry-status">
-            <span class="status-text">{{ store.commentLabels[store.commentPermission] }}</span>
+            <span class="status-text">{{ interactionSummary }}</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
 
-        <!-- 卡片4：内容发布权限 -->
-        <div class="entry-card" @click="$router.push('/settings/privacy/content')">
+        <!-- 卡片4：更多设置 -->
+        <div class="entry-card" @click="$router.push('/settings/privacy/more')">
           <div class="entry-icon" style="background: #f3e5f5;">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9c27b0" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
           </div>
           <div class="entry-body">
-            <div class="entry-title">内容发布权限</div>
-            <div class="entry-desc">控制发布内容时的默认可见规则与匿名设置</div>
+            <div class="entry-title">更多设置</div>
+            <div class="entry-desc">匿名消息等其他隐私选项</div>
           </div>
           <div class="entry-status">
-            <span class="status-text">{{ store.publishLabels[store.defaultVisibility] }}</span>
+            <span class="status-text">{{ store.allowAnonMessage ? '接收匿名消息' : '拒绝匿名消息' }}</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
@@ -100,15 +99,22 @@
 
       <!-- 底部说明 -->
       <p class="page-footer-note">
-        以上设置将作为平台的全局隐私规则，部分页面提供发布时的临时覆盖选项。
+        本页仅管理账号级隐私规则，帖子可见范围等内容级权限在发帖时单独设置。
       </p>
     </div>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useAppStore } from '@/stores/app.js'
 const store = useAppStore()
+
+// 互动权限摘要：显示私信+关注当前设置
+const interactionSummary = computed(() => {
+  const msg = store.messageLabels[store.messagePermission]
+  return msg.length > 8 ? msg.slice(0, 7) + '…' : msg
+})
 </script>
 
 <style scoped>

@@ -201,8 +201,9 @@ const showDrafts = ref(false)
 
 const visibilityOptions = [
   { value: 'public', label: '所有人可见' },
-  { value: 'followers', label: '仅关注者' },
-  { value: 'private', label: '完全私密' }
+  { value: 'followers', label: '仅关注者可见' },
+  { value: 'mutual', label: '仅互关者可见' },
+  { value: 'private', label: '仅自己可见' }
 ]
 
 // ===== 业务规则 =====
@@ -244,7 +245,7 @@ function onAnonChange(val) {
 // 提示信息
 const schoolOnlyHint = computed(() => {
   if (form.isAnon) return '匿名发布时不支持本校可见'
-  if (form.visibility === 'private') return '完全私密时不支持本校可见'
+  if (form.visibility === 'private') return '仅自己可见时不支持本校可见'
   return '开启后仅本校用户可查看此帖'
 })
 
@@ -255,7 +256,7 @@ const anonHint = computed(() => {
 
 const ruleMessage = computed(() => {
   if (form.isAnon) return '匿名发布时，帖子将强制设为「所有人可见」，且无法限制本校可见。'
-  if (form.visibility === 'private') return '完全私密的帖子仅自己可见，不支持本校可见限制。'
+  if (form.visibility === 'private') return '仅自己可见的帖子不会在公开频道展示，不支持本校可见限制。'
   return ''
 })
 
