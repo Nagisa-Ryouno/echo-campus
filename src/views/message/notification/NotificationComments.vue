@@ -102,9 +102,6 @@ function onItemClick(item) {
   justify-content: space-between;
   padding: 12px 16px;
   background: var(--echo-white);
-  position: sticky;
-  top: 0;
-  z-index: 100;
 }
 .back-icon { cursor: pointer; }
 .notif-title {

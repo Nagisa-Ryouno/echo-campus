@@ -122,7 +122,6 @@ const followOptions = [
   display: flex; align-items: center; gap: 12px;
   padding: 12px 16px;
   background: var(--echo-white);
-  position: sticky; top: 0; z-index: 100;
 }
 .nav-back {
   width: 32px; height: 32px; border-radius: 50%;

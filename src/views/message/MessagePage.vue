@@ -4,6 +4,19 @@
     <div class="msg-header">
       <h1 class="msg-title">消息</h1>
       <div class="msg-header-actions">
+        <!-- 一键已读刷子图标 -->
+        <span class="broom-icon" :class="{ 'is-sweeping': sweepAnimating }" @click="markAllRead">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+            <!-- 顶部半圆形提手 -->
+            <path d="M8,9 L8,6 Q8,3 12,3 Q16,3 16,6 L16,9" />
+            <!-- 刷子头部外框 -->
+            <path d="M5,9 L19,9 Q20,9 20,10 L20,17 Q20,20 17,20 L7,20 Q4,20 4,17 L4,10 Q4,9 5,9 Z" />
+            <!-- 底部刷毛（三个凸起） -->
+            <path d="M8,20 L8,17 Q8,16 9,16 Q10,16 10,17 L10,20" />
+            <path d="M11,20 L11,17.5 Q11,17 12,17 Q13,17 13,17.5 L13,20" />
+            <path d="M14,20 L14,17 Q14,16 15,16 Q16,16 16,17 L16,20" />
+          </svg>
+        </span>
         <van-icon name="search" size="20" @click="$router.push('/search')" />
         <van-icon
           :name="plusMenuVisible ? 'cross' : 'plus'"
@@ -14,38 +27,47 @@
       </div>
     </div>
 
-    <!-- 加号展开菜单（弹层，锁定背景滚动）-->
+    <!-- 加号展开菜单 —— 右上角气泡弹出式（Teleport 到 phone-screen，锁定背景滚动）-->
     <Teleport to="#phone-screen">
       <transition name="plus-fade">
         <div v-if="plusMenuVisible" class="plus-menu-overlay" @click.self="closePlusMenu">
-          <div class="plus-menu-sheet">
-            <div class="plus-menu-grid">
-              <div class="plus-menu-item" @click="onPlusAction('group')">
-                <div class="plus-menu-icon" style="background:#e8f5ee;">
-                  <van-icon name="friends-o" size="22" color="#4caf7d" />
-                </div>
-                <span>创建圈子</span>
+          <!-- 气泡卡片：右上角弹出，三角箭头指向 + 按钮 -->
+          <div class="plus-bubble">
+            <div class="plus-bubble-arrow"></div>
+            <div class="plus-bubble-item" @click="onPlusAction('group')">
+              <div class="plus-bubble-icon" style="background:#e8f5ee;">
+                <van-icon name="friends-o" size="18" color="#4caf7d" />
               </div>
-              <div class="plus-menu-item" @click="onPlusAction('square')">
-                <div class="plus-menu-icon" style="background:#fff3e0;">
-                  <van-icon name="fire-o" size="22" color="#ff6b35" />
-                </div>
-                <span>圈子广场</span>
+              <span>创建圈子</span>
+            </div>
+            <div class="plus-bubble-item" @click="onPlusAction('square')">
+              <div class="plus-bubble-icon" style="background:#fff3e0;">
+                <van-icon name="fire-o" size="18" color="#ff6b35" />
               </div>
-              <div class="plus-menu-item" @click="onPlusAction('addFriend')">
-                <div class="plus-menu-icon" style="background:#e3f2fd;">
-                  <van-icon name="user-o" size="22" color="#3498db" />
-                </div>
-                <span>添加好友</span>
+              <span>圈子广场</span>
+            </div>
+            <div class="plus-bubble-item" @click="onPlusAction('addFriend')">
+              <div class="plus-bubble-icon" style="background:#e3f2fd;">
+                <van-icon name="user-o" size="18" color="#3498db" />
               </div>
-              <div class="plus-menu-item" @click="onPlusAction('scan')">
-                <div class="plus-menu-icon" style="background:#f3e5f5;">
-                  <van-icon name="scan" size="22" color="#9b59b6" />
-                </div>
-                <span>扫一扫</span>
+              <span>添加好友</span>
+            </div>
+            <div class="plus-bubble-item" @click="onPlusAction('scan')">
+              <div class="plus-bubble-icon" style="background:#f3e5f5;">
+                <van-icon name="scan" size="18" color="#9b59b6" />
               </div>
+              <span>扫一扫</span>
             </div>
           </div>
+        </div>
+      </transition>
+    </Teleport>
+
+    <!-- 一键已读扫光反馈：极简渐变条从左到右扫过，0.3s 自动消失 -->
+    <Teleport to="#phone-screen">
+      <transition name="sweep-fade">
+        <div v-if="sweepAnimating" class="sweep-overlay">
+          <div class="sweep-flash"></div>
         </div>
       </transition>
     </Teleport>
@@ -154,12 +176,13 @@
 import { ref, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
-import { showToast } from 'vant'
+import { showToast, showConfirmDialog } from 'vant'
 
 const router = useRouter()
 const store = useAppStore()
 
 const plusMenuVisible = ref(false)
+const sweepAnimating = ref(false)
 
 function openPlusMenu() {
   plusMenuVisible.value = true
@@ -175,6 +198,28 @@ function closePlusMenu() {
 onBeforeUnmount(() => {
   store.unlockPhoneScroll()
 })
+
+// 一键已读：确认弹窗 → 立即清除未读 → 极简扫光动画（0.3s）
+async function markAllRead() {
+  try {
+    await showConfirmDialog({
+      title: '一键已读',
+      message: '确定将所有消息标记为已读吗？\n生效范围：通知入口、聊天列表、匿名消息',
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      confirmButtonColor: '#4caf7d'
+    })
+    // 立即清除全部未读标记
+    store.markAllMessagesRead()
+    // 触发扫光反馈
+    sweepAnimating.value = true
+    setTimeout(() => {
+      sweepAnimating.value = false
+    }, 600)
+  } catch (_) {
+    // 用户取消，不执行任何操作
+  }
+}
 
 function onChatClick(chat) {
   store.markChatRead(chat.id)
@@ -232,74 +277,152 @@ function badgeText(count) {
   transition: transform 0.2s;
 }
 
-/* ===== 加号菜单弹层 ===== */
+/* 一键已读扫把图标：与搜索/加号图标风格统一 */
+.broom-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--echo-text);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+.broom-icon:active {
+  transform: scale(0.85);
+  color: var(--echo-primary);
+}
+/* 刷子点击动效 —— 模拟真实清扫动作 */
+.broom-icon.is-sweeping {
+  color: var(--echo-primary);
+  animation: broomSweep 0.55s ease-in-out;
+}
+@keyframes broomSweep {
+  0%   { transform: rotate(0deg) translateX(0); }
+  15%  { transform: rotate(-20deg) translateX(-4px); }
+  40%  { transform: rotate(-20deg) translateX(6px); }
+  55%  { transform: rotate(-20deg) translateX(6px); }
+  70%  { transform: rotate(5deg) translateX(0); }
+  85%  { transform: rotate(-8deg) translateX(-2px); }
+  100% { transform: rotate(0deg) translateX(0); }
+}
+
+/* ===== 加号菜单弹层 —— 全屏半透明蒙层 + 右上角气泡 ===== */
 .plus-menu-overlay {
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.3);
-  z-index: 500;
+  z-index: 9999;
+}
+
+/* 气泡卡片：右上角弹出，三角箭头指向 + 按钮 */
+.plus-bubble {
+  position: absolute;
+  top: 46px;
+  right: 8px;
+  min-width: 136px;
+  z-index: 10000;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 6px 0;
+  overflow: visible;
+}
+
+/* 三角箭头 —— 指向上方的 + 按钮 */
+.plus-bubble-arrow {
+  position: absolute;
+  top: -7px;
+  right: 16px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 8px solid #ffffff;
+}
+
+/* 竖向菜单项 */
+.plus-bubble-item {
   display: flex;
-  max-width: 375px;
-  box-sizing: border-box;
-}
-.plus-menu-sheet {
-  width: 100%;
-  max-width: 375px;
-  background: var(--echo-white);
-  border-radius: 0 0 16px 16px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  box-sizing: border-box;
-}
-.plus-menu-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  padding: 14px 8px;
-  gap: 4px;
-}
-.plus-menu-item {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 8px 0;
+  gap: 10px;
+  padding: 10px 16px;
   cursor: pointer;
-  border-radius: 8px;
-  transition: background 0.15s;
+  transition: background 0.12s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
-.plus-menu-item:active { background: var(--echo-bg); }
-.plus-menu-item span { font-size: 11px; color: var(--echo-text-secondary); }
-.plus-menu-icon {
-  width: 44px;
-  height: 44px;
+.plus-bubble-item:first-child {
+  border-radius: 12px 12px 0 0;
+}
+.plus-bubble-item:last-child {
+  border-radius: 0 0 12px 12px;
+}
+.plus-bubble-item:active {
+  background: var(--echo-bg);
+}
+.plus-bubble-item span {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--echo-text);
+  white-space: nowrap;
+}
+
+/* 菜单项左侧圆形图标 */
+.plus-bubble-icon {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
-/* 弹层过渡动画 */
-.plus-fade-enter-active { animation: plusFadeIn 0.25s ease; }
-.plus-fade-leave-active { animation: plusFadeOut 0.2s ease; }
-@keyframes plusFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+
+/* ===== 弹出 / 隐藏动画 ===== */
+.plus-fade-enter-active {
+  transition: opacity 0.2s ease;
 }
-@keyframes plusFadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
+.plus-fade-leave-active {
+  transition: opacity 0.18s ease;
 }
-.plus-fade-enter-active .plus-menu-sheet {
-  animation: plusSlideDown 0.25s ease;
+.plus-fade-enter-from,
+.plus-fade-leave-to {
+  opacity: 0;
 }
-.plus-fade-leave-active .plus-menu-sheet {
-  animation: plusSlideUp 0.2s ease;
+
+/* 气泡卡片：从右上角缩放弹出 */
+.plus-fade-enter-active .plus-bubble {
+  animation: bubblePopIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-@keyframes plusSlideDown {
-  from { transform: translateY(-100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+.plus-fade-leave-active .plus-bubble {
+  animation: bubblePopOut 0.16s ease;
 }
-@keyframes plusSlideUp {
-  from { transform: translateY(0); opacity: 1; }
-  to { transform: translateY(-100%); opacity: 0; }
+@keyframes bubblePopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.75);
+    transform-origin: top right;
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    transform-origin: top right;
+  }
+}
+@keyframes bubblePopOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+    transform-origin: top right;
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.75);
+    transform-origin: top right;
+  }
 }
 
 /* ===== 通知分类入口 —— 无外层卡片，图标块在上 + 文字在下 ===== */
@@ -515,4 +638,61 @@ function badgeText(count) {
   background: var(--echo-danger);
   border-radius: 50%;
 }
+
+/* ===== 一键已读扫光反馈：增强版渐变扫光 + 粒子尾迹 ===== */
+.sweep-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10001;
+  pointer-events: none;
+  overflow: hidden;
+}
+.sweep-flash {
+  position: absolute;
+  inset: 0;
+  /* 更明显的主扫光条 */
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(76, 175, 125, 0.08) 25%,
+    rgba(76, 175, 125, 0.18) 45%,
+    rgba(76, 175, 125, 0.15) 55%,
+    rgba(76, 175, 125, 0.05) 75%,
+    transparent 100%
+  );
+  animation: sweepFlash 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.sweep-flash::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 3px;
+  left: 0;
+  /* 扫光前沿亮线 */
+  background: linear-gradient(
+    90deg,
+    rgba(76, 175, 125, 0.35),
+    rgba(76, 175, 125, 0.55),
+    rgba(76, 175, 125, 0.2)
+  );
+  animation: sweepEdge 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes sweepFlash {
+  0%   { transform: translateX(-100%); opacity: 0; }
+  8%   { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+@keyframes sweepEdge {
+  0%   { transform: translateX(-20vw); opacity: 0; }
+  10%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateX(110vw); opacity: 0; }
+}
+
+/* 蒙层淡入淡出 */
+.sweep-fade-enter-active { transition: opacity 0.1s ease; }
+.sweep-fade-leave-active { transition: opacity 0.4s ease; }
+.sweep-fade-enter-from,
+.sweep-fade-leave-to { opacity: 0; }
 </style>

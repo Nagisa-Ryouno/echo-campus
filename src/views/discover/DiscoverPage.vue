@@ -31,8 +31,14 @@
     <!-- 滚动层：独立 overflow-y:auto，与固定层彻底隔离    -->
     <!-- ═══════════════════════════════════════════ -->
     <div ref="scrollRef" class="scroll-content" @scroll="handleScroll">
-      <!-- 硬编码占位：标题(56) + Tab(60) = 116 -->
-      <div class="header-spacer"></div>
+      <!-- 动态占位：标题显示时 116px，隐藏后 60px -->
+      <div
+        class="header-spacer"
+        :style="{
+          height: (scrollTop > 10 ? 60 : 116) + 'px',
+          transition: 'height 0.2s ease'
+        }"
+      ></div>
 
       <div class="discover-feed">
         <!-- 空状态 -->
@@ -226,11 +232,14 @@ function goTag(tag) {
   justify-content: space-between;
   padding: 12px 16px 10px;
   box-sizing: border-box;
-  transition: all .2s ease;
+  transition: height 0.2s ease, padding 0.2s ease, opacity 0.2s ease;
+  overflow: hidden;
 }
 
 .logo-header.hidden {
-  transform: translateY(-100%);
+  height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
   opacity: 0;
 }
 
@@ -308,10 +317,7 @@ function goTag(tag) {
   -webkit-overflow-scrolling: touch;
 }
 
-/* 硬编码占位：标题(56) + Tab(60) = 116 */
-.header-spacer {
-  height: 116px;
-}
+/* 动态占位高度由 :style 控制 */
 
 /* ── 帖子流 ── */
 .discover-feed {

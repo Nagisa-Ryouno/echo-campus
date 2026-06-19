@@ -284,6 +284,18 @@ export const useAppStore = defineStore('app', () => {
     followerNotifs.value.forEach(n => { n.read = true })
   }
 
+  // 全局一键已读：清除消息页全部未读标记
+  function markAllMessagesRead() {
+    // 三大通知入口全部已读
+    likedNotifs.value.forEach(n => { n.read = true })
+    commentAtNotifs.value.forEach(n => { n.read = true })
+    followerNotifs.value.forEach(n => { n.read = true })
+    // 所有聊天会话未读清零
+    chatListData.value.forEach(c => { c.unread = 0 })
+    // 所有匿名会话未读清零
+    anonSessionData.value.forEach(s => { s.unread = 0 })
+  }
+
   // 标记某个聊天已读
   function markChatRead(chatId) {
     const chat = chatListData.value.find(c => c.id === chatId)
@@ -396,6 +408,7 @@ export const useAppStore = defineStore('app', () => {
     unreadLikeCount, unreadCommentAtCount, unreadFollowerCount,
     unreadAnonCount, unreadChatCount,
     markAllLikesRead, markAllCommentsRead, markAllFansRead, markChatRead,
+    markAllMessagesRead,
 
     // 用户内容
     getUserPosts, getUserCommentedPosts, getUserCollectedPosts, getUserLikedPosts,
