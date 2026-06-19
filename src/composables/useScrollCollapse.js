@@ -7,13 +7,13 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
  * 所有页面共享同一个滚动容器 (#phone-screen)，因此
  * 该 composable 在各页面独立挂载/卸载是安全的。
  *
- * @param {number} threshold - 判定"已滚动"的像素阈值，默认 4px
+ * @param {number} threshold - 判定"已滚动"的像素阈值，默认 1px（即用户一开始滚动就触发）
  * @returns {{ scrollY, isScrolled, direction }}
  *   - scrollY: 当前滚动偏移 (px)
  *   - isScrolled: scrollY > threshold
  *   - direction: 'up' | 'down' | 'idle'  滚动方向
  */
-export function useScrollCollapse(threshold = 4) {
+export function useScrollCollapse(threshold = 1) {
   const scrollY = ref(0)
   const isScrolled = ref(false)
   const direction = ref('idle')

@@ -209,16 +209,14 @@ function badgeText(count) {
   padding-bottom: 8px;
 }
 
-/* ===== 顶部 ===== */
+/* ===== 顶部：普通文档流，随页面滚动消失 ===== */
 .msg-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px 8px;
+  padding: 12px 16px 10px;
   background: var(--echo-white);
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  border-bottom: 1px solid var(--echo-border);
 }
 .msg-title {
   font-size: 22px;

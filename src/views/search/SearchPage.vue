@@ -144,7 +144,7 @@ import { useScrollCollapse } from '@/composables/useScrollCollapse.js'
 const router = useRouter()
 const store = useAppStore()
 
-const { isScrolled } = useScrollCollapse(6)
+const { isScrolled } = useScrollCollapse(0)
 
 const keyword = ref('')
 const results = ref(null)
@@ -255,11 +255,21 @@ onMounted(() => {
   max-width: 375px;
   box-sizing: border-box;
   box-shadow: none;
-  transition: box-shadow 0.2s ease;
+  transition:
+    background 0.25s ease,
+    box-shadow 0.25s ease,
+    backdrop-filter 0.25s ease,
+    -webkit-backdrop-filter 0.25s ease;
 }
 
+/* 滚动后：毛玻璃 + 双层阴影 */
 .search-sticky-wrap.is-scrolled {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  box-shadow:
+    0 1px 0 var(--echo-border),
+    0 6px 20px rgba(0, 0, 0, 0.07);
 }
 
 /* ===== 搜索栏（紧凑）===== */

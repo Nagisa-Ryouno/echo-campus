@@ -1,186 +1,195 @@
 <template>
-  <div class="home-page">
-    <!-- ===== 标题栏：普通流，用户一滚动就自然离开 ===== -->
-    <div class="home-header">
-      <h1 class="home-title">校声</h1>
-      <div class="home-search" @click="$router.push('/search')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      </div>
-    </div>
-
-    <!-- ===== 频道栏：紧凑 sticky（唯一粘性元素）===== -->
-    <div class="channel-tabs-sticky" :class="{ 'is-scrolled': isScrolled }">
-      <div
-        v-for="ch in store.channelLabels"
-        :key="ch.key"
-        class="channel-tab"
-        :class="{ 'channel-tab--active': store.activeChannel === ch.key }"
-        @click="onChannelSwitch(ch.key)"
-      >
-        <span class="channel-tab-text">{{ ch.label }}</span>
-        <span v-if="store.activeChannel === ch.key" class="channel-tab-bar"></span>
-      </div>
-    </div>
-
-    <!-- ===== 子标签 / 关注栏：紧随频道栏在普通流中，自然滚走 ===== -->
-    <!-- 遇见频道 → 无标签栏 -->
-    <!-- 关注频道 → 已关注用户头像横滑 -->
-    <div v-if="store.activeChannel === 'follow'" class="follow-avatars-bar">
-      <div class="follow-avatars-scroll">
-        <div
-          class="follow-avatar-item"
-          :class="{ 'follow-avatar-item--active': followFilterUid === null }"
-          @click="followFilterUid = null"
-        >
-          <div class="follow-avatar-ring">
-            <span class="follow-avatar-all-text">全部</span>
-          </div>
+  <div class="page-root">
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- 固定层：脱离滚动流，始终在顶部                 -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="fixed-header">
+      <!-- Logo 区：滚动后隐藏 -->
+      <div class="top-hero" :class="{ 'top-hero--hidden': isScrolled }">
+        <h1 class="home-title">校声</h1>
+        <div class="home-search" @click="$router.push('/search')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </div>
+      </div>
+
+      <!-- 大频道 Tab：始终可见 -->
+      <div class="channel-tabs">
         <div
-          v-for="user in store.followedUsers"
-          :key="user.id"
-          class="follow-avatar-item"
-          :class="{ 'follow-avatar-item--active': followFilterUid === user.id }"
-          @click="followFilterUid = followFilterUid === user.id ? null : user.id"
+          v-for="ch in store.channelLabels"
+          :key="ch.key"
+          class="channel-tab"
+          :class="{ 'channel-tab--active': store.activeChannel === ch.key }"
+          @click="onChannelSwitch(ch.key)"
         >
-          <div class="follow-avatar-ring">
+          <span class="channel-tab-text">{{ ch.label }}</span>
+          <span v-if="store.activeChannel === ch.key" class="channel-tab-bar"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- 滚动层：普通文档流，phone-screen 托管滚动      -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="page-scroll">
+      <!-- 占位：高度等于 fixed-header 总高度，确保内容永不侵入固定区域 -->
+      <div class="header-spacer" :style="{ height: spacerHeight + 'px' }"></div>
+
+      <!-- 小频道：跟随滚动消失 -->
+      <div v-if="store.activeChannel !== 'meet'" class="sub-tags">
+        <!-- 关注频道 → 已关注用户头像横滑 -->
+        <div v-if="store.activeChannel === 'follow'" class="follow-avatars-bar">
+          <div class="follow-avatars-scroll">
             <div
-              class="follow-avatar-img"
-              :style="{ background: user.avatarColor }"
+              class="follow-avatar-item"
+              :class="{ 'follow-avatar-item--active': followFilterUid === null }"
+              @click="followFilterUid = null"
             >
-              {{ user.nickname.slice(0, 1) }}
+              <div class="follow-avatar-ring">
+                <span class="follow-avatar-all-text">全部</span>
+              </div>
+            </div>
+            <div
+              v-for="user in store.followedUsers"
+              :key="user.id"
+              class="follow-avatar-item"
+              :class="{ 'follow-avatar-item--active': followFilterUid === user.id }"
+              @click="followFilterUid = followFilterUid === user.id ? null : user.id"
+            >
+              <div class="follow-avatar-ring">
+                <div class="follow-avatar-img" :style="{ background: user.avatarColor }">
+                  {{ user.nickname.slice(0, 1) }}
+                </div>
+              </div>
+              <span class="follow-avatar-name">{{ user.nickname.length > 3 ? user.nickname.slice(0, 3) + '…' : user.nickname }}</span>
+            </div>
+            <div class="follow-avatar-item follow-avatar-manage" @click="onFollowManage">
+              <div class="follow-avatar-ring follow-avatar-ring--manage">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+              </div>
             </div>
           </div>
-          <span class="follow-avatar-name">{{ user.nickname.length > 3 ? user.nickname.slice(0, 3) + '…' : user.nickname }}</span>
         </div>
-        <div class="follow-avatar-item follow-avatar-manage" @click="onFollowManage">
-          <div class="follow-avatar-ring follow-avatar-ring--manage">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+
+        <!-- 推荐 / 同城 / 我的学校 → 小标签横向滑动 -->
+        <div v-else-if="store.currentChannelTags.length > 0" class="sub-tags-area">
+          <div class="sub-tags-scroll">
+            <div
+              v-for="tag in store.visibleTags"
+              :key="tag"
+              class="sub-tag"
+              :class="{ 'sub-tag--active': store.activeCategoryTag === tag }"
+              @click="store.setCategoryTag(tag)"
+            >
+              {{ tag }}
+            </div>
+          </div>
+          <div class="sub-tags-expand" @click="openTagPanel">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 推荐 / 同城 / 我的学校 → 小标签横向滑动 -->
-    <div v-else-if="store.currentChannelTags.length > 0" class="sub-tags-area">
-      <div class="sub-tags-scroll" ref="tagsScrollRef">
-        <div
-          v-for="tag in store.visibleTags"
-          :key="tag"
-          class="sub-tag"
-          :class="{ 'sub-tag--active': store.activeCategoryTag === tag }"
-          @click="store.setCategoryTag(tag)"
-        >
-          {{ tag }}
-        </div>
-      </div>
-      <div class="sub-tags-expand" @click="openTagPanel">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-    </div>
-
-    <!-- ===== 内容区域 ===== -->
-    <!-- 遇见频道：用户推荐卡片 -->
-    <div v-if="store.activeChannel === 'meet'" class="meet-users">
-      <div class="section-title">
-        <span>可能感兴趣的人</span>
-        <span class="section-title-hint">基于你的兴趣推荐</span>
-      </div>
-      <div class="meet-user-grid">
-        <div
-          v-for="user in meetUsers"
-          :key="user.id"
-          class="meet-user-card"
-          @click="$router.push(`/profile/${user.id}`)"
-        >
-          <div class="meet-user-avatar" :style="{ background: user.avatarColor }">
-            {{ user.nickname.slice(0, 1) }}
+      <!-- 帖子流 -->
+      <div class="post-list">
+        <!-- 遇见频道：用户推荐卡片 -->
+        <div v-if="store.activeChannel === 'meet'" class="meet-users">
+          <div class="section-title">
+            <span>可能感兴趣的人</span>
+            <span class="section-title-hint">基于你的兴趣推荐</span>
           </div>
-          <div class="meet-user-name">{{ user.nickname }}</div>
-          <div class="meet-user-school">{{ user.school }}</div>
-          <div class="meet-user-tags">
-            <span v-for="t in user.tags.slice(0, 2)" :key="t" class="meet-user-tag">{{ t }}</span>
-          </div>
-          <div class="meet-user-stats">
-            <span>{{ user.postCount }} 帖</span>
-            <span class="meet-user-divider">·</span>
-            <span>{{ user.fanCount }} 粉丝</span>
+          <div class="meet-user-grid">
+            <div
+              v-for="user in meetUsers"
+              :key="user.id"
+              class="meet-user-card"
+              @click="$router.push(`/profile/${user.id}`)"
+            >
+              <div class="meet-user-avatar" :style="{ background: user.avatarColor }">
+                {{ user.nickname.slice(0, 1) }}
+              </div>
+              <div class="meet-user-name">{{ user.nickname }}</div>
+              <div class="meet-user-school">{{ user.school }}</div>
+              <div class="meet-user-tags">
+                <span v-for="t in user.tags.slice(0, 2)" :key="t" class="meet-user-tag">{{ t }}</span>
+              </div>
+              <div class="meet-user-stats">
+                <span>{{ user.postCount }} 帖</span>
+                <span class="meet-user-divider">·</span>
+                <span>{{ user.fanCount }} 粉丝</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- 其他频道：帖子卡片流 -->
-    <div v-else class="post-feed">
-      <div v-if="displayPosts.length === 0" class="empty-feed">
-        <div class="empty-icon">📭</div>
-        <p>这里还没有内容</p>
-        <p class="empty-hint">去发布第一条帖子吧</p>
-      </div>
+        <!-- 其他频道：帖子卡片流 -->
+        <div v-else class="post-feed">
+          <div v-if="displayPosts.length === 0" class="empty-feed">
+            <div class="empty-icon">📭</div>
+            <p>这里还没有内容</p>
+            <p class="empty-hint">去发布第一条帖子吧</p>
+          </div>
 
-      <div
-        v-for="post in displayPosts"
-        :key="post.id"
-        class="post-card"
-        @click="goPostDetail(post.id)"
-      >
-        <!-- 帖子头部 -->
-        <div class="post-card-header">
           <div
-            class="post-card-avatar"
-            :style="{ background: getAuthor(post.authorId)?.avatarColor || '#ccc' }"
-            @click.stop="goUserProfile(post.authorId)"
+            v-for="post in displayPosts"
+            :key="post.id"
+            class="post-card"
+            @click="goPostDetail(post.id)"
           >
-            <template v-if="post.isAnon">匿</template>
-            <template v-else>{{ getAuthor(post.authorId)?.nickname?.slice(0, 1) || '?' }}</template>
-          </div>
-          <div class="post-card-meta" @click.stop="goUserProfile(post.authorId)">
-            <div class="post-card-name">
-              <template v-if="post.isAnon">匿名用户</template>
-              <template v-else>{{ getAuthor(post.authorId)?.nickname || '未知' }}</template>
+            <div class="post-card-header">
+              <div
+                class="post-card-avatar"
+                :style="{ background: getAuthor(post.authorId)?.avatarColor || '#ccc' }"
+                @click.stop="goUserProfile(post.authorId)"
+              >
+                <template v-if="post.isAnon">匿</template>
+                <template v-else>{{ getAuthor(post.authorId)?.nickname?.slice(0, 1) || '?' }}</template>
+              </div>
+              <div class="post-card-meta" @click.stop="goUserProfile(post.authorId)">
+                <div class="post-card-name">
+                  <template v-if="post.isAnon">匿名用户</template>
+                  <template v-else>{{ getAuthor(post.authorId)?.nickname || '未知' }}</template>
+                </div>
+                <div class="post-card-time">{{ post.createdAt }}</div>
+              </div>
+              <div class="post-card-tag" v-if="post.categoryTag">
+                <span class="tag-badge">{{ post.categoryTag }}</span>
+              </div>
             </div>
-            <div class="post-card-time">{{ post.createdAt }}</div>
-          </div>
-          <div class="post-card-tag" v-if="post.categoryTag">
-            <span class="tag-badge">{{ post.categoryTag }}</span>
-          </div>
-        </div>
 
-        <!-- 帖子正文 -->
-        <div class="post-card-body">
-          <p class="post-card-content">{{ post.content }}</p>
-        </div>
-
-        <!-- 帖子图片 -->
-        <div v-if="post.images && post.images.length" class="post-card-images">
-          <div
-            v-for="(img, idx) in post.images"
-            :key="idx"
-            class="post-card-img"
-            :class="{ 'post-card-img--single': post.images.length === 1 }"
-          >
-            <div class="img-placeholder">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <div class="post-card-body">
+              <p class="post-card-content">{{ post.content }}</p>
             </div>
-          </div>
-        </div>
 
-        <!-- 帖子底部互动 -->
-        <div class="post-card-footer">
-          <div class="post-card-action" @click.stop="store.toggleLike(post.id)">
-            <svg width="18" height="18" viewBox="0 0 24 24" :fill="store.isPostLiked(post.id) ? 'var(--echo-danger)' : 'none'" :stroke="store.isPostLiked(post.id) ? 'var(--echo-danger)' : 'currentColor'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            <span>{{ post.likeCount }}</span>
-          </div>
-          <div class="post-card-action" @click.stop="goPostDetail(post.id)">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span>{{ post.commentCount }}</span>
-          </div>
-          <div class="post-card-action" @click.stop="store.toggleCollect(post.id)">
-            <svg width="18" height="18" viewBox="0 0 24 24" :fill="store.isPostCollected(post.id) ? 'var(--echo-warning)' : 'none'" :stroke="store.isPostCollected(post.id) ? 'var(--echo-warning)' : 'currentColor'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-            <span>{{ post.collectCount }}</span>
-          </div>
-          <div class="post-card-action post-card-share" @click.stop="onShare(post.id)">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            <div v-if="post.images && post.images.length" class="post-card-images">
+              <div
+                v-for="(img, idx) in post.images"
+                :key="idx"
+                class="post-card-img"
+                :class="{ 'post-card-img--single': post.images.length === 1 }"
+              >
+                <div class="img-placeholder">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="post-card-footer">
+              <div class="post-card-action" @click.stop="store.toggleLike(post.id)">
+                <svg width="18" height="18" viewBox="0 0 24 24" :fill="store.isPostLiked(post.id) ? 'var(--echo-danger)' : 'none'" :stroke="store.isPostLiked(post.id) ? 'var(--echo-danger)' : 'currentColor'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                <span>{{ post.likeCount }}</span>
+              </div>
+              <div class="post-card-action" @click.stop="goPostDetail(post.id)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span>{{ post.commentCount }}</span>
+              </div>
+              <div class="post-card-action" @click.stop="store.toggleCollect(post.id)">
+                <svg width="18" height="18" viewBox="0 0 24 24" :fill="store.isPostCollected(post.id) ? 'var(--echo-warning)' : 'none'" :stroke="store.isPostCollected(post.id) ? 'var(--echo-warning)' : 'currentColor'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                <span>{{ post.collectCount }}</span>
+              </div>
+              <div class="post-card-action post-card-share" @click.stop="onShare(post.id)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -241,7 +250,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
 import { useScrollCollapse } from '@/composables/useScrollCollapse.js'
@@ -249,8 +258,16 @@ import { useScrollCollapse } from '@/composables/useScrollCollapse.js'
 const router = useRouter()
 const store = useAppStore()
 
-// 滚动监听：用于频道栏阴影切换
-const { isScrolled } = useScrollCollapse(6)
+// ===== 滚动监听：phone-screen 滚动 > 10px 时隐藏 Logo =====
+const { isScrolled } = useScrollCollapse(10)
+
+// 固定层高度常量
+const LOGO_HEIGHT = 54
+const TABS_HEIGHT = 36
+// spacer 高度：未滚动 = logo + tabs，滚动后 = 仅 tabs
+const spacerHeight = computed(() =>
+  isScrolled.value ? TABS_HEIGHT : LOGO_HEIGHT + TABS_HEIGHT
+)
 
 // ===== 频道切换（同步标签池）=====
 const channelDisplayName = computed(() => {
@@ -270,7 +287,6 @@ if (store.userTags.length === 0 || store.activeChannel === 'recommend') {
 
 // ===== 标签面板 =====
 const showTagPanel = ref(false)
-const tagsScrollRef = ref(null)
 
 function openTagPanel() {
   showTagPanel.value = true
@@ -291,7 +307,7 @@ const shareOptions = [
   { name: '复制链接', emoji: '🔗' }
 ]
 
-function onShare(postId) {
+function onShare() {
   showShare.value = true
   store.lockPhoneScroll()
 }
@@ -304,7 +320,6 @@ function closeShare() {
 // ===== 关注频道 - 用户筛选 =====
 const followFilterUid = ref(null)
 
-// 关注频道按用户筛选帖子
 const displayPosts = computed(() => {
   if (store.activeChannel === 'follow' && followFilterUid.value) {
     return store.filteredPosts.filter(p => p.authorId === followFilterUid.value)
@@ -312,10 +327,7 @@ const displayPosts = computed(() => {
   return store.filteredPosts
 })
 
-// 关注管理（当前阶段占位）
-function onFollowManage() {
-  // 后续可跳转到关注管理页面
-}
+function onFollowManage() {}
 
 // ===== 遇见频道推荐用户 =====
 const meetUsers = computed(() => {
@@ -334,31 +346,53 @@ function goPostDetail(postId) {
 function goUserProfile(uid) {
   router.push(`/profile/${uid}`)
 }
-
-// ===== 清理：组件卸载时恢复滚动 =====
-import { onBeforeUnmount } from 'vue'
-onBeforeUnmount(() => {
-  store.unlockPhoneScroll()
-})
 </script>
 
 <style scoped>
-/* ===== 页面容器 ===== */
-.home-page {
+/* ===== 页面根容器 ===== */
+.page-root {
+  position: relative;
   min-height: 100%;
   background: var(--echo-bg);
+}
+
+/* ═══════════════════════════════════════════ */
+/* 固定层：position:fixed 相对 phone-body      */
+/* phone-body 的 transform:translateZ(0) 创建  */
+/* 包含块，故 fixed 不相对 viewport 而相对手机壳 */
+/* ═══════════════════════════════════════════ */
+.fixed-header {
+  position: fixed;
+  top: 48px; /* 避让 48px 刘海区 */
+  left: 0;
+  width: 100%;
   max-width: 375px;
-  overflow-x: hidden;
+  z-index: 99; /* 低于 notch-area (100)，高于内容 (1) */
+  background: var(--echo-white);
   box-sizing: border-box;
 }
 
-/* ===== 标题栏：普通流，用户滚动即离开 ===== */
-.home-header {
+/* ── Logo 区：滚动后收缩隐藏 ── */
+.top-hero {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px 10px;
   background: var(--echo-white);
+  max-height: 54px;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease,
+    padding 0.25s ease;
+}
+
+.top-hero--hidden {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .home-title {
@@ -366,6 +400,7 @@ onBeforeUnmount(() => {
   font-weight: 700;
   color: var(--echo-text);
   letter-spacing: 0.5px;
+  margin: 0;
 }
 
 .home-search {
@@ -386,26 +421,27 @@ onBeforeUnmount(() => {
   transform: scale(0.95);
 }
 
-/* ===== 频道栏：紧凑 sticky（唯一粘性区域，仅 ~42px）===== */
-.channel-tabs-sticky {
-  position: sticky;
-  top: 0;
-  z-index: 100;
+/* ── 大频道 Tab：始终可见 ── */
+.channel-tabs {
   display: flex;
   background: var(--echo-white);
   border-bottom: 1px solid var(--echo-border);
-  max-width: 375px;
-  box-sizing: border-box;
-  /* 未滚动时无阴影 */
-  box-shadow: none;
-  transition: box-shadow 0.2s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
 }
 
-/* 滚动后添加轻微阴影，作为视觉分层 */
-.channel-tabs-sticky.is-scrolled {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+/* ═══════════════════════════════════════════ */
+/* 滚动层：普通文档流，内容在占位符下方开始        */
+/* ═══════════════════════════════════════════ */
+.page-scroll {
+  position: relative;
 }
 
+/* 占位：高度由 JS 动态计算，确保内容不从固定区域上方开始 */
+.header-spacer {
+  transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── 频道 Tab 项样式（与之前一致）── */
 .channel-tab {
   flex: 1;
   display: flex;
@@ -442,7 +478,7 @@ onBeforeUnmount(() => {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ===== 关注频道：用户头像横滑栏 ===== */
+/* ── 关注频道：用户头像横滑栏 ── */
 .follow-avatars-bar {
   padding: 8px 0;
   border-bottom: 1px solid var(--echo-border);
@@ -523,7 +559,7 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
 }
 
-/* ===== 小频道标签（推荐/同城/我的学校）===== */
+/* ── 小频道标签（推荐/同城/我的学校）── */
 .sub-tags-area {
   display: flex;
   align-items: center;
@@ -578,7 +614,7 @@ onBeforeUnmount(() => {
   background: linear-gradient(90deg, transparent 0%, var(--echo-white) 50%);
 }
 
-/* ===== 遇见频道 - 用户卡片 ===== */
+/* ── 遇见频道 - 用户卡片 ── */
 .meet-users {
   padding: 16px 12px;
   max-width: 375px;
@@ -675,7 +711,7 @@ onBeforeUnmount(() => {
   opacity: 0.5;
 }
 
-/* ===== 帖子流 ===== */
+/* ── 帖子流 ── */
 .post-feed {
   padding: 0;
 }
@@ -698,7 +734,7 @@ onBeforeUnmount(() => {
   margin-top: 4px;
 }
 
-/* ===== 帖子卡片 ===== */
+/* ── 帖子卡片 ── */
 .post-card {
   background: var(--echo-white);
   margin: 8px 12px;
@@ -812,7 +848,7 @@ onBeforeUnmount(() => {
   color: var(--echo-text-hint);
 }
 
-/* 互动栏 */
+/* ── 互动栏 ── */
 .post-card-footer {
   display: flex;
   align-items: center;
@@ -840,7 +876,9 @@ onBeforeUnmount(() => {
   margin-left: auto;
 }
 
-/* ===== 标签管理面板 ===== */
+/* ═══════════════════════════════════════════ */
+/* 弹层面板（标签管理 / 分享）                   */
+/* ═══════════════════════════════════════════ */
 .tag-panel-overlay {
   position: absolute;
   inset: 0;
@@ -875,6 +913,7 @@ onBeforeUnmount(() => {
   font-size: 18px;
   font-weight: 600;
   color: var(--echo-text);
+  margin: 0;
 }
 
 .tag-panel-close {
@@ -887,7 +926,7 @@ onBeforeUnmount(() => {
 .tag-panel-hint {
   font-size: 12px;
   color: var(--echo-text-hint);
-  margin-bottom: 16px;
+  margin: 0 0 16px 0;
 }
 
 .tag-panel-grid {
@@ -905,9 +944,6 @@ onBeforeUnmount(() => {
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .tag-panel-item--hidden {
@@ -926,7 +962,7 @@ onBeforeUnmount(() => {
   font-size: 14px;
 }
 
-/* ===== 分享面板 ===== */
+/* ── 分享面板 ── */
 .share-grid {
   display: flex;
   flex-wrap: wrap;
@@ -959,7 +995,7 @@ onBeforeUnmount(() => {
   color: var(--echo-text-secondary);
 }
 
-/* ===== 面板动画 ===== */
+/* ── 面板动画 ── */
 .panel-slide-enter-active,
 .panel-slide-leave-active {
   transition: all 0.3s ease;

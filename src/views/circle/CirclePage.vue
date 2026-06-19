@@ -1,6 +1,6 @@
 <template>
   <div class="circle-page">
-    <!-- 返回+标题栏：普通流，自然滚走 -->
+    <!-- 返回+标题栏 -->
     <div class="circle-header">
       <div class="nav-back" @click="$router.back()">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -8,8 +8,8 @@
       <h2 class="circle-title">我的圈子</h2>
     </div>
 
-    <!-- Tab 栏：紧凑 sticky（唯一粘性元素）-->
-    <div class="circle-tabs-sticky" :class="{ 'is-scrolled': isScrolled }">
+    <!-- Tab 栏：固定占据真实空间 -->
+    <div class="circle-tabs-fixed">
       <div
         v-for="tab in tabs"
         :key="tab.key"
@@ -21,7 +21,8 @@
       </div>
     </div>
 
-    <!-- 圈子列表 -->
+    <!-- 圈子内容（可滚动） -->
+    <div class="circle-scroll-area">
     <div class="circle-body">
       <!-- 我加入的 -->
       <div v-if="activeTab === 'joined'" class="circle-list">
@@ -84,14 +85,18 @@
         </div>
       </div>
     </div>
+    </div><!-- /circle-scroll-area -->
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { useScrollCollapse } from '@/composables/useScrollCollapse.js'
+import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
+import { useAppStore } from '@/stores/app.js'
 
-const { isScrolled } = useScrollCollapse(6)
+const store = useAppStore()
+
+onMounted(() => { store.lockPhoneScroll() })
+onBeforeUnmount(() => { store.unlockPhoneScroll() })
 
 const activeTab = ref('joined')
 
@@ -215,18 +220,24 @@ function onJoin(circleId) {
 </script>
 
 <style scoped>
+/* ===== 页面容器：absolute 填满 + flex column ===== */
 .circle-page {
-  min-height: 100%;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--echo-bg);
 }
 
-/* ===== 返回+标题栏：普通流，滚动即离开 ===== */
+/* ===== 返回+标题栏 ===== */
 .circle-header {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
   background: var(--echo-white);
+  flex-shrink: 0;
 }
 
 .nav-back {
@@ -251,22 +262,15 @@ function onJoin(circleId) {
   color: var(--echo-text);
 }
 
-/* ===== Tab 栏：紧凑 sticky（唯一粘性元素，仅 ~40px）===== */
-.circle-tabs-sticky {
-  position: sticky;
-  top: 0;
-  z-index: 100;
+/* ===== Tab 栏：固定占据真实空间，纯白底+阴影+分割线 ===== */
+.circle-tabs-fixed {
   display: flex;
-  background: var(--echo-white);
+  flex-shrink: 0;
+  background: #fff;
   border-bottom: 1px solid var(--echo-border);
-  max-width: 375px;
-  box-sizing: border-box;
-  box-shadow: none;
-  transition: box-shadow 0.2s ease;
-}
-
-.circle-tabs-sticky.is-scrolled {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  position: relative;
+  z-index: 2;
 }
 
 .circle-tab {
@@ -295,6 +299,17 @@ function onJoin(circleId) {
   height: 3px;
   border-radius: 2px;
   background: var(--echo-primary);
+}
+
+/* ===== 可滚动内容区 ===== */
+.circle-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+  position: relative;
+  z-index: 1;
 }
 
 /* ===== 列表 ===== */

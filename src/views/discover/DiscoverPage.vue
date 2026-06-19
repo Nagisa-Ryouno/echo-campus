@@ -1,99 +1,111 @@
 <template>
-  <div class="discover-page">
-    <!-- 标题栏：普通流，用户一滚动就自然离开 -->
-    <div class="discover-header">
-      <h1 class="discover-title">发现</h1>
-      <div class="discover-search-btn" @click="$router.push('/search')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      </div>
-    </div>
-
-    <!-- Tab 栏：紧凑 sticky（唯一粘性元素）-->
-    <div class="discover-tabs-sticky" :class="{ 'is-scrolled': isScrolled }">
-      <div
-        v-for="tab in tabs"
-        :key="tab.key"
-        class="discover-tab"
-        :class="{ 'discover-tab--active': activeTab === tab.key }"
-        @click="switchTab(tab.key)"
-      >
-        <span>{{ tab.label }}</span>
-        <span v-if="activeTab === tab.key" class="discover-tab-bar"></span>
-      </div>
-    </div>
-
-    <!-- 内容流 -->
-    <div class="discover-feed">
-      <!-- 空状态 -->
-      <div v-if="displayPosts.length === 0" class="empty-state">
-        <div class="empty-icon">📭</div>
-        <p class="empty-text">暂无内容</p>
-        <p class="empty-hint">去看看其他栏目吧</p>
+  <div class="page-root">
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- 固定层：脱离滚动流，始终在顶部                 -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="fixed-header">
+      <!-- 标题栏：滚动后隐藏 -->
+      <div class="top-hero" :class="{ 'top-hero--hidden': isScrolled }">
+        <h1 class="discover-title">发现</h1>
+        <div class="discover-search-btn" @click="$router.push('/search')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
       </div>
 
-      <!-- 帖子卡片流 -->
-      <div
-        v-for="(item, idx) in displayPosts"
-        :key="item.id"
-        class="hot-post-card"
-        :class="{ 'hot-post-card--ranked': activeTab === 'campus_hot' || activeTab === 'topic_hot' }"
-        @click="goDetail(item.id)"
-      >
-        <!-- 排名 badge（热榜模式） -->
+      <!-- Tab 栏：始终可见 -->
+      <div class="channel-tabs">
         <div
-          v-if="activeTab === 'campus_hot' || activeTab === 'topic_hot'"
-          class="rank-badge"
-          :class="{ 'rank-badge--top': idx < 3 }"
+          v-for="tab in tabs"
+          :key="tab.key"
+          class="discover-tab"
+          :class="{ 'discover-tab--active': activeTab === tab.key }"
+          @click="switchTab(tab.key)"
         >
-          {{ idx + 1 }}
+          <span>{{ tab.label }}</span>
+          <span v-if="activeTab === tab.key" class="discover-tab-bar"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- 滚动层：普通文档流，phone-screen 托管滚动      -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="page-scroll">
+      <!-- 占位：高度等于 fixed-header 总高度，确保内容永不侵入固定区域 -->
+      <div class="header-spacer" :style="{ height: spacerHeight + 'px' }"></div>
+
+      <div class="discover-feed">
+        <!-- 空状态 -->
+        <div v-if="displayPosts.length === 0" class="empty-state">
+          <div class="empty-icon">📭</div>
+          <p class="empty-text">暂无内容</p>
+          <p class="empty-hint">去看看其他栏目吧</p>
         </div>
 
-        <!-- 帖子主内容 -->
-        <div class="hot-post-main" :class="{ 'hot-post-main--ranked': activeTab === 'campus_hot' || activeTab === 'topic_hot' }">
-          <div class="hot-post-header" @click.stop="goProfile(item.authorId)">
-            <div class="hot-post-avatar" :style="{ background: getAuthor(item.authorId)?.avatarColor || '#ccc' }">
-              {{ item.isAnon ? '匿' : getAuthor(item.authorId)?.nickname?.slice(0, 1) || '?' }}
+        <!-- 帖子卡片流 -->
+        <div
+          v-for="(item, idx) in displayPosts"
+          :key="item.id"
+          class="hot-post-card"
+          :class="{ 'hot-post-card--ranked': activeTab === 'campus_hot' || activeTab === 'topic_hot' }"
+          @click="goDetail(item.id)"
+        >
+          <!-- 排名 badge（热榜模式） -->
+          <div
+            v-if="activeTab === 'campus_hot' || activeTab === 'topic_hot'"
+            class="rank-badge"
+            :class="{ 'rank-badge--top': idx < 3 }"
+          >
+            {{ idx + 1 }}
+          </div>
+
+          <!-- 帖子主内容 -->
+          <div class="hot-post-main" :class="{ 'hot-post-main--ranked': activeTab === 'campus_hot' || activeTab === 'topic_hot' }">
+            <div class="hot-post-header" @click.stop="goProfile(item.authorId)">
+              <div class="hot-post-avatar" :style="{ background: getAuthor(item.authorId)?.avatarColor || '#ccc' }">
+                {{ item.isAnon ? '匿' : getAuthor(item.authorId)?.nickname?.slice(0, 1) || '?' }}
+              </div>
+              <span class="hot-post-name">
+                {{ item.isAnon ? '匿名用户' : getAuthor(item.authorId)?.nickname || '未知' }}
+              </span>
+              <span class="hot-post-time">{{ item.createdAt }}</span>
             </div>
-            <span class="hot-post-name">
-              {{ item.isAnon ? '匿名用户' : getAuthor(item.authorId)?.nickname || '未知' }}
-            </span>
-            <span class="hot-post-time">{{ item.createdAt }}</span>
-          </div>
 
-          <p class="hot-post-content">{{ item.content }}</p>
+            <p class="hot-post-content">{{ item.content }}</p>
 
-          <!-- 标签 -->
-          <div class="hot-post-tags" v-if="item.topicTags?.length">
-            <span
-              v-for="t in item.topicTags"
-              :key="t"
-              class="hot-post-tag"
-              @click.stop="goTag(t)"
-            >#{{ t }}</span>
-          </div>
+            <!-- 标签 -->
+            <div class="hot-post-tags" v-if="item.topicTags?.length">
+              <span
+                v-for="t in item.topicTags"
+                :key="t"
+                class="hot-post-tag"
+                @click.stop="goTag(t)"
+              >#{{ t }}</span>
+            </div>
 
-          <!-- 互动栏 -->
-          <div class="hot-post-footer">
-            <span class="hot-post-action">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-              {{ item.likeCount }}
-            </span>
-            <span class="hot-post-action">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              {{ item.commentCount }}
-            </span>
-            <!-- 热度图标 — 火焰 SVG，热榜 Tab 下显示内焰填充 -->
-            <span
-              class="hot-post-action hot-post-action--heat"
-              :class="{ 'hot-post-action--heat-active': isHeatTab }"
-              v-if="isHeatTab"
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2.5C9.5 6.5 7 10.5 7 14.8C7 18 9.2 21.5 12 21.5C14.8 21.5 17 18 17 14.8C17 10.5 14.5 6.5 12 2.5Z" />
-                <path class="flame-core" d="M10 16.2C10 15.1 10.9 14.5 12 14.5C13.1 14.5 14 15.1 14 16.2" fill="currentColor" stroke="none" />
-              </svg>
-              {{ calcHeat(item) }}
-            </span>
+            <!-- 互动栏 -->
+            <div class="hot-post-footer">
+              <span class="hot-post-action">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                {{ item.likeCount }}
+              </span>
+              <span class="hot-post-action">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                {{ item.commentCount }}
+              </span>
+              <!-- 热度图标 — 火焰 SVG，热榜 Tab 下显示内焰填充 -->
+              <span
+                class="hot-post-action hot-post-action--heat"
+                :class="{ 'hot-post-action--heat-active': isHeatTab }"
+                v-if="isHeatTab"
+              >
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2.5C9.5 6.5 7 10.5 7 14.8C7 18 9.2 21.5 12 21.5C14.8 21.5 17 18 17 14.8C17 10.5 14.5 6.5 12 2.5Z" />
+                  <path class="flame-core" d="M10 16.2C10 15.1 10.9 14.5 12 14.5C13.1 14.5 14 15.1 14 16.2" fill="currentColor" stroke="none" />
+                </svg>
+                {{ calcHeat(item) }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -110,7 +122,15 @@ import { useScrollCollapse } from '@/composables/useScrollCollapse.js'
 const router = useRouter()
 const store = useAppStore()
 
-const { isScrolled } = useScrollCollapse(6)
+// ===== 滚动监听：phone-screen 滚动 > 10px 时隐藏标题 =====
+const { isScrolled } = useScrollCollapse(10)
+
+// 固定层高度常量
+const LOGO_HEIGHT = 54
+const TABS_HEIGHT = 36
+const spacerHeight = computed(() =>
+  isScrolled.value ? TABS_HEIGHT : LOGO_HEIGHT + TABS_HEIGHT
+)
 
 const tabs = [
   { key: 'hot', label: '热门' },
@@ -179,19 +199,48 @@ function goTag(tag) {
 </script>
 
 <style scoped>
-.discover-page {
+/* ===== 页面根容器 ===== */
+.page-root {
+  position: relative;
   min-height: 100%;
   background: var(--echo-bg);
-  padding-bottom: 8px;
 }
 
-/* ===== 标题栏：普通流，滚动即离开 ===== */
-.discover-header {
+/* ═══════════════════════════════════════════ */
+/* 固定层：position:fixed 相对 phone-body      */
+/* ═══════════════════════════════════════════ */
+.fixed-header {
+  position: fixed;
+  top: 48px; /* 避让 48px 刘海区 */
+  left: 0;
+  width: 100%;
+  max-width: 375px;
+  z-index: 99;
+  background: var(--echo-white);
+  box-sizing: border-box;
+}
+
+/* ── 标题栏：滚动后收缩隐藏 ── */
+.top-hero {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px 10px;
   background: var(--echo-white);
+  max-height: 54px;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease,
+    padding 0.25s ease;
+}
+
+.top-hero--hidden {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .discover-title {
@@ -199,6 +248,7 @@ function goTag(tag) {
   font-weight: 700;
   color: var(--echo-text);
   letter-spacing: 0.5px;
+  margin: 0;
 }
 
 .discover-search-btn {
@@ -219,24 +269,26 @@ function goTag(tag) {
   transform: scale(0.95);
 }
 
-/* ===== Tab 栏：紧凑 sticky（唯一粘性元素，仅 ~40px）===== */
-.discover-tabs-sticky {
-  position: sticky;
-  top: 0;
-  z-index: 100;
+/* ── Tab 栏：始终可见 ── */
+.channel-tabs {
   display: flex;
   background: var(--echo-white);
   border-bottom: 1px solid var(--echo-border);
-  max-width: 375px;
-  box-sizing: border-box;
-  box-shadow: none;
-  transition: box-shadow 0.2s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
 }
 
-.discover-tabs-sticky.is-scrolled {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+/* ═══════════════════════════════════════════ */
+/* 滚动层                                          */
+/* ═══════════════════════════════════════════ */
+.page-scroll {
+  position: relative;
 }
 
+.header-spacer {
+  transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Tab 项 ── */
 .discover-tab {
   flex: 1;
   display: flex;
@@ -267,12 +319,12 @@ function goTag(tag) {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ===== 帖子流 ===== */
+/* ── 帖子流 ── */
 .discover-feed {
   padding: 0;
 }
 
-/* ===== 热帖卡片 ===== */
+/* ── 热帖卡片 ── */
 .hot-post-card {
   background: var(--echo-white);
   display: flex;
@@ -290,7 +342,7 @@ function goTag(tag) {
   align-items: flex-start;
 }
 
-/* ===== 排名 ===== */
+/* ── 排名 ── */
 .rank-badge {
   width: 26px;
   height: 26px;
@@ -317,11 +369,7 @@ function goTag(tag) {
   min-width: 0;
 }
 
-.hot-post-main--ranked {
-  /* 配合 rank-badge */
-}
-
-/* ===== 帖子头部 ===== */
+/* ── 帖子头部 ── */
 .hot-post-header {
   display: flex;
   align-items: center;
@@ -355,7 +403,7 @@ function goTag(tag) {
   margin-left: auto;
 }
 
-/* ===== 正文 ===== */
+/* ── 正文 ── */
 .hot-post-content {
   font-size: 14px;
   color: var(--echo-text);
@@ -368,7 +416,7 @@ function goTag(tag) {
   margin-bottom: 8px;
 }
 
-/* ===== 标签 ===== */
+/* ── 标签 ── */
 .hot-post-tags {
   display: flex;
   flex-wrap: wrap;
@@ -392,7 +440,7 @@ function goTag(tag) {
   color: #fff;
 }
 
-/* ===== 互动栏 ===== */
+/* ── 互动栏 ── */
 .hot-post-footer {
   display: flex;
   gap: 20px;
@@ -428,7 +476,7 @@ function goTag(tag) {
   opacity: 0.55;
 }
 
-/* ===== 空状态 ===== */
+/* ── 空状态 ── */
 .empty-state {
   display: flex;
   flex-direction: column;

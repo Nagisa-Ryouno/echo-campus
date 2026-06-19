@@ -87,7 +87,7 @@
     <!-- /profile-hero-card -->
 
     <!-- 内容 Tab -->
-    <div class="content-tabs">
+    <div class="content-tabs" :class="{ 'is-scrolled': isScrolled }">
       <div class="tabs-inner">
         <div
           v-for="tab in contentTabs"
@@ -183,11 +183,14 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
+import { useScrollCollapse } from '@/composables/useScrollCollapse.js'
 import { showToast } from 'vant'
 
 const route = useRoute()
 const router = useRouter()
 const store = useAppStore()
+
+const { isScrolled } = useScrollCollapse(0)
 
 const activeTab = ref('posts')
 const uid = computed(() => route.params.uid)
@@ -439,7 +442,23 @@ function onMore() {
   border-bottom: 1px solid var(--echo-border);
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 100;
+  box-shadow: none;
+  transition:
+    background 0.25s ease,
+    box-shadow 0.25s ease,
+    backdrop-filter 0.25s ease,
+    -webkit-backdrop-filter 0.25s ease;
+}
+
+/* 滚动后：毛玻璃 + 双层阴影 */
+.content-tabs.is-scrolled {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  box-shadow:
+    0 1px 0 var(--echo-border),
+    0 6px 20px rgba(0, 0, 0, 0.07);
 }
 .tabs-inner {
   display: flex;
