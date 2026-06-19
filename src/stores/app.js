@@ -127,10 +127,12 @@ export const useAppStore = defineStore('app', () => {
     return { ...post, author: author || null }
   }
 
-  // ===== 喜欢 / 收藏状态（本地点赞数） =====
+  // ===== 喜欢 / 收藏 / 转发状态 =====
   const likedPosts = ref(new Set())
   const collectedPosts = ref(new Set())
+  const forwardedPosts = ref(new Set())
   const likedComments = ref(new Set())
+  const blockedUsers = ref(new Set())
 
   function toggleLike(postId) {
     const post = posts.value.find(p => p.id === postId)
@@ -170,7 +172,29 @@ export const useAppStore = defineStore('app', () => {
 
   function isPostLiked(postId) { return likedPosts.value.has(postId) }
   function isPostCollected(postId) { return collectedPosts.value.has(postId) }
+  function isPostForwarded(postId) { return forwardedPosts.value.has(postId) }
   function isCommentLiked(commentId) { return likedComments.value.has(commentId) }
+
+  function blockUser(userId) {
+    blockedUsers.value.add(userId)
+    // 同时取消关注
+    if (followedUserIds.value.has(userId)) {
+      followedUserIds.value.delete(userId)
+    }
+  }
+  function isUserBlocked(userId) { return blockedUsers.value.has(userId) }
+
+  function toggleForward(postId) {
+    const post = posts.value.find(p => p.id === postId)
+    if (!post) return
+    if (forwardedPosts.value.has(postId)) {
+      forwardedPosts.value.delete(postId)
+      post.forwardCount = Math.max(0, post.forwardCount - 1)
+    } else {
+      forwardedPosts.value.add(postId)
+      post.forwardCount = (post.forwardCount || 0) + 1
+    }
+  }
 
   // ===== 评论 =====
   const allComments = ref([...mockComments])
@@ -388,9 +412,10 @@ export const useAppStore = defineStore('app', () => {
     syncTagsToChannel, toggleTagVisibility,
 
     // 互动
-    likedPosts, collectedPosts, likedComments,
-    toggleLike, toggleCollect, toggleCommentLike,
-    isPostLiked, isPostCollected, isCommentLiked,
+    likedPosts, collectedPosts, forwardedPosts, likedComments,
+    toggleLike, toggleCollect, toggleForward, toggleCommentLike,
+    isPostLiked, isPostCollected, isPostForwarded, isCommentLiked,
+    blockUser, isUserBlocked,
 
     // 评论
     allComments, getPostComments, getCommentReplies, addComment,

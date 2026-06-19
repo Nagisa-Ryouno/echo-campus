@@ -9,8 +9,8 @@
         <span class="detail-action-btn" @click="onShare">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         </span>
-        <span class="detail-action-btn" @click="showReport = true">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+        <span class="detail-action-btn detail-action-btn--warn" @click="showReport = true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         </span>
       </div>
     </div>
@@ -37,10 +37,10 @@
           <div class="detail-author-meta">
             <template v-if="post.isAnon">
               <span>匿名发布</span>
+              <span class="meta-divider">·</span>
+              <span>{{ post.createdAt }}</span>
             </template>
             <template v-else>
-              <span>{{ post.author?.echoId || '' }}</span>
-              <span class="meta-divider">·</span>
               <span>{{ post.createdAt }}</span>
             </template>
           </div>
@@ -64,16 +64,6 @@
         <span v-if="post.isAnon" class="meta-badge meta-badge--anon">匿名发布</span>
         <span v-if="post.schoolOnly" class="meta-badge meta-badge--school">仅本校可见</span>
         <span v-if="post.visibility === 'private'" class="meta-badge meta-badge--private">私密</span>
-        <span class="meta-badge meta-badge--time">{{ post.createdAt }}</span>
-      </div>
-
-      <!-- 互动统计 -->
-      <div class="detail-stats">
-        <span>{{ post.likeCount }} 点赞</span>
-        <span class="stats-divider">·</span>
-        <span>{{ post.commentCount }} 评论</span>
-        <span class="stats-divider">·</span>
-        <span>{{ post.collectCount }} 收藏</span>
       </div>
 
       <!-- 分割线 -->
@@ -155,33 +145,45 @@
       </div>
     </div>
 
-    <!-- 底部互动栏 -->
-    <div v-if="post" class="detail-footer">
-      <div class="comment-input-area">
+    <!-- 底部常驻互动栏：小红书风格左右分栏 -->
+    <div v-if="post" class="detail-bottom-bar">
+      <!-- 左侧：评论输入框 -->
+      <div class="bottom-input-wrap">
         <input
           v-model="commentText"
           class="comment-input"
           :placeholder="replyTarget ? `回复 ${replyTargetName}...` : '说点什么...'"
           @keyup.enter="onSendComment"
         />
-        <button
-          class="comment-send"
-          :class="{ 'comment-send--active': commentText.trim() }"
-          @click="onSendComment"
-        >发送</button>
       </div>
-      <div class="detail-actions">
-        <div class="detail-action" @click="store.toggleLike(post.id)">
-          <svg width="22" height="22" viewBox="0 0 24 24" :fill="store.isPostLiked(post.id) ? 'var(--echo-danger)' : 'none'" :stroke="store.isPostLiked(post.id) ? 'var(--echo-danger)' : 'currentColor'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          <span>{{ post.likeCount }}</span>
+      <!-- 右侧：三个互动按钮 -->
+      <div class="bottom-actions">
+        <!-- 点赞 -->
+        <div
+          class="bottom-action"
+          :class="{ 'bottom-action--active': store.isPostLiked(post.id) }"
+          @click="store.toggleLike(post.id)"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" :fill="store.isPostLiked(post.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <span>{{ post.likeCount || 0 }}</span>
         </div>
-        <div class="detail-action" @click="focusComment">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          <span>{{ post.commentCount }}</span>
+        <!-- 收藏 -->
+        <div
+          class="bottom-action"
+          :class="{ 'bottom-action--active': store.isPostCollected(post.id) }"
+          @click="store.toggleCollect(post.id)"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" :fill="store.isPostCollected(post.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span>{{ post.collectCount || 0 }}</span>
         </div>
-        <div class="detail-action" @click="store.toggleCollect(post.id)">
-          <svg width="22" height="22" viewBox="0 0 24 24" :fill="store.isPostCollected(post.id) ? 'var(--echo-warning)' : 'none'" :stroke="store.isPostCollected(post.id) ? 'var(--echo-warning)' : 'currentColor'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          <span>{{ post.collectCount }}</span>
+        <!-- 站内转发 -->
+        <div
+          class="bottom-action"
+          :class="{ 'bottom-action--active': store.isPostForwarded(post.id) }"
+          @click="onForward"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          <span>{{ post.forwardCount || 0 }}</span>
         </div>
       </div>
     </div>
@@ -196,12 +198,22 @@
       cancel-text="取消"
     />
 
-    <!-- 分享面板（绑定到手机壳内）-->
+    <!-- 分享面板（外链分享，绑定到手机壳内）-->
     <van-share-sheet
       v-model:show="showShareSheet"
       title="分享"
       :options="shareOptions"
       teleport="#phone-screen"
+    />
+
+    <!-- 站内转发面板（绑定到手机壳内）-->
+    <van-action-sheet
+      v-model:show="showForwardSheet"
+      title="站内转发"
+      :actions="forwardActions"
+      teleport="#phone-screen"
+      @select="onForwardSelect"
+      cancel-text="取消"
     />
   </div>
 </template>
@@ -299,6 +311,26 @@ function onShare() {
   showShareSheet.value = true
 }
 
+// 站内转发
+const showForwardSheet = ref(false)
+const forwardActions = [
+  { name: '站内好友', value: 'friend' },
+  { name: '已加入的圈子', value: 'circle' },
+  { name: '本校信息流', value: 'school' }
+]
+
+function onForward() {
+  showForwardSheet.value = true
+}
+
+function onForwardSelect(action) {
+  showForwardSheet.value = false
+  if (!post.value) return
+  store.toggleForward(post.value.id)
+  const targetMap = { friend: '站内好友', circle: '圈子', school: '本校信息流' }
+  showToast(`已转发至${targetMap[action.value] || action.name}`)
+}
+
 // 举报
 const showReport = ref(false)
 const reportActions = [
@@ -326,20 +358,27 @@ function goUserProfile(uid) {
 .post-detail-page {
   min-height: 100%;
   background: var(--echo-bg);
-  padding-bottom: 80px;
+  padding-top: 48px;
+  /* 32px(bottom偏移) + 10px(padding-top) + 48px(按钮组高度) + 10px(padding-bottom) + 12px(安全余量) = 112px */
+  padding-bottom: 112px;
 }
 
-/* 顶部 */
+/* 顶部导航栏：固定常驻，层级最高 */
 .detail-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
   background: var(--echo-white);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  position: fixed;
+  top: 48px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: 375px;
+  z-index: 200;
   box-shadow: 0 1px 0 var(--echo-border);
+  box-sizing: border-box;
 }
 
 .detail-back {
@@ -505,26 +544,6 @@ function goUserProfile(uid) {
   color: #c62828;
 }
 
-.meta-badge--time {
-  background: var(--echo-bg);
-  color: var(--echo-text-hint);
-}
-
-/* 统计分析 */
-.detail-stats {
-  padding: 12px 16px;
-  background: var(--echo-white);
-  font-size: 13px;
-  color: var(--echo-text-hint);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.stats-divider {
-  opacity: 0.4;
-}
-
 /* 评论分割线 */
 .comment-divider {
   padding: 16px 16px 8px;
@@ -656,27 +675,35 @@ function goUserProfile(uid) {
   font-weight: 500;
 }
 
-/* 底部输入（粘性锚定在 phone-screen 底部） */
-.detail-footer {
-  position: sticky;
-  bottom: 0;
-  background: var(--echo-white);
-  border-top: 1px solid var(--echo-border);
-  padding: 8px 12px;
-  padding-bottom: max(8px, env(safe-area-inset-bottom));
-  z-index: 10;
-  box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
-}
-
-.comment-input-area {
+/* ===== 底部常驻互动栏：fixed 定位 + 最高层级 ===== */
+.detail-bottom-bar {
+  position: fixed;
+  bottom: 32px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: 375px;
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  padding: 10px 12px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  background: var(--echo-white);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+  z-index: 500;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+/* 左侧输入框 */
+.bottom-input-wrap {
+  flex: 1;
+  min-width: 0;
 }
 
 .comment-input {
-  flex: 1;
+  width: 100%;
   height: 36px;
   border-radius: 18px;
   border: 1px solid var(--echo-border);
@@ -686,50 +713,60 @@ function goUserProfile(uid) {
   outline: none;
   background: var(--echo-bg);
   transition: border-color 0.2s;
+  box-sizing: border-box;
 }
 
 .comment-input:focus {
   border-color: var(--echo-primary);
 }
 
-.comment-send {
-  flex-shrink: 0;
-  padding: 6px 16px;
-  border-radius: 18px;
-  border: none;
-  background: var(--echo-bg);
-  color: var(--echo-text-hint);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.comment-send--active {
-  background: var(--echo-primary);
-  color: #fff;
-}
-
-/* 底部互动 */
-.detail-actions {
-  display: flex;
-  justify-content: space-around;
-  padding: 4px 0;
-}
-
-.detail-action {
+/* 右侧互动按钮组 */
+.bottom-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: var(--echo-text-secondary);
-  font-size: 13px;
-  cursor: pointer;
-  padding: 6px 16px;
-  border-radius: 8px;
-  transition: all 0.15s;
+  gap: 0;
+  flex-shrink: 0;
 }
 
-.detail-action:active {
-  background: var(--echo-bg);
+.bottom-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 2px 9px;
+  color: var(--echo-text-secondary);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s;
 }
+
+.bottom-action:active {
+  transform: scale(0.9);
+}
+
+.bottom-action svg {
+  width: 20px;
+  height: 20px;
+  transition: color 0.15s;
+}
+
+.bottom-action span {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--echo-text-hint);
+  transition: color 0.15s;
+}
+
+/* 点赞激活：主题色实心 */
+.bottom-action--active {
+  color: var(--echo-primary);
+}
+
+.bottom-action--active span {
+  color: var(--echo-primary);
+}
+
 </style>

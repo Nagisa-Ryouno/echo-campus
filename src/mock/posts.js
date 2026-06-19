@@ -44,6 +44,7 @@ export const mockPosts = [
     likeCount: 128,
     commentCount: 45,
     collectCount: 23,
+    forwardCount: 40,
     createdAt: '2026-06-18 15:32',
     channel: 'recommend'
   },
@@ -60,6 +61,7 @@ export const mockPosts = [
     likeCount: 356,
     commentCount: 89,
     collectCount: 178,
+    forwardCount: 7,
     createdAt: '2026-06-17 21:15',
     channel: 'recommend'
   },
@@ -76,6 +78,7 @@ export const mockPosts = [
     likeCount: 89,
     commentCount: 27,
     collectCount: 34,
+    forwardCount: 1,
     createdAt: '2026-06-17 18:45',
     channel: 'recommend'
   },
@@ -92,6 +95,7 @@ export const mockPosts = [
     likeCount: 567,
     commentCount: 134,
     collectCount: 245,
+    forwardCount: 47,
     createdAt: '2026-06-16 10:20',
     channel: 'recommend'
   },
@@ -110,6 +114,7 @@ export const mockPosts = [
     likeCount: 45,
     commentCount: 32,
     collectCount: 8,
+    forwardCount: 17,
     createdAt: '2026-06-18 12:00',
     channel: 'city'
   },
@@ -126,6 +131,7 @@ export const mockPosts = [
     likeCount: 23,
     commentCount: 15,
     collectCount: 3,
+    forwardCount: 15,
     createdAt: '2026-06-18 14:30',
     channel: 'school'
   },
@@ -144,6 +150,7 @@ export const mockPosts = [
     likeCount: 56,
     commentCount: 12,
     collectCount: 2,
+    forwardCount: 14,
     createdAt: '2026-06-18 16:00',
     channel: 'school'
   },
@@ -160,6 +167,7 @@ export const mockPosts = [
     likeCount: 34,
     commentCount: 28,
     collectCount: 15,
+    forwardCount: 8,
     createdAt: '2026-06-17 20:00',
     channel: 'school'
   },
@@ -176,6 +184,7 @@ export const mockPosts = [
     likeCount: 234,
     commentCount: 56,
     collectCount: 89,
+    forwardCount: 47,
     createdAt: '2026-06-16 09:00',
     channel: 'school'
   },
@@ -192,6 +201,7 @@ export const mockPosts = [
     likeCount: 167,
     commentCount: 78,
     collectCount: 45,
+    forwardCount: 6,
     createdAt: '2026-06-15 23:45',
     channel: 'school'
   },
@@ -210,6 +220,7 @@ export const mockPosts = [
     likeCount: 445,
     commentCount: 167,
     collectCount: 56,
+    forwardCount: 43,
     createdAt: '2026-06-17 22:00',
     channel: 'school'
   },
@@ -226,6 +237,7 @@ export const mockPosts = [
     likeCount: 678,
     commentCount: 234,
     collectCount: 89,
+    forwardCount: 47,
     createdAt: '2026-06-18 01:30',
     channel: 'school'
   },
@@ -244,6 +256,7 @@ export const mockPosts = [
     likeCount: 89,
     commentCount: 23,
     collectCount: 45,
+    forwardCount: 34,
     createdAt: '2026-06-17 16:00',
     channel: 'follow'
   },
@@ -260,6 +273,7 @@ export const mockPosts = [
     likeCount: 76,
     commentCount: 21,
     collectCount: 8,
+    forwardCount: 5,
     createdAt: '2026-06-18 07:30',
     channel: 'follow'
   },
@@ -278,6 +292,7 @@ export const mockPosts = [
     likeCount: 123,
     commentCount: 67,
     collectCount: 34,
+    forwardCount: 37,
     createdAt: '2026-06-16 20:00',
     channel: 'meet'
   },
@@ -294,6 +309,7 @@ export const mockPosts = [
     likeCount: 45,
     commentCount: 32,
     collectCount: 7,
+    forwardCount: 27,
     createdAt: '2026-06-18 11:00',
     channel: 'city'
   },
@@ -312,6 +328,7 @@ export const mockPosts = [
     likeCount: 234,
     commentCount: 89,
     collectCount: 123,
+    forwardCount: 2,
     createdAt: '2026-06-17 10:00',
     channel: 'recommend'
   },
@@ -328,6 +345,7 @@ export const mockPosts = [
     likeCount: 412,
     commentCount: 156,
     collectCount: 278,
+    forwardCount: 1,
     createdAt: '2026-06-15 14:00',
     channel: 'recommend'
   }

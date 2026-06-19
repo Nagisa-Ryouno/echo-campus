@@ -1,6 +1,39 @@
 <template>
   <div class="user-profile-page">
 
+    <!-- ===== 三点「更多」弹出菜单（Teleport 到 phone-screen） ===== -->
+    <Teleport to="#phone-screen">
+      <transition name="more-fade">
+        <div v-if="showMoreMenu" class="more-menu-overlay" @click.self="closeMoreMenu">
+          <div class="more-bubble">
+            <div class="more-bubble-arrow"></div>
+            <div class="more-bubble-item" @click="onBlock">
+              <div class="more-bubble-icon" style="background:#fdecea;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="4" x2="20" y2="20"/><circle cx="12" cy="12" r="10"/></svg>
+              </div>
+              <span>拉黑</span>
+            </div>
+            <div class="more-bubble-item" @click="onForwardFromProfile">
+              <div class="more-bubble-icon" style="background:#e3f2fd;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1976d2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+              </div>
+              <span>转发</span>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </Teleport>
+
+    <!-- 站内转发面板（仅好友 / 圈子，移除本校信息流） -->
+    <van-action-sheet
+      v-model:show="showForwardSheet"
+      title="站内转发"
+      :actions="forwardActions"
+      teleport="#phone-screen"
+      @select="onForwardSelect"
+      cancel-text="取消"
+    />
+
     <!-- ===== 大卡片：贴边，包含顶部操作栏 + 所有个人信息 ===== -->
     <div class="profile-hero-card">
 
@@ -184,7 +217,7 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
 import { useScrollCollapse } from '@/composables/useScrollCollapse.js'
-import { showToast } from 'vant'
+import { showToast, showConfirmDialog } from 'vant'
 
 const route = useRoute()
 const router = useRouter()
@@ -194,6 +227,16 @@ const { isScrolled } = useScrollCollapse(0)
 
 const activeTab = ref('posts')
 const uid = computed(() => route.params.uid)
+
+// 三点菜单
+const showMoreMenu = ref(false)
+
+// 站内转发
+const showForwardSheet = ref(false)
+const forwardActions = [
+  { name: '站内好友', value: 'friend' },
+  { name: '已加入的圈子', value: 'circle' }
+]
 
 const profileUser = computed(() => {
   if (uid.value === 'demo' || !uid.value) return store.users[1] || store.currentUser
@@ -250,8 +293,41 @@ function onChat() {
   showToast(`与 ${profileUser.value.nickname} 的私聊（原型占位）`)
 }
 
+// ===== 三点菜单逻辑 =====
 function onMore() {
-  showToast('更多操作（原型占位）')
+  showMoreMenu.value = true
+}
+
+function closeMoreMenu() {
+  showMoreMenu.value = false
+}
+
+async function onBlock() {
+  if (!profileUser.value) return
+  const uname = profileUser.value.nickname || '该用户'
+  try {
+    await showConfirmDialog({
+      title: '拉黑用户',
+      message: `确认要拉黑${uname}？`
+    })
+    store.blockUser(profileUser.value.id)
+    showMoreMenu.value = false
+    showToast(`已拉黑${uname}`)
+  } catch {
+    // 用户点击取消，不做任何操作
+  }
+}
+
+function onForwardFromProfile() {
+  showMoreMenu.value = false
+  showForwardSheet.value = true
+}
+
+function onForwardSelect(action) {
+  showForwardSheet.value = false
+  if (!profileUser.value) return
+  const targetMap = { friend: '站内好友', circle: '圈子' }
+  showToast(`已转发至${targetMap[action.value] || action.name}`)
 }
 </script>
 
@@ -587,4 +663,105 @@ function onMore() {
   gap: 4px;
 }
 .empty-sub { font-size: 11px; color: var(--echo-text-hint); margin-top: 0; }
+
+/* ===== 三点「更多」弹出菜单（复用消息页 + 号菜单规范） ===== */
+.more-menu-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+}
+
+.more-bubble {
+  position: absolute;
+  top: 85px;
+  right: 8px;
+  min-width: 128px;
+  z-index: 10000;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 6px 0;
+  overflow: visible;
+}
+
+/* 三角箭头 —— 指向上方的三点按钮 */
+.more-bubble-arrow {
+  position: absolute;
+  top: -7px;
+  right: 14px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 8px solid #ffffff;
+}
+
+/* 竖向菜单项 */
+.more-bubble-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.12s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.more-bubble-item:first-child { border-radius: 12px 12px 0 0; }
+.more-bubble-item:last-child  { border-radius: 0 0 12px 12px; }
+.more-bubble-item:active { background: var(--echo-bg); }
+.more-bubble-item span {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--echo-text);
+  white-space: nowrap;
+}
+
+/* 菜单项左侧圆形图标 */
+.more-bubble-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ===== 弹出 / 隐藏动画 ===== */
+.more-fade-enter-active { transition: opacity 0.2s ease; }
+.more-fade-leave-active { transition: opacity 0.18s ease; }
+.more-fade-enter-from,
+.more-fade-leave-to { opacity: 0; }
+
+/* 气泡从右上角缩放弹出 */
+.more-fade-enter-active .more-bubble {
+  animation: morePopIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.more-fade-leave-active .more-bubble {
+  animation: morePopOut 0.16s ease;
+}
+
+@keyframes morePopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.75);
+    transform-origin: top right;
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    transform-origin: top right;
+  }
+}
+
+@keyframes morePopOut {
+  to    { opacity: 0; transform: scale(0.85); }
+  from  { opacity: 1; transform: scale(1); }
+  transform-origin: top right;
+}
 </style>
