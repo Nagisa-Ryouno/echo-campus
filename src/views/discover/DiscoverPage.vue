@@ -31,11 +31,11 @@
     <!-- 滚动层：独立 overflow-y:auto，与固定层彻底隔离    -->
     <!-- ═══════════════════════════════════════════ -->
     <div ref="scrollRef" class="scroll-content" @scroll="handleScroll">
-      <!-- 动态占位：标题显示时 116px，隐藏后 60px -->
+      <!-- 动态占位：标题显示时 92px，隐藏后 48px -->
       <div
         class="header-spacer"
         :style="{
-          height: (scrollTop > 10 ? 60 : 116) + 'px',
+          height: (scrollTop > 10 ? 48 : 92) + 'px',
           transition: 'height 0.2s ease'
         }"
       ></div>
@@ -226,11 +226,11 @@ function goTag(tag) {
 
 /* ── 标题栏：滚动后隐藏 ── */
 .logo-header {
-  height: 56px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px 10px;
+  padding: 8px 16px 6px;
   box-sizing: border-box;
   transition: height 0.2s ease, padding 0.2s ease, opacity 0.2s ease;
   overflow: hidden;
@@ -244,7 +244,7 @@ function goTag(tag) {
 }
 
 .discover-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--echo-text);
   letter-spacing: 0.5px;
@@ -252,8 +252,8 @@ function goTag(tag) {
 }
 
 .discover-search-btn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: #e8edf2;
   display: flex;
@@ -271,7 +271,7 @@ function goTag(tag) {
 
 /* ── Tab 栏：永久固定，禁止 sticky ── */
 .channel-header {
-  height: 60px;
+  height: 48px;
   display: flex;
   background: var(--echo-bg);
   border-bottom: 1px solid var(--echo-divider);
@@ -285,7 +285,7 @@ function goTag(tag) {
   justify-content: center;
   cursor: pointer;
   position: relative;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--echo-text-secondary);
   font-weight: 500;
   transition: all 0.2s;
@@ -299,9 +299,9 @@ function goTag(tag) {
 
 .discover-tab-bar {
   position: absolute;
-  bottom: 8px;
-  width: 20px;
-  height: 3px;
+  bottom: 6px;
+  width: 18px;
+  height: 2.5px;
   border-radius: 2px;
   background: var(--echo-primary);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
