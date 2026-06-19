@@ -36,38 +36,71 @@
       </div>
     </div>
 
-    <!-- 搜索历史 / 热门搜索 -->
+    <!-- 默认页：根据搜索模式显示不同内容 -->
     <div v-if="!keyword && !results" class="search-default">
-      <!-- 热门搜索 -->
-      <div class="search-section">
-        <div class="section-header">
-          <span class="section-title">🔥 热门搜索</span>
-        </div>
-        <div class="hot-tags">
-          <span v-for="t in hotSearches" :key="t" class="hot-tag" @click="keyword = t; doSearch()">{{ t }}</span>
-        </div>
-      </div>
 
-      <!-- 推荐用户 -->
-      <div class="search-section">
-        <div class="section-header">
-          <span class="section-title">👥 推荐用户</span>
+      <!-- 非消息搜索：热门搜索 + 推荐用户 -->
+      <template v-if="!isMessageSearch">
+        <!-- 热门搜索 -->
+        <div class="search-section">
+          <div class="section-header">
+            <span class="section-title">🔥 热门搜索</span>
+          </div>
+          <div class="hot-tags">
+            <span v-for="t in hotSearches" :key="t" class="hot-tag" @click="keyword = t; doSearch()">{{ t }}</span>
+          </div>
         </div>
-        <div class="user-list">
-          <div
-            v-for="u in recommendUsers"
-            :key="u.id"
-            class="search-user-item"
-            @click="$router.push(`/profile/${u.id}`)"
-          >
-            <div class="su-avatar" :style="{ background: u.avatarColor }">{{ u.nickname.slice(0, 1) }}</div>
-            <div class="su-info">
-              <div class="su-name">{{ u.nickname }}</div>
-              <div class="su-school">{{ u.school }}</div>
+
+        <!-- 推荐用户 -->
+        <div class="search-section">
+          <div class="section-header">
+            <span class="section-title">👥 推荐用户</span>
+          </div>
+          <div class="user-list">
+            <div
+              v-for="u in recommendUsers"
+              :key="u.id"
+              class="search-user-item"
+              @click="$router.push(`/profile/${u.id}`)"
+            >
+              <div class="su-avatar" :style="{ background: u.avatarColor }">{{ u.nickname.slice(0, 1) }}</div>
+              <div class="su-info">
+                <div class="su-name">{{ u.nickname }}</div>
+                <div class="su-school">{{ u.school }}</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </template>
+
+      <!-- 消息搜索：最近聊天列表 -->
+      <template v-else>
+        <div class="search-section">
+          <div class="section-header">
+            <span class="section-title">💬 最近聊天</span>
+          </div>
+          <div class="recent-chat-list">
+            <div
+              v-for="chat in recentChats"
+              :key="chat.id"
+              class="recent-chat-item"
+              @click="onRecentChatClick(chat)"
+            >
+              <div class="rc-avatar" :style="{ background: chat.isGroup ? (chat.avatarColor || '#4caf7d') : (store.getUserById(chat.userId)?.avatarColor || '#999') }">
+                {{ chat.isGroup ? (chat.name?.charAt(0) || '圈') : (store.getUserById(chat.userId)?.nickname?.charAt(0) || '?') }}
+              </div>
+              <div class="rc-info">
+                <div class="rc-name">
+                  {{ chat.isGroup ? chat.name : (store.getUserById(chat.userId)?.nickname || '未知用户') }}
+                  <span v-if="chat.unread > 0" class="rc-unread">{{ chat.unread > 99 ? '99+' : chat.unread }}</span>
+                </div>
+                <div class="rc-last-msg">{{ chat.lastMsg || '暂无消息' }}</div>
+              </div>
+              <div class="rc-time">{{ chat.lastTime }}</div>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
 
     <!-- 搜索结果列表 -->
@@ -318,6 +351,31 @@ const msgChatRecords = computed(() => {
   ).slice(0, 20)
 })
 
+// ===== 最近聊天列表（消息搜索默认页）=====
+// 按未读状态 + 时间倒序排列
+const recentChats = computed(() => {
+  const list = [...store.chatListData]
+  // 解析时间字符串为可排序的数值
+  const parseTime = (t) => {
+    if (!t) return 0
+    if (t.includes(':')) {
+      // "21:32" → 21 * 60 + 32
+      const [h, m] = t.split(':').map(Number)
+      return h * 60 + m
+    }
+    if (t.includes('分钟前') || t.includes('小时前')) return Date.now()
+    return 0
+  }
+  return list.sort((a, b) => {
+    // 有未读消息的排前面
+    if ((b.unread || 0) !== (a.unread || 0)) {
+      return (b.unread || 0) - (a.unread || 0)
+    }
+    // 然后按最后消息时间倒序
+    return parseTime(b.lastTime) - parseTime(a.lastTime)
+  }).slice(0, 20)
+})
+
 function getResultCount(key) {
   if (key === 'posts') return filteredPosts.value.length
   if (key === 'users') return filteredUsers.value.length
@@ -365,6 +423,16 @@ function onCircleClick(circle) {
 
 // 消息搜索：点击聊天记录
 function onChatRecordClick(chat) {
+  store.markChatRead(chat.id)
+  if (chat.isGroup) {
+    showToast('进入群聊（原型占位）')
+  } else {
+    showToast(`与 ${store.getUserById(chat.userId)?.nickname || '用户'} 的私聊（原型占位）`)
+  }
+}
+
+// 消息搜索默认页：点击最近聊天
+function onRecentChatClick(chat) {
   store.markChatRead(chat.id)
   if (chat.isGroup) {
     showToast('进入群聊（原型占位）')
@@ -692,6 +760,85 @@ onMounted(() => {
 .st-count {
   font-size: var(--echo-text-sm);
   color: var(--echo-text-hint);
+  margin-top: 2px;
+}
+
+/* ===== 最近聊天列表（消息搜索默认页）===== */
+.recent-chat-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.recent-chat-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--echo-divider);
+  cursor: pointer;
+  transition: background var(--echo-transition-fast);
+}
+
+.recent-chat-item:active {
+  background: var(--echo-bg);
+}
+
+.rc-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 18px;
+  font-weight: var(--echo-weight-bold);
+  flex-shrink: 0;
+}
+
+.rc-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.rc-name {
+  font-size: var(--echo-text-md);
+  font-weight: var(--echo-weight-semibold);
+  color: var(--echo-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rc-unread {
+  background: var(--echo-danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: var(--echo-weight-bold);
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  flex-shrink: 0;
+}
+
+.rc-last-msg {
+  font-size: var(--echo-text-sm);
+  color: var(--echo-text-hint);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rc-time {
+  font-size: var(--echo-text-xs);
+  color: var(--echo-text-hint);
+  flex-shrink: 0;
+  align-self: flex-start;
   margin-top: 2px;
 }
 </style>

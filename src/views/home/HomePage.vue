@@ -131,8 +131,11 @@
         <div v-else class="post-feed">
           <div v-if="displayPosts.length === 0" class="empty-feed">
             <div class="empty-icon">📭</div>
-            <p>这里还没有内容</p>
-            <p class="empty-hint">去发布第一条帖子吧</p>
+            <p v-if="followFilterUid">该用户还没有发布过帖子</p>
+            <template v-else>
+              <p>这里还没有内容</p>
+              <p class="empty-hint">去发布第一条帖子吧</p>
+            </template>
           </div>
 
           <div
@@ -192,8 +195,9 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" :fill="store.isPostCollected(post.id) ? 'var(--echo-warning)' : 'none'" :stroke="store.isPostCollected(post.id) ? 'var(--echo-warning)' : 'currentColor'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                 <span>{{ post.collectCount }}</span>
               </div>
-              <div class="post-card-action post-card-share" @click.stop="onShare(post.id)">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              <div class="post-card-action" @click.stop="onForward(post.id)">
+                <van-icon name="share-o" size="18" />
+                <span>{{ post.forwardCount || 0 }}</span>
               </div>
             </div>
           </div>
@@ -233,25 +237,15 @@
       </transition>
     </Teleport>
 
-    <!-- ===== 分享面板 ===== -->
-    <Teleport to="#phone-screen">
-      <transition name="panel-slide">
-        <div v-if="showShare" class="tag-panel-overlay" @click.self="closeShare">
-          <div class="tag-panel-sheet">
-            <div class="tag-panel-header">
-              <h3>分享</h3>
-              <span class="tag-panel-close" @click="closeShare">取消</span>
-            </div>
-            <div class="share-grid">
-              <div v-for="opt in shareOptions" :key="opt.name" class="share-item">
-                <div class="share-icon">{{ opt.emoji }}</div>
-                <span class="share-label">{{ opt.name }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </transition>
-    </Teleport>
+    <!-- ===== 站内转发面板 ===== -->
+    <van-action-sheet
+      v-model:show="showForwardSheet"
+      title="站内转发"
+      :actions="forwardActions"
+      teleport="#phone-screen"
+      @select="onForwardSelect"
+      cancel-text="取消"
+    />
   </div>
 </template>
 
@@ -259,6 +253,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
+import { showToast } from 'vant'
 
 const router = useRouter()
 const store = useAppStore()
@@ -300,22 +295,31 @@ function closeTagPanel() {
   store.unlockPhoneScroll()
 }
 
-// ===== 分享面板 =====
-const showShare = ref(false)
-const shareOptions = [
-  { name: '微信', emoji: '💬' },
-  { name: '朋友圈', emoji: '🟢' },
-  { name: 'QQ', emoji: '🐧' },
-  { name: '复制链接', emoji: '🔗' }
+// ===== 站内转发面板 =====
+const showForwardSheet = ref(false)
+const forwardPostId = ref(null)
+const forwardActions = [
+  { name: '站内好友', value: 'friend' },
+  { name: '已加入的圈子', value: 'circle' }
 ]
 
-function onShare() {
-  showShare.value = true
+function onForward(postId) {
+  forwardPostId.value = postId
+  showForwardSheet.value = true
   store.lockPhoneScroll()
 }
 
-function closeShare() {
-  showShare.value = false
+function onForwardSelect(action) {
+  showForwardSheet.value = false
+  if (!forwardPostId.value) return
+  store.toggleForward(forwardPostId.value)
+  const targetMap = { friend: '站内好友', circle: '圈子' }
+  showToast(`已转发至${targetMap[action.value] || action.name}`)
+  store.unlockPhoneScroll()
+}
+
+function closeForwardSheet() {
+  showForwardSheet.value = false
   store.unlockPhoneScroll()
 }
 
@@ -958,39 +962,6 @@ function goUserProfile(uid) {
   padding: 32px 0;
   color: var(--echo-text-hint);
   font-size: 14px;
-}
-
-/* ── 分享面板 ── */
-.share-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  justify-content: flex-start;
-}
-
-.share-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  width: 68px;
-}
-
-.share-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  background: var(--echo-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-}
-
-.share-label {
-  font-size: 12px;
-  color: var(--echo-text-secondary);
 }
 
 /* ── 面板动画 ── */

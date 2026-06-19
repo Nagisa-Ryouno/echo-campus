@@ -145,7 +145,6 @@ export const anonSessions = [
 // ===== 系统通知 =====
 export const systemNotices = [
   { id: 'sys_1', type: 'audit', content: '你的帖子"宿舍阳台的多肉又开了"已通过审核', time: '昨天 10:30' },
-  { id: 'sys_2', type: 'upgrade', content: '你的声望值提升至 820，解锁"热心学长"称号', time: '3天前' },
   { id: 'sys_3', type: 'security', content: '检测到新设备登录（北京 · 海淀），如非本人操作请修改密码', time: '5天前' }
 ]
 

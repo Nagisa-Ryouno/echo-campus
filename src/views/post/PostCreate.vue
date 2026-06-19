@@ -1,27 +1,28 @@
 <template>
   <div class="post-create-page">
     <!-- 顶部导航 -->
+    <!-- 顶部固定导航栏 -->
     <div class="create-header">
       <span class="create-back" @click="onBack">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
       </span>
       <span class="create-title">发布帖子</span>
-      <span class="create-draft" @click="onSaveDraft">草稿</span>
+      <span class="create-draft" @click="onSaveDraft">存入草稿</span>
     </div>
 
     <!-- 表单区域 -->
     <div class="create-body">
-      <!-- 一级分类标签 -->
+      <!-- 分类标签（可选） -->
       <div class="form-section">
-        <div class="form-label">分类标签 <span class="required">*</span></div>
-        <div class="tag-grid">
-          <span
-            v-for="tag in allCategoryTags"
-            :key="tag"
-            class="form-tag"
-            :class="{ 'form-tag--active': form.categoryTag === tag }"
-            @click="form.categoryTag = tag"
-          >{{ tag }}</span>
+        <div class="tag-select-row" @click="onTagSelect">
+          <span class="tag-select-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            添加标签（可选）
+          </span>
+          <div v-if="form.categoryTag || form.topicTags.length" class="selected-tags-inline">
+            <span v-if="form.categoryTag" class="selected-tag-pill">{{ form.categoryTag }}</span>
+            <span v-for="t in form.topicTags" :key="t" class="selected-tag-pill">{{ t }}</span>
+          </div>
         </div>
       </div>
 
@@ -129,18 +130,18 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
         <span>{{ ruleMessage }}</span>
       </div>
-    </div>
 
-    <!-- 底部发布按钮 -->
-    <div class="create-footer">
-      <button
-        class="publish-btn"
-        :class="{ 'publish-btn--disabled': !canPublish }"
-        :disabled="!canPublish"
-        @click="onPublish"
-      >
-        发布
-      </button>
+      <!-- 发布按钮（跟随内容滚动，在页面最底部） -->
+      <div class="publish-section">
+        <button
+          class="publish-btn"
+          :class="{ 'publish-btn--disabled': !canPublish }"
+          :disabled="!canPublish"
+          @click="onPublish"
+        >
+          发布
+        </button>
+      </div>
     </div>
 
     <!-- 草稿列表弹窗（绑定到手机壳内）-->
@@ -172,17 +173,28 @@
         </div>
       </div>
     </van-popup>
+
+    <!-- 返回确认面板（绑定到手机壳内）-->
+    <van-action-sheet
+      v-model:show="showBackSheet"
+      :actions="backActions"
+      @select="onBackAction"
+      cancel-text="继续编辑"
+      close-on-click-action
+      teleport="#phone-screen"
+    />
   </div>
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { reactive, ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
 import { showToast, showDialog } from 'vant'
 import { allCategoryTags, topicTags } from '@/mock/posts.js'
 
 const router = useRouter()
+const route = useRoute()
 const store = useAppStore()
 
 // 表单数据
@@ -209,10 +221,43 @@ onMounted(() => {
   if (store.defaultVisibility === 'private') {
     form.schoolOnly = false
   }
+  // 从标签选择页返回时，读取已选标签
+  loadTagsFromRoute()
 })
+
+// 从路由参数读取已选标签（从标签选择页返回时）
+function loadTagsFromRoute() {
+  const cat = route.query.categoryTag
+  const topics = route.query.topicTags
+  if (cat) form.categoryTag = cat
+  if (topics) {
+    form.topicTags = decodeURIComponent(topics).split(',').filter(Boolean)
+  }
+}
+
+// 监听路由参数变化（从标签选择页返回时触发）
+watch(() => route.query, () => {
+  loadTagsFromRoute()
+}, { immediate: false })
+
+// 跳转至标签选择页
+function onTagSelect() {
+  // 将当前已选标签通过 query 传给选择页
+  const params = new URLSearchParams()
+  if (form.categoryTag) params.set('categoryTag', form.categoryTag)
+  if (form.topicTags.length) params.set('topicTags', form.topicTags.join(','))
+  router.push(`/tag-select?${params.toString()}`)
+}
 
 const topicTagOptions = topicTags
 const showDrafts = ref(false)
+const showBackSheet = ref(false)
+
+// 返回确认面板选项
+const backActions = ref([
+  { name: '存为草稿并退出', color: 'var(--echo-primary)' },
+  { name: '不保存并退出', color: 'var(--echo-danger)' }
+])
 
 const visibilityOptions = [
   { value: 'public', label: '所有人可见' },
@@ -275,10 +320,59 @@ const ruleMessage = computed(() => {
   return ''
 })
 
-// 是否可以发布
+// 是否可以发布（分类标签已改为可选）
 const canPublish = computed(() => {
-  return form.content.trim().length > 0 && form.categoryTag !== ''
+  return form.content.trim().length > 0
 })
+
+// ===== 无感自动标签识别 =====
+// 关键词 → 分类标签映射（与 allCategoryTags 及频道对应关系一致）
+const autoTagKeywordMap = {
+  '二手闲置': ['二手','闲置','出','转卖','收购','求购','闲鱼'],
+  '校园活动': ['活动','晚会','迎新','毕业','校庆','运动会','社团'],
+  '学习干货': ['学习','考研','复习','期末','考试','笔记','资料','论文','四六级','雅思','托福','考公'],
+  '情感树洞': ['情感','树洞','失恋','暗恋','表白','心情','烦'],
+  '美食探店': ['美食','探店','餐厅','食堂','外卖','做饭'],
+  '运动健身': ['运动','健身','篮球','足球','跑步','羽毛球','网球'],
+  '校园求助': ['求助','帮忙','问一下','请问','不懂'],
+  '兼职实习': ['兼职','实习','工作','招聘','家教'],
+  '校园传话': ['传话','告诉','帮我','转告'],
+  '表白墙': ['表白','喜欢','暗恋'],
+  '吐槽': ['吐槽','无语','醉了','服了','破防'],
+  '租房': ['租房','找房','合租','室友'],
+  '失物招领': ['失物','丢失','捡到','寻找','遗失'],
+  '校园资讯': ['通知','资讯','公告','新闻','政策'],
+  '兴趣爱好': ['兴趣','爱好','摄影','音乐','绘画','舞蹈'],
+  '校园风景': ['风景','校园','打卡','拍照','秋景','春景'],
+  '匿名树洞': ['匿名','树洞','秘密']
+}
+
+function detectAutoTags(content) {
+  const text = content.toLowerCase()
+  const matched = []
+  for (const [tag, keywords] of Object.entries(autoTagKeywordMap)) {
+    if (keywords.some(k => text.includes(k.toLowerCase()))) {
+      matched.push(tag)
+    }
+  }
+  return matched
+}
+
+// 发布时：若无手动标签，执行自动识别
+function applyAutoTagsIfNeeded() {
+  // 用户已手动选择分类标签，以手动为准，不覆盖
+  if (form.categoryTag) return
+  const auto = detectAutoTags(form.content)
+  if (auto.length > 0) {
+    form.categoryTag = auto[0]  // 取第一个匹配作为分类标签
+    // 其余匹配项补充到话题标签
+    auto.slice(1).forEach(t => {
+      if (!form.topicTags.includes(t) && form.topicTags.length < 5) {
+        form.topicTags.push(t)
+      }
+    })
+  }
+}
 
 // ===== 图片操作 =====
 function onAddImage() {
@@ -309,21 +403,18 @@ function toggleTopicTag(tag) {
 function onPublish() {
   if (!canPublish.value) return
 
+  // 发布前自动识别标签（用户未手动选择时）
+  applyAutoTagsIfNeeded()
+
+  const displayTag = form.categoryTag || '未分类'
   showDialog({
     title: '确认发布',
-    message: `将发布一条「${form.categoryTag}」帖子${form.isAnon ? '（匿名）' : ''}`,
+    message: `将发布一条「${displayTag}」帖子${form.isAnon ? '（匿名）' : ''}`,
     teleport: '#phone-screen',
   }).then(() => {
     const post = store.createPost({ ...form })
     showToast('发布成功！')
-    // 重置表单为默认偏好
-    form.content = ''
-    form.images = []
-    form.categoryTag = ''
-    form.topicTags = []
-    form.isAnon = store.defaultAnonPost
-    form.visibility = store.defaultAnonPost ? 'public' : store.defaultVisibility
-    form.schoolOnly = store.defaultAnonPost ? false : (store.defaultVisibility === 'private' ? false : store.defaultSchoolOnly)
+    resetForm()
     // 跳转到帖子详情
     router.replace(`/post/${post.id}`)
   }).catch(() => {})
@@ -331,12 +422,12 @@ function onPublish() {
 
 // ===== 草稿 =====
 function onSaveDraft() {
-  if (!form.content.trim() && !form.categoryTag) {
-    showToast('内容为空，无需保存')
+  if (isFormEmpty()) {
+    showToast('暂无内容可保存')
     return
   }
   store.saveDraft({ ...form })
-  showToast('已保存草稿')
+  showToast('已存入草稿')
 }
 
 function onDeleteDraft(draftId) {
@@ -358,23 +449,46 @@ function loadDraft(draft) {
 }
 
 // ===== 返回 =====
+function isFormEmpty() {
+  return (
+    !form.content.trim() &&
+    form.images.length === 0 &&
+    !form.categoryTag &&
+    form.topicTags.length === 0 &&
+    !form.isAnon &&
+    form.visibility === 'public' &&
+    !form.schoolOnly
+  )
+}
+
 function onBack() {
-  if (form.content.trim() || form.categoryTag) {
-    showDialog({
-      title: '提示',
-      message: '有未保存的内容，是否保存为草稿？',
-      confirmButtonText: '保存',
-      cancelButtonText: '不保存',
-      teleport: '#phone-screen',
-    }).then(() => {
-      onSaveDraft()
-      router.back()
-    }).catch(() => {
-      router.back()
-    })
-  } else {
+  if (isFormEmpty()) {
+    router.back()
+    return
+  }
+  showBackSheet.value = true
+}
+
+function onBackAction(action) {
+  if (action.name === '存为草稿并退出') {
+    onSaveDraft()
+    router.back()
+  } else if (action.name === '不保存并退出') {
+    // 重置表单后退出
+    resetForm()
     router.back()
   }
+  // "继续编辑" = cancel，自动关闭面板，无需处理
+}
+
+function resetForm() {
+  form.content = ''
+  form.images = []
+  form.categoryTag = ''
+  form.topicTags = []
+  form.visibility = store.defaultVisibility
+  form.schoolOnly = store.defaultSchoolOnly
+  form.isAnon = store.defaultAnonPost
 }
 </script>
 
@@ -386,16 +500,22 @@ function onBack() {
   flex-direction: column;
 }
 
-/* 顶部 */
+/* 顶部固定导航栏：最高层级，纯色背景 */
 .create-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
   background: var(--echo-white);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  position: fixed;
+  top: 48px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: 375px;
+  z-index: 200;
+  box-sizing: border-box;
+  box-shadow: 0 1px 0 var(--echo-border);
 }
 
 .create-back {
@@ -418,10 +538,10 @@ function onBack() {
   font-weight: 500;
 }
 
-/* 表单（不创建独立滚动上下文，跟随 phone-screen 滚动） */
+/* 表单（顶部留出固定导航栏高度，跟随 phone-screen 滚动） */
 .create-body {
-  flex: 1;
-  padding-bottom: 8px;
+  padding-top: 48px;
+  padding-bottom: 24px;
 }
 
 .form-section {
@@ -444,6 +564,53 @@ function onBack() {
 .form-hint {
   font-size: 12px;
   color: var(--echo-text-hint);
+}
+
+/* 标签选择行 */
+.tag-select-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.tag-select-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 13px;
+  background: var(--echo-bg);
+  color: var(--echo-text-secondary);
+  transition: all 0.2s;
+  border: 1px dashed var(--echo-border);
+}
+
+.tag-select-btn:active {
+  background: var(--echo-primary-light);
+  color: var(--echo-primary);
+  border-color: var(--echo-primary);
+}
+
+.selected-tags-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.selected-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  background: var(--echo-primary-light);
+  color: var(--echo-primary);
+  font-weight: 500;
 }
 
 /* 分类标签网格 */
@@ -596,15 +763,9 @@ function onBack() {
   margin-top: 1px;
 }
 
-/* 发布按钮 */
-.create-footer {
-  position: sticky;
-  bottom: 0;
-  background: var(--echo-white);
-  padding: 12px 16px;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
-  border-top: 1px solid var(--echo-border);
-  z-index: 10;
+/* 发布按钮区域（跟随内容滚动，在页面最底部） */
+.publish-section {
+  padding: 20px 16px 32px;
 }
 
 .publish-btn {

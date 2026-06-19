@@ -45,16 +45,6 @@
         </div>
       </div>
 
-      <!-- 声望值：仅自己可见 -->
-      <div class="reputation-row">
-        <div class="rep-left">
-          <van-icon name="star-o" size="14" color="#f39c12" />
-          <span class="rep-title">声望值</span>
-          <span class="rep-hint">仅自己可见</span>
-        </div>
-        <span class="rep-value">{{ store.currentUser?.reputation || 0 }}</span>
-      </div>
-
       <!-- 计数行 -->
       <div class="counts-row">
         <div class="count-item">
@@ -390,38 +380,6 @@ function onDrafts() { showToast('草稿箱（原型占位）') }
   font-size: 12px;
   color: var(--echo-text-secondary);
   margin-top: 2px;
-}
-
-/* ===== 声望 ===== */
-.reputation-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 14px;
-  padding: 10px 12px;
-  background: linear-gradient(135deg, #fff8e1, #fffde7);
-  border-radius: 10px;
-}
-.rep-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.rep-title {
-  font-size: 12px;
-  color: var(--echo-text-secondary);
-}
-.rep-hint {
-  font-size: 10px;
-  color: var(--echo-text-hint);
-  background: #f0f0f0;
-  padding: 2px 6px;
-  border-radius: 6px;
-}
-.rep-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: #f39c12;
 }
 
 /* ===== 计数行 ===== */

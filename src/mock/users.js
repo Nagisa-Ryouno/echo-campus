@@ -14,8 +14,11 @@ export const mockUsers = [
     followCount: 128,
     fanCount: 256,
     postCount: 47,
-    reputation: 820,
-    showSchool: 'public'
+    showSchool: 'public',
+    // 内容隐私设置
+    postVisibility: 'everyone',      // 帖子可见性：everyone所有人 / followers仅关注者 / mutual仅互关 / private仅自己
+    commentVisibility: 'everyone',   // 评论可见性
+    collectionVisibility: 'private'    // 收藏可见性（默认仅自己可见）
   },
   {
     id: 'u2',
@@ -31,8 +34,10 @@ export const mockUsers = [
     followCount: 256,
     fanCount: 412,
     postCount: 89,
-    reputation: 1560,
-    showSchool: 'public'
+    showSchool: 'public',
+    postVisibility: 'everyone',
+    commentVisibility: 'followers',
+    collectionVisibility: 'private'
   },
   {
     id: 'u3',
@@ -48,8 +53,10 @@ export const mockUsers = [
     followCount: 89,
     fanCount: 134,
     postCount: 32,
-    reputation: 580,
-    showSchool: 'public'
+    showSchool: 'public',
+    postVisibility: 'everyone',
+    commentVisibility: 'everyone',
+    collectionVisibility: 'private'
   },
   {
     id: 'u4',
@@ -65,8 +72,10 @@ export const mockUsers = [
     followCount: 345,
     fanCount: 567,
     postCount: 124,
-    reputation: 2300,
-    showSchool: 'school_only'
+    showSchool: 'school_only',
+    postVisibility: 'followers',
+    commentVisibility: 'mutual',
+    collectionVisibility: 'private'
   },
   {
     id: 'u5',
@@ -82,8 +91,10 @@ export const mockUsers = [
     followCount: 67,
     fanCount: 98,
     postCount: 21,
-    reputation: 420,
-    showSchool: 'hidden'
+    showSchool: 'hidden',
+    postVisibility: 'everyone',
+    commentVisibility: 'everyone',
+    collectionVisibility: 'private'
   },
   {
     id: 'u6',
@@ -99,8 +110,10 @@ export const mockUsers = [
     followCount: 178,
     fanCount: 234,
     postCount: 56,
-    reputation: 980,
-    showSchool: 'hidden'
+    showSchool: 'hidden',
+    postVisibility: 'followers',
+    commentVisibility: 'followers',
+    collectionVisibility: 'private'
   },
   {
     id: 'u7',
@@ -116,8 +129,10 @@ export const mockUsers = [
     followCount: 201,
     fanCount: 389,
     postCount: 73,
-    reputation: 1240,
-    showSchool: 'school_only'
+    showSchool: 'school_only',
+    postVisibility: 'mutual',
+    commentVisibility: 'mutual',
+    collectionVisibility: 'private'
   },
   {
     id: 'u8',
@@ -133,8 +148,10 @@ export const mockUsers = [
     followCount: 890,
     fanCount: 2345,
     postCount: 15,
-    reputation: 5000,
-    showSchool: 'public'
+    showSchool: 'public',
+    postVisibility: 'everyone',
+    commentVisibility: 'everyone',
+    collectionVisibility: 'private'
   }
 ]
 

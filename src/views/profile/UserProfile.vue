@@ -15,7 +15,7 @@
             </div>
             <div class="more-bubble-item" @click="onForwardFromProfile">
               <div class="more-bubble-icon" style="background:#e3f2fd;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1976d2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                <van-icon name="share-o" size="18" color="#1976d2" />
               </div>
               <span>转发</span>
             </div>
@@ -163,9 +163,7 @@
         </div>
       </div>
       <div v-else class="empty-content">
-        <van-icon name="lock" size="36" color="#dcdfe6" />
-        <p>暂无可见内容</p>
-        <p class="empty-sub">对方设置了隐私保护</p>
+        <p>暂无对你可见的帖子</p>
       </div>
     </div>
 
@@ -190,30 +188,39 @@
         </div>
       </div>
       <div v-else class="empty-content">
-        <p>暂无可见内容</p>
+        <p>该用户暂无公开评论</p>
       </div>
     </div>
 
     <!-- 收藏的 -->
     <div class="profile-posts" v-if="activeTab === 'collects'">
-      <div class="empty-content">
-        <van-icon name="lock" size="36" color="#dcdfe6" />
-        <p>收藏夹仅自己可见</p>
+      <div v-if="collectedPosts.length" class="post-grid">
+        <div
+          v-for="post in collectedPosts"
+          :key="post.id"
+          class="grid-post-card"
+          @click="$router.push(`/post/${post.id}`)"
+        >
+          <div class="grid-post-img" v-if="post.images?.[0]">
+            <img :src="post.images[0]" alt="" />
+          </div>
+          <div class="grid-post-body">
+            <div class="grid-post-text">{{ post.content }}</div>
+            <div class="grid-post-meta">
+              <span class="grid-post-tag">{{ post.categoryTag }}</span>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-
-    <!-- 赞过 -->
-    <div class="profile-posts" v-if="activeTab === 'likes'">
-      <div class="empty-content">
-        <van-icon name="lock" size="36" color="#dcdfe6" />
-        <p>赞过内容仅自己可见</p>
+      <div v-else class="empty-content">
+        <p>该用户暂无公开收藏</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
 import { useScrollCollapse } from '@/composables/useScrollCollapse.js'
@@ -226,6 +233,7 @@ const store = useAppStore()
 const { isScrolled } = useScrollCollapse(0)
 
 const activeTab = ref('posts')
+
 const uid = computed(() => route.params.uid)
 
 // 三点菜单
@@ -260,27 +268,141 @@ const showSchoolToVisitor = computed(() => {
   return false
 })
 
-// 可见帖子（过滤私密和匿名）
+// 判断当前访客是否为页面主人（自己访问自己的主页）
+const isSelf = computed(() => {
+  if (!profileUser.value || !store.currentUser) return false
+  return profileUser.value.id === store.currentUser.id
+})
+
+// 判断某个栏目是否对当前访客可见
+function isTabVisibleToVisitor(tabType) {
+  if (!profileUser.value) return false
+
+  // 自己访问自己的主页：所有栏目可见
+  if (isSelf.value) return true
+
+  // 获取被访问用户的隐私设置（undefined 默认视为 everyone）
+  const visibilityMap = {
+    post: profileUser.value.postVisibility,
+    comment: profileUser.value.commentVisibility,
+    collect: profileUser.value.collectionVisibility
+  }
+  let visibility = visibilityMap[tabType]
+  // 字段不存在时默认为「所有人可见」
+  if (!visibility) visibility = 'everyone'
+
+  // private：仅自己可见
+  if (visibility === 'private') return false
+
+  // everyone：所有人可见
+  if (visibility === 'everyone') return true
+
+  // followers：仅关注者可见（需要判断当前用户是否关注了对方）
+  if (visibility === 'followers') {
+    return store.isFollowing(profileUser.value.id)
+  }
+
+  // mutual：仅互关者可见
+  if (visibility === 'mutual') {
+    return store.isFollowing(profileUser.value.id) &&
+           store.followedUserIds.includes(profileUser.value.id)
+  }
+
+  return false
+}
+
+// 可见帖子（过滤私密和匿名 + 根据帖子权限过滤）
 const visiblePosts = computed(() => {
   if (!profileUser.value) return []
-  return store.posts.filter(p =>
-    p.authorId === profileUser.value.id &&
-    p.visibility !== 'private' &&
-    !p.isAnon
-  )
+
+  return store.posts.filter(p => {
+    // 1. 必须是该用户的帖子
+    if (p.authorId !== profileUser.value.id) return false
+
+    // 2. 过滤私密帖子
+    if (p.visibility === 'private') return false
+
+    // 3. 过滤匿名帖子（他人主页不显示匿名内容）
+    if (p.isAnon) return false
+
+    // 4. 根据帖子权限设置，判断当前访客是否可见
+    const postVisibility = p.visibility || 'public'
+    if (postVisibility === 'public') return true
+    if (postVisibility === 'school') {
+      // 仅同校可见
+      return store.currentUser?.school === profileUser.value.school
+    }
+    if (postVisibility === 'followers') {
+      // 仅关注者可见
+      return isSelf.value || store.isFollowing(profileUser.value.id)
+    }
+    if (postVisibility === 'mutual') {
+      // 仅互关可见
+      return isSelf.value ||
+             (store.isFollowing(profileUser.value.id) &&
+              store.followedUserIds.includes(profileUser.value.id))
+    }
+
+    return false
+  })
 })
 
+// 评论过的帖子（根据评论权限过滤）
 const commentedPosts = computed(() => {
   if (!profileUser.value) return []
-  return store.getUserCommentedPosts(profileUser.value.id)
+  if (!isTabVisibleToVisitor('comment')) return []
+
+  const userCommentedPostIds = [...new Set(
+    store.allComments.filter(c => c.authorId === profileUser.value.id && !c.isAnon).map(c => c.postId)
+  )]
+  return store.posts.filter(p => userCommentedPostIds.includes(p.id))
 })
 
-const contentTabs = computed(() => [
-  { key: 'posts', label: '帖子', count: visiblePosts.value.length },
-  { key: 'comments', label: '评论', count: commentedPosts.value.length },
-  { key: 'collects', label: '收藏', count: 0 },
-  { key: 'likes', label: '赞过', count: 0 }
-])
+// 收藏的帖子（根据收藏权限过滤）
+const collectedPosts = computed(() => {
+  if (!profileUser.value) return []
+  if (!isTabVisibleToVisitor('collect')) return []
+
+  // 注意：这里需要 profileUser 的收藏数据，目前 mock 中收藏是存在 store.collectedPosts 中的
+  // 为简化原型，这里返回空数组，实际应该根据 profileUser.id 去查找
+  return []
+})
+
+const contentTabs = computed(() => {
+  if (!profileUser.value) return []
+
+  const tabs = []
+
+  // 1. 帖子栏目：根据 postVisibility 判断是否可见
+  if (isTabVisibleToVisitor('post')) {
+    tabs.push({ key: 'posts', label: '帖子', count: visiblePosts.value.length })
+  }
+
+  // 2. 评论栏目：根据 commentVisibility 判断是否可见
+  if (isTabVisibleToVisitor('comment')) {
+    tabs.push({ key: 'comments', label: '评论', count: commentedPosts.value.length })
+  }
+
+  // 3. 收藏栏目：根据 collectionVisibility 判断是否可见
+  if (isTabVisibleToVisitor('collect')) {
+    tabs.push({ key: 'collects', label: '收藏', count: collectedPosts.value.length })
+  }
+
+  // 4. 赞过栏目：他人主页完全隐藏，仅自己可见
+  // （不添加到 tabs 数组）
+
+  return tabs
+})
+
+// 监听 contentTabs 变化，确保 activeTab 始终指向可见的 tab
+// 注意：此 watch 必须放在 contentTabs 定义之后，避免 immediate 模式下读取未初始化的 computed
+watch(contentTabs, (newTabs) => {
+  if (!newTabs || !newTabs.length) return
+  const tabKeys = newTabs.map(t => t.key)
+  if (!tabKeys.includes(activeTab.value)) {
+    activeTab.value = tabKeys[0] || 'posts'
+  }
+}, { immediate: true })
 
 function onFollow() {
   if (!profileUser.value) return

@@ -50,6 +50,12 @@ const routes = [
     meta: { title: '发布', tabBar: false }
   },
   {
+    path: '/tag-select',
+    name: 'TagSelect',
+    component: () => import('@/views/post/TagSelect.vue'),
+    meta: { title: '选择标签', tabBar: false }
+  },
+  {
     path: '/post/:id',
     name: 'PostDetail',
     component: () => import('@/views/post/PostDetail.vue'),
