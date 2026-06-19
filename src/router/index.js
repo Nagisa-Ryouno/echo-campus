@@ -152,6 +152,12 @@ const routes = [
     meta: { title: '个人主页搜索', tabBar: false }
   },
   {
+    path: '/edit-profile',
+    name: 'EditProfile',
+    component: () => import('@/views/profile/EditProfile.vue'),
+    meta: { title: '编辑资料', tabBar: false }
+  },
+  {
     path: '/circle',
     name: 'Circle',
     component: () => import('@/views/circle/CirclePage.vue'),

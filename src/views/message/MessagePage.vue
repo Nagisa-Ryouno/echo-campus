@@ -17,7 +17,7 @@
             <path d="M14,20 L14,17 Q14,16 15,16 Q16,16 16,17 L16,20" />
           </svg>
         </span>
-        <van-icon name="search" size="20" @click="$router.push('/search')" />
+        <van-icon name="search" size="20" @click="$router.push('/search?from=message')" />
         <van-icon
           :name="plusMenuVisible ? 'cross' : 'plus'"
           size="20"

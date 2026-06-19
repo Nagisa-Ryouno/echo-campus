@@ -12,7 +12,7 @@
           </div>
         </div>
         <div class="action-bar-right">
-          <div class="text-action-btn" @click="onEditProfile">编辑主页</div>
+          <div class="text-action-btn" @click="$router.push('/edit-profile')">编辑主页</div>
           <div class="icon-btn" @click="onShare">
             <van-icon name="share-o" size="19" />
           </div>

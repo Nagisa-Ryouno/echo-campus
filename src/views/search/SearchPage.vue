@@ -10,7 +10,7 @@
             v-model="keyword"
             type="text"
             class="search-input"
-            placeholder="搜索用户、帖子、话题"
+            :placeholder="isMessageSearch ? '搜索联系人、圈子、聊天记录' : '搜索用户、帖子、话题'"
             @keyup.enter="doSearch"
             @input="onInput"
           />
@@ -24,7 +24,7 @@
       <!-- 结果 Tab（仅在搜索后有结果时显示） -->
       <div v-if="results" class="result-tabs">
         <div
-          v-for="tab in resultTabs"
+          v-for="tab in currentTabs"
           :key="tab.key"
           class="result-tab"
           :class="{ active: activeResultTab === tab.key }"
@@ -113,8 +113,8 @@
         </div>
       </div>
 
-      <!-- 话题结果 -->
-      <div v-if="activeResultTab === 'topics'" class="result-list">
+      <!-- 话题结果（仅全局搜索） -->
+      <div v-if="!isMessageSearch && activeResultTab === 'topics'" class="result-list">
         <div v-if="filteredTopics.length === 0" class="echo-empty">
           <div class="echo-empty-icon">🏷️</div>
           <p class="echo-empty-text">未找到相关话题</p>
@@ -131,17 +131,90 @@
           </div>
         </div>
       </div>
+
+      <!-- 联系人结果（消息搜索） -->
+      <div v-if="isMessageSearch && activeResultTab === 'contacts'" class="result-list">
+        <div v-if="msgContacts.length === 0" class="echo-empty">
+          <div class="echo-empty-icon">👤</div>
+          <p class="echo-empty-text">未找到相关联系人</p>
+        </div>
+        <div
+          v-for="u in msgContacts"
+          :key="u.id"
+          class="search-user-item"
+          @click="$router.push(`/profile/${u.id}`)"
+        >
+          <div class="su-avatar" :style="{ background: u.avatarColor }">
+            <span v-html="highlightMatch(u.nickname.slice(0,1))"></span>
+          </div>
+          <div class="su-info">
+            <div class="su-name" v-html="highlightMatch(u.nickname)"></div>
+            <div class="su-school">{{ u.school }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 圈子结果（消息搜索） -->
+      <div v-if="isMessageSearch && activeResultTab === 'circles'" class="result-list">
+        <div v-if="msgCircles.length === 0" class="echo-empty">
+          <div class="echo-empty-icon">🔵</div>
+          <p class="echo-empty-text">未找到相关圈子</p>
+        </div>
+        <div
+          v-for="c in msgCircles"
+          :key="c.id"
+          class="search-user-item"
+          @click="onCircleClick(c)"
+        >
+          <div class="su-avatar" :style="{ background: c.avatarColor || '#4caf7d' }">
+            {{ c.name?.charAt(0) || '圈' }}
+          </div>
+          <div class="su-info">
+            <div class="su-name" v-html="highlightMatch(c.name)"></div>
+            <div class="su-school">{{ c.memberCount || 0 }} 名成员</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 聊天记录结果（消息搜索） -->
+      <div v-if="isMessageSearch && activeResultTab === 'chatRecords'" class="result-list">
+        <div v-if="msgChatRecords.length === 0" class="echo-empty">
+          <div class="echo-empty-icon">💬</div>
+          <p class="echo-empty-text">未找到相关聊天记录</p>
+        </div>
+        <div
+          v-for="c in msgChatRecords"
+          :key="c.id"
+          class="search-post-item"
+          @click="onChatRecordClick(c)"
+        >
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <div class="su-avatar" :style="{ background: c.isGroup ? (c.avatarColor || '#999') : (store.getUserById(c.userId)?.avatarColor || '#ccc') }" style="width:36px;height:36px;font-size:14px;">
+              {{ c.isGroup ? c.name?.charAt(0) : (store.getUserById(c.userId)?.nickname?.charAt(0) || '?') }}
+            </div>
+            <span style="font-size:14px;font-weight:500;color:var(--echo-text);">
+              {{ c.isGroup ? c.name : (store.getUserById(c.userId)?.nickname || '未知') }}
+            </span>
+          </div>
+          <p class="sp-content" v-html="highlightMatch(c.lastMsg)"></p>
+          <div class="sp-meta">
+            <span>{{ c.lastTime }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
 import { useScrollCollapse } from '@/composables/useScrollCollapse.js'
+import { showToast } from 'vant'
 
 const router = useRouter()
+const route = useRoute()
 const store = useAppStore()
 
 const { isScrolled } = useScrollCollapse(0)
@@ -151,11 +224,22 @@ const results = ref(null)
 const activeResultTab = ref('posts')
 const inputRef = ref(null)
 
-const resultTabs = [
+// ===== 消息搜索模式检测 =====
+const isMessageSearch = computed(() => route.query.from === 'message')
+
+const defaultTabs = [
   { key: 'posts', label: '帖子' },
   { key: 'users', label: '用户' },
   { key: 'topics', label: '话题' }
 ]
+
+const messageTabs = [
+  { key: 'contacts', label: '联系人' },
+  { key: 'circles', label: '圈子' },
+  { key: 'chatRecords', label: '聊天记录' }
+]
+
+const currentTabs = computed(() => isMessageSearch.value ? messageTabs : defaultTabs)
 
 const hotSearches = ['考研', '四六级', '摄影', '二手闲置', '健身房', '美食探店', '实习', '恋爱']
 
@@ -205,10 +289,42 @@ const filteredTopics = computed(() => {
     .sort((a, b) => b.count - a.count)
 })
 
+// ===== 消息搜索专用结果 =====
+// 联系人：匹配昵称或学校
+const msgContacts = computed(() => {
+  if (!isMessageSearch.value || !keyword.value) return []
+  const kw = keyword.value.toLowerCase()
+  return store.users.filter(u =>
+    u.nickname.toLowerCase().includes(kw) ||
+    (u.school || '').toLowerCase().includes(kw)
+  ).slice(0, 20)
+})
+
+// 圈子：匹配群聊名称
+const msgCircles = computed(() => {
+  if (!isMessageSearch.value || !keyword.value) return []
+  const kw = keyword.value.toLowerCase()
+  return store.chatListData.filter(c =>
+    c.isGroup && (c.name || '').toLowerCase().includes(kw)
+  ).slice(0, 20)
+})
+
+// 聊天记录：匹配所有私聊和圈子会话的 lastMsg
+const msgChatRecords = computed(() => {
+  if (!isMessageSearch.value || !keyword.value) return []
+  const kw = keyword.value.toLowerCase()
+  return store.chatListData.filter(c =>
+    (c.lastMsg || '').toLowerCase().includes(kw)
+  ).slice(0, 20)
+})
+
 function getResultCount(key) {
   if (key === 'posts') return filteredPosts.value.length
   if (key === 'users') return filteredUsers.value.length
   if (key === 'topics') return filteredTopics.value.length
+  if (key === 'contacts') return msgContacts.value.length
+  if (key === 'circles') return msgCircles.value.length
+  if (key === 'chatRecords') return msgChatRecords.value.length
   return 0
 }
 
@@ -233,6 +349,28 @@ function onInput() {
 function doSearch() {
   if (!keyword.value.trim()) return
   results.value = true
+  // 消息搜索默认显示联系人
+  if (isMessageSearch.value) {
+    activeResultTab.value = 'contacts'
+  } else {
+    activeResultTab.value = 'posts'
+  }
+}
+
+// 消息搜索：点击圈子
+function onCircleClick(circle) {
+  store.markChatRead(circle.id)
+  showToast('进入群聊（原型占位）')
+}
+
+// 消息搜索：点击聊天记录
+function onChatRecordClick(chat) {
+  store.markChatRead(chat.id)
+  if (chat.isGroup) {
+    showToast('进入群聊（原型占位）')
+  } else {
+    showToast(`与 ${store.getUserById(chat.userId)?.nickname || '用户'} 的私聊（原型占位）`)
+  }
 }
 
 onMounted(() => {
