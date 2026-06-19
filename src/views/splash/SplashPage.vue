@@ -1,28 +1,29 @@
 <template>
-  <div class="splash-page" :class="{ loaded }">
-    <!-- 背景光晕 -->
-    <div class="bg-orb orb-1"></div>
-    <div class="bg-orb orb-2"></div>
+  <div class="splash-page">
 
-    <!-- 中间内容 -->
+    <!-- 背景光晕 -->
+    <div class="bg-glow glow-1"></div>
+    <div class="bg-glow glow-2"></div>
+
+    <!-- 主体 -->
     <div class="splash-content">
-      <!-- Logo 外层炫光壳 -->
-      <div class="logo-wrap">
-        <div class="logo-ring"></div>
-        <div class="logo-core">
-          <img
-            class="splash-logo-img"
-            :src="logoImg"
-            alt="校声 Logo"
-          />
-        </div>
-      </div>
+
+      <!-- Logo -->
+      <img
+        src="/logo.png"
+        alt="校声 Logo"
+        class="splash-logo"
+      />
 
       <!-- 英文名 -->
-      <div class="splash-subtitle">Echo Campus</div>
+      <div class="splash-subtitle">
+        Echo Campus
+      </div>
 
       <!-- 标语 -->
-      <div class="splash-desc">发现同频的人，记录真实校园生活</div>
+      <div class="splash-desc">
+        发现同频的人，记录校园生活
+      </div>
     </div>
 
     <!-- 底部按钮 -->
@@ -31,7 +32,6 @@
         round
         block
         type="primary"
-        class="main-btn"
         @click="$router.push('/register')"
       >
         注册账号
@@ -42,296 +42,256 @@
         block
         plain
         type="primary"
-        class="sub-btn"
         @click="$router.push('/login')"
+        style="margin-top:12px"
       >
         已有账号，去登录
       </van-button>
 
-      <div class="splash-skip" @click="$router.push('/home')">
+      <div
+        class="splash-skip"
+        @click="$router.push('/home')"
+      >
         先随便看看 →
       </div>
     </div>
+
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import logoImg from '@/assets/logo.png'
-
-const loaded = ref(false)
-
-onMounted(() => {
-  requestAnimationFrame(() => {
-    loaded.value = true
-  })
-})
 </script>
 
 <style scoped>
+/* 页面 */
 .splash-page {
+  position: relative;
+  overflow: hidden;
+
   min-height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
+
   background:
-    radial-gradient(circle at top, rgba(78, 205, 196, 0.24), transparent 35%),
-    linear-gradient(160deg, #e8f5ee 0%, #f5f7fa 52%, #e3f7ef 100%);
-  padding: 48px 32px 36px;
+    linear-gradient(
+      160deg,
+      #eefaf3 0%,
+      #f7f9fc 45%,
+      #eefaf3 100%
+    );
+
+  padding: 60px 32px;
   box-sizing: border-box;
-  overflow: hidden;
-  position: relative;
 
-  opacity: 0;
-  transform: translateY(18px) scale(0.985);
-  transition:
-    opacity 0.65s ease,
-    transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: pageFade 1s ease;
 }
 
-.splash-page.loaded {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-/* 背景飘浮光球 */
-.bg-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(18px);
-  pointer-events: none;
-  opacity: 0.75;
-}
-
-.orb-1 {
-  width: 180px;
-  height: 180px;
-  left: -40px;
-  top: 56px;
-  background: rgba(77, 181, 121, 0.18);
-  animation: floatOrb 7s ease-in-out infinite;
-}
-
-.orb-2 {
-  width: 220px;
-  height: 220px;
-  right: -70px;
-  bottom: 72px;
-  background: rgba(80, 180, 255, 0.16);
-  animation: floatOrb 8.5s ease-in-out infinite reverse;
-}
-
-@keyframes floatOrb {
-  0%,
-  100% {
-    transform: translateY(0px) translateX(0px);
-  }
-  50% {
-    transform: translateY(-10px) translateX(6px);
-  }
-}
-
+/* 主内容 */
 .splash-content {
   flex: 1;
+
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-}
 
-/* Logo 外层 */
-.logo-wrap {
   position: relative;
-  width: 184px;
-  height: 184px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 14px;
-
-  transform: translateY(8px) scale(0.96);
-  opacity: 0;
-  transition:
-    transform 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) 0.08s,
-    opacity 0.75s ease 0.08s;
+  z-index: 2;
 }
 
-.splash-page.loaded .logo-wrap {
-  transform: translateY(0) scale(1);
-  opacity: 1;
-}
-
-/* 外圈光环 */
-.logo-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 34px;
-  background:
-    linear-gradient(135deg, rgba(79, 181, 121, 0.22), rgba(78, 205, 196, 0.12), rgba(95, 178, 255, 0.22));
-  box-shadow:
-    0 18px 40px rgba(76, 175, 125, 0.15),
-    0 0 0 1px rgba(255, 255, 255, 0.55) inset;
-  backdrop-filter: blur(10px);
-}
-
-.logo-core {
-  position: relative;
-  width: 158px;
-  height: 158px;
-  border-radius: 30px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.26));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow:
-    0 12px 24px rgba(0, 0, 0, 0.06),
-    0 0 0 1px rgba(255, 255, 255, 0.7) inset;
-  overflow: hidden;
-}
-
-.logo-core::before {
-  content: "";
-  position: absolute;
-  inset: -20%;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.0) 35%,
-    rgba(255, 255, 255, 0.42) 50%,
-    rgba(255, 255, 255, 0.0) 65%
-  );
-  transform: translateX(-60%) rotate(18deg);
-  animation: shine 4.8s ease-in-out infinite;
-}
-
-@keyframes shine {
-  0% {
-    transform: translateX(-70%) rotate(18deg);
-    opacity: 0;
-  }
-  35% {
-    opacity: 1;
-  }
-  60% {
-    opacity: 0;
-  }
-  100% {
-    transform: translateX(70%) rotate(18deg);
-    opacity: 0;
-  }
-}
-
-.splash-logo-img {
-  width: 128px;
-  height: 128px;
+/* Logo */
+.splash-logo {
+  width: 170px;
+  height: 170px;
   object-fit: contain;
-  position: relative;
-  z-index: 1;
-  user-select: none;
-  -webkit-user-drag: none;
+
+  animation:
+    logoEnter 1.1s ease,
+    logoFloat 4s ease-in-out infinite;
+
   filter:
-    drop-shadow(0 8px 16px rgba(35, 111, 82, 0.18))
-    drop-shadow(0 0 10px rgba(105, 212, 178, 0.24));
-  animation: logoFloat 4s ease-in-out infinite;
+    drop-shadow(0 8px 24px rgba(76, 175, 125, 0.18))
+    drop-shadow(0 2px 6px rgba(76, 175, 125, 0.12));
 }
 
-@keyframes logoFloat {
-  0%,
-  100% {
-    transform: translateY(0px) scale(1);
-  }
-  50% {
-    transform: translateY(-5px) scale(1.02);
-  }
-}
-
+/* 英文名 */
 .splash-subtitle {
-  margin-top: 22px;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 4px;
-  color: var(--echo-primary-dark);
+  margin-top: 18px;
+
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 6px;
+
+  color: var(--echo-primary);
 
   opacity: 0;
-  transform: translateY(10px);
-  transition:
-    opacity 0.55s ease 0.2s,
-    transform 0.55s ease 0.2s;
+
+  animation:
+    textFade 0.8s ease forwards;
+
+  animation-delay: 0.35s;
 }
 
-.splash-page.loaded .splash-subtitle {
-  opacity: 1;
-  transform: translateY(0);
-}
-
+/* 标语 */
 .splash-desc {
-  margin-top: 14px;
+  margin-top: 22px;
+
   font-size: 14px;
   line-height: 1.7;
-  text-align: center;
   letter-spacing: 1px;
+
   color: var(--echo-text-secondary);
 
   opacity: 0;
-  transform: translateY(10px);
-  transition:
-    opacity 0.55s ease 0.3s,
-    transform 0.55s ease 0.3s;
-}
 
-.splash-page.loaded .splash-desc {
-  opacity: 1;
-  transform: translateY(0);
+  animation:
+    textFade 0.8s ease forwards;
+
+  animation-delay: 0.55s;
 }
 
 /* 底部按钮 */
 .splash-actions {
   width: 100%;
-  flex-shrink: 0;
+  padding-bottom: 20px;
+
+  z-index: 2;
 
   opacity: 0;
-  transform: translateY(16px);
-  transition:
-    opacity 0.6s ease 0.42s,
-    transform 0.6s ease 0.42s;
-}
 
-.splash-page.loaded .splash-actions {
-  opacity: 1;
-  transform: translateY(0);
-}
+  animation:
+    textFade 0.8s ease forwards;
 
-.main-btn {
-  height: 46px;
-  font-size: 15px;
-  font-weight: 600;
-  box-shadow: 0 10px 22px rgba(76, 175, 125, 0.18);
-}
-
-.sub-btn {
-  margin-top: 14px;
-  height: 46px;
-  font-size: 15px;
-  font-weight: 600;
+  animation-delay: 0.75s;
 }
 
 .splash-skip {
-  margin-top: 28px;
   text-align: center;
+  margin-top: 24px;
+
   font-size: 13px;
-  letter-spacing: 0.5px;
   color: var(--echo-text-hint);
+
   cursor: pointer;
-  transition:
-    color 0.2s ease,
-    transform 0.2s ease;
 }
 
-.splash-skip:hover {
-  color: var(--echo-primary);
+/* 背景光晕 */
+.bg-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.35;
 }
 
-.splash-skip:active {
-  transform: scale(0.96);
+/* 左上 */
+.glow-1 {
+  width: 240px;
+  height: 240px;
+
+  background: rgba(76, 175, 125, 0.22);
+
+  top: -80px;
+  left: -60px;
+
+  animation: glowMove1 8s ease-in-out infinite;
+}
+
+/* 右下 */
+.glow-2 {
+  width: 220px;
+  height: 220px;
+
+  background: rgba(33, 150, 243, 0.14);
+
+  bottom: -80px;
+  right: -50px;
+
+  animation: glowMove2 9s ease-in-out infinite;
+}
+
+/* 页面渐入 */
+@keyframes pageFade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* Logo 入场 */
+@keyframes logoEnter {
+  0% {
+    opacity: 0;
+    transform:
+      translateY(24px)
+      scale(0.82);
+  }
+
+  100% {
+    opacity: 1;
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+/* Logo 漂浮 */
+@keyframes logoFloat {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* 文字渐入 */
+@keyframes textFade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 光晕动画 */
+@keyframes glowMove1 {
+  0% {
+    transform: translate(0, 0);
+  }
+
+  50% {
+    transform: translate(20px, 10px);
+  }
+
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes glowMove2 {
+  0% {
+    transform: translate(0, 0);
+  }
+
+  50% {
+    transform: translate(-20px, -10px);
+  }
+
+  100% {
+    transform: translate(0, 0);
+  }
 }
 </style>
