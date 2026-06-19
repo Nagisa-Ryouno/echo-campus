@@ -1,18 +1,25 @@
 <template>
   <div class="my-profile-page">
-    <!-- 顶部导航栏 -->
-    <div class="profile-nav">
-      <div class="profile-nav-left">
-        <van-icon name="setting-o" size="20" @click="$router.push('/settings')" />
-      </div>
-      <div class="profile-nav-right">
-        <span class="nav-btn" @click="onEditProfile">编辑主页</span>
-        <van-icon name="share-o" size="20" @click="onShare" />
-      </div>
-    </div>
 
-    <!-- 用户信息卡片 -->
-    <div class="user-card">
+    <!-- ===== 大卡片：贴边，包含顶部操作栏 + 所有个人信息 ===== -->
+    <div class="profile-hero-card">
+
+      <!-- 顶部操作栏 -->
+      <div class="hero-action-bar">
+        <div class="action-bar-left">
+          <div class="icon-btn" @click="$router.push('/settings')">
+            <van-icon name="setting-o" size="19" />
+          </div>
+        </div>
+        <div class="action-bar-right">
+          <div class="text-action-btn" @click="onEditProfile">编辑主页</div>
+          <div class="icon-btn" @click="onShare">
+            <van-icon name="share-o" size="19" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 头像 + 基础信息 -->
       <div class="user-card-top">
         <div
           class="profile-avatar"
@@ -71,7 +78,7 @@
         <span class="bio-text">{{ store.currentUser.bio }}</span>
       </div>
 
-      <!-- 统一标签区：年龄 + 兴趣标签，浅绿背景 + 深绿文字 -->
+      <!-- 统一标签区：年龄 + 兴趣标签 -->
       <div class="tags-row" v-if="allTags.length">
         <span v-for="t in allTags" :key="t" class="unified-tag">{{ t }}</span>
       </div>
@@ -92,7 +99,9 @@
           <span>我的圈子</span>
         </div>
       </div>
+
     </div>
+    <!-- /profile-hero-card -->
 
     <!-- 内容 Tab（含搜索入口） -->
     <div class="content-tabs">
@@ -280,40 +289,59 @@ function onDrafts() { showToast('草稿箱（原型占位）') }
   padding-bottom: 20px;
 }
 
-/* ===== 顶部导航 ===== */
-.profile-nav {
+/* ===== 英雄大卡片：贴边，无外边距，圆角底部 ===== */
+.profile-hero-card {
+  background: var(--echo-white);
+  border-radius: 0 0 20px 20px;
+  padding: 0 16px 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  /* 左右贴边，无 margin */
+}
+
+/* ===== 顶部操作栏（卡片内部） ===== */
+.hero-action-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
+  padding: 10px 0 8px;
 }
-.profile-nav-right {
+.action-bar-left,
+.action-bar-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
-.nav-btn {
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--echo-text-secondary);
+  transition: background 0.15s;
+}
+.icon-btn:active { background: var(--echo-bg); }
+.text-action-btn {
   font-size: 13px;
   color: var(--echo-primary);
-  padding: 4px 10px;
+  padding: 5px 12px;
   background: var(--echo-primary-light);
-  border-radius: 12px;
+  border-radius: 14px;
   cursor: pointer;
+  font-weight: 500;
   user-select: none;
+  transition: opacity 0.15s;
 }
+.text-action-btn:active { opacity: 0.7; }
 
-/* ===== 用户信息卡片 ===== */
-.user-card {
-  background: var(--echo-white);
-  margin: 0 12px;
-  border-radius: 16px;
-  padding: 20px 16px 16px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-}
+/* ===== 头像 + 基础信息 ===== */
 .user-card-top {
   display: flex;
   gap: 14px;
   align-items: center;
+  padding-top: 4px;
 }
 .profile-avatar {
   width: 64px;
@@ -364,7 +392,7 @@ function onDrafts() { showToast('草稿箱（原型占位）') }
   margin-top: 2px;
 }
 
-/* 声望 */
+/* ===== 声望 ===== */
 .reputation-row {
   display: flex;
   justify-content: space-between;
@@ -396,7 +424,7 @@ function onDrafts() { showToast('草稿箱（原型占位）') }
   color: #f39c12;
 }
 
-/* 计数行 */
+/* ===== 计数行 ===== */
 .counts-row {
   display: flex;
   align-items: center;
@@ -419,7 +447,7 @@ function onDrafts() { showToast('草稿箱（原型占位）') }
   background: var(--echo-border);
 }
 
-/* 简介 */
+/* ===== 简介 ===== */
 .bio-section {
   margin-top: 14px;
   padding: 12px;
@@ -428,7 +456,7 @@ function onDrafts() { showToast('草稿箱（原型占位）') }
 }
 .bio-text { font-size: 13px; color: var(--echo-text-secondary); line-height: 1.5; }
 
-/* ===== 统一标签区：年龄 + 兴趣标签，浅绿背景 + 深绿文字 ===== */
+/* ===== 统一标签区：年龄 + 兴趣标签 ===== */
 .tags-row {
   display: flex;
   gap: 8px;
@@ -490,7 +518,7 @@ function onDrafts() { showToast('草稿箱（原型占位）') }
   align-items: center;
   gap: 0;
   padding: 0 12px;
-  margin-top: 10px;
+  margin-top: 8px;
   background: var(--echo-white);
   border-top: 1px solid var(--echo-border);
   border-bottom: 1px solid var(--echo-border);
@@ -549,22 +577,22 @@ function onDrafts() { showToast('草稿箱（原型占位）') }
 .tab-search:active { background: var(--echo-bg); }
 
 /* ===== 帖子网格 ===== */
-.profile-posts { padding: 10px 12px; }
+.profile-posts { padding: 0; }
 .post-grid {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
 }
 .grid-post-card {
   background: var(--echo-white);
-  border-radius: 12px;
+  border-radius: 0;
   overflow: hidden;
   cursor: pointer;
   transition: all 0.15s;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   display: flex;
+  border-bottom: 1px solid var(--echo-border);
 }
-.grid-post-card:active { transform: scale(0.985); }
+.grid-post-card:active { background: #f5f7fa; }
 .grid-post-img {
   width: 100px;
   height: 100px;

@@ -1,14 +1,36 @@
 <template>
   <div class="user-profile-page">
-    <!-- 顶部导航栏 -->
-    <div class="profile-nav">
-      <van-icon name="arrow-left" size="20" @click="$router.back()" class="back-icon" />
-      <h2 class="nav-title">{{ profileUser?.nickname || '用户' }}</h2>
-      <div style="width:20px" />
-    </div>
 
-    <!-- 用户信息卡片 -->
-    <div class="user-card">
+    <!-- ===== 大卡片：贴边，包含顶部操作栏 + 所有个人信息 ===== -->
+    <div class="profile-hero-card">
+
+      <!-- 顶部操作栏 -->
+      <div class="hero-action-bar">
+        <div class="action-bar-left">
+          <div class="icon-btn" @click="$router.back()">
+            <van-icon name="arrow-left" size="19" />
+          </div>
+        </div>
+        <div class="action-bar-right">
+          <button
+            class="action-btn follow-btn"
+            :class="{ followed: isFollowed }"
+            @click="onFollow"
+          >
+            <van-icon :name="isFollowed ? 'success' : 'add-o'" size="14" />
+            <span>{{ isFollowed ? '已关注' : '关注' }}</span>
+          </button>
+          <button class="action-btn chat-btn" @click="onChat">
+            <van-icon name="chat-o" size="14" />
+            <span>私信</span>
+          </button>
+          <div class="icon-btn" @click="onMore">
+            <van-icon name="ellipsis" size="19" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 头像 + 基础信息 -->
       <div class="user-card-top">
         <div
           class="profile-avatar"
@@ -30,22 +52,6 @@
             学校：{{ profileUser?.school }}
           </div>
         </div>
-      </div>
-
-      <!-- 操作按钮 -->
-      <div class="action-btns">
-        <button
-          class="action-btn follow-btn"
-          :class="{ followed: isFollowed }"
-          @click="onFollow"
-        >
-          <van-icon :name="isFollowed ? 'success' : 'add-o'" size="15" />
-          <span>{{ isFollowed ? '已关注' : '关注' }}</span>
-        </button>
-        <button class="action-btn chat-btn" @click="onChat">
-          <van-icon name="chat-o" size="15" />
-          <span>发私信</span>
-        </button>
       </div>
 
       <!-- 计数行 -->
@@ -76,7 +82,9 @@
         <span class="unified-tag">{{ profileUser?.age }}岁</span>
         <span v-for="tag in profileUser?.tags || []" :key="tag" class="unified-tag">{{ tag }}</span>
       </div>
+
     </div>
+    <!-- /profile-hero-card -->
 
     <!-- 内容 Tab -->
     <div class="content-tabs">
@@ -238,6 +246,10 @@ function onChat() {
   if (!profileUser.value) return
   showToast(`与 ${profileUser.value.nickname} 的私聊（原型占位）`)
 }
+
+function onMore() {
+  showToast('更多操作（原型占位）')
+}
 </script>
 
 <style scoped>
@@ -247,40 +259,80 @@ function onChat() {
   padding-bottom: 20px;
 }
 
-/* ===== 顶部导航 ===== */
-.profile-nav {
+/* ===== 英雄大卡片：贴边，无外边距，圆角底部 ===== */
+.profile-hero-card {
+  background: var(--echo-white);
+  border-radius: 0 0 20px 20px;
+  padding: 0 16px 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  /* 左右贴边，无 margin */
+}
+
+/* ===== 顶部操作栏（卡片内部） ===== */
+.hero-action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0 8px;
+}
+.action-bar-left,
+.action-bar-right {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 16px;
-  position: sticky;
-  top: 0;
-  background: var(--echo-white);
-  z-index: 100;
+  gap: 8px;
 }
-.back-icon { cursor: pointer; }
-.nav-title {
-  font-size: 17px;
-  font-weight: 600;
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--echo-text-secondary);
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.icon-btn:active { background: var(--echo-bg); }
+
+/* 关注 / 私信按钮 */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 14px;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+.action-btn:active { transform: scale(0.95); }
+.follow-btn {
+  background: var(--echo-primary);
+  color: #fff;
+}
+.follow-btn.followed {
+  background: var(--echo-bg);
+  color: var(--echo-text-secondary);
+}
+.chat-btn {
+  background: var(--echo-bg);
   color: var(--echo-text);
 }
 
-/* ===== 用户信息卡片 ===== */
-.user-card {
-  background: var(--echo-white);
-  margin: 0 12px;
-  border-radius: 16px;
-  padding: 16px 16px 14px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-}
+/* ===== 头像 + 基础信息 ===== */
 .user-card-top {
   display: flex;
-  gap: 12px;
+  gap: 14px;
   align-items: center;
+  padding-top: 4px;
 }
 .profile-avatar {
-  width: 60px;
-  height: 60px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -290,7 +342,7 @@ function onChat() {
 }
 .profile-avatar-text {
   color: #fff;
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
 }
 .user-card-info { flex: 1; min-width: 0; }
@@ -319,7 +371,7 @@ function onChat() {
 .uecho {
   font-size: 12px;
   color: var(--echo-text-secondary);
-  margin-top: 2px;
+  margin-top: 4px;
 }
 .uschool {
   font-size: 12px;
@@ -327,41 +379,7 @@ function onChat() {
   margin-top: 2px;
 }
 
-/* 操作按钮 */
-.action-btns {
-  display: flex;
-  gap: 10px;
-  margin-top: 16px;
-}
-.action-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 10px 0;
-  border-radius: 10px;
-  border: none;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.follow-btn {
-  background: var(--echo-primary);
-  color: #fff;
-}
-.follow-btn.followed {
-  background: var(--echo-bg);
-  color: var(--echo-text-secondary);
-}
-.chat-btn {
-  background: var(--echo-bg);
-  color: var(--echo-text);
-}
-.action-btn:active { transform: scale(0.96); }
-
-/* 计数行 */
+/* ===== 计数行 ===== */
 .counts-row {
   display: flex;
   align-items: center;
@@ -383,7 +401,7 @@ function onChat() {
   background: var(--echo-border);
 }
 
-/* 简介 */
+/* ===== 简介 ===== */
 .bio-section {
   margin-top: 14px;
   padding: 12px;
@@ -392,7 +410,7 @@ function onChat() {
 }
 .bio-text { font-size: 13px; color: var(--echo-text-secondary); line-height: 1.5; }
 
-/* ===== 统一标签区：年龄 + 兴趣标签，浅绿背景 + 深绿文字 ===== */
+/* ===== 统一标签区 ===== */
 .tags-row {
   display: flex;
   gap: 8px;
@@ -415,12 +433,12 @@ function onChat() {
   align-items: center;
   gap: 0;
   padding: 0 12px;
-  margin-top: 10px;
+  margin-top: 8px;
   background: var(--echo-white);
   border-top: 1px solid var(--echo-border);
   border-bottom: 1px solid var(--echo-border);
   position: sticky;
-  top: 44px;
+  top: 0;
   z-index: 50;
 }
 .tabs-inner {
@@ -474,22 +492,22 @@ function onChat() {
 .tab-search:active { background: var(--echo-bg); }
 
 /* ===== 帖子列表 ===== */
-.profile-posts { padding: 10px 12px; }
+.profile-posts { padding: 0; }
 .post-grid {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
 }
 .grid-post-card {
-	background: var(--echo-white);
-  border-radius: 12px;
+  background: var(--echo-white);
+  border-radius: 0;
   overflow: hidden;
   cursor: pointer;
   transition: all 0.15s;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
   display: flex;
+  border-bottom: 1px solid var(--echo-border);
 }
-.grid-post-card:active { transform: scale(0.985); }
+.grid-post-card:active { background: #f5f7fa; }
 .grid-post-img {
   width: 100px;
   height: 100px;

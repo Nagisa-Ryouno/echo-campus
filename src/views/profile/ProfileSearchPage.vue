@@ -75,7 +75,7 @@ const results = ref([])
 
 const from = computed(() => route.query.from || 'me')
 const targetUid = computed(() => route.query.uid || '')
-const isOwnProfile = computed(() => from.value === 'me')
+const isOwnProfile = computed(() => from.value === 'self')
 
 const placeholderText = computed(() => {
   if (isOwnProfile.value) return '搜索我的帖子、评论、收藏等'
