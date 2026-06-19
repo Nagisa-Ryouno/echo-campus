@@ -1,19 +1,19 @@
 <template>
   <div class="page-root">
     <!-- ═══════════════════════════════════════════ -->
-    <!-- 固定层：脱离滚动流，始终在顶部                 -->
+    <!-- 固定层：position:fixed，脱离滚动流             -->
     <!-- ═══════════════════════════════════════════ -->
     <div class="fixed-header">
-      <!-- Logo 区：滚动后隐藏 -->
-      <div class="top-hero" :class="{ 'top-hero--hidden': isScrolled }">
+      <!-- LOGO 区：滚动后隐藏 -->
+      <div class="logo-header" :class="{ hidden: scrollTop > 10 }">
         <h1 class="home-title">校声</h1>
         <div class="home-search" @click="$router.push('/search')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </div>
       </div>
 
-      <!-- 大频道 Tab：始终可见 -->
-      <div class="channel-tabs">
+      <!-- 大频道 Tab：永久固定 -->
+      <div class="channel-header">
         <div
           v-for="ch in store.channelLabels"
           :key="ch.key"
@@ -28,11 +28,11 @@
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- 滚动层：普通文档流，phone-screen 托管滚动      -->
+    <!-- 滚动层：独立 overflow-y:auto，与固定层彻底隔离    -->
     <!-- ═══════════════════════════════════════════ -->
-    <div class="page-scroll">
-      <!-- 占位：高度等于 fixed-header 总高度，确保内容永不侵入固定区域 -->
-      <div class="header-spacer" :style="{ height: spacerHeight + 'px' }"></div>
+    <div ref="scrollRef" class="scroll-content" @scroll="handleScroll">
+      <!-- 硬编码占位：高度 = logo(56) + channel(60) = 116 -->
+      <div class="header-spacer"></div>
 
       <!-- 小频道：跟随滚动消失 -->
       <div v-if="store.activeChannel !== 'meet'" class="sub-tags">
@@ -253,21 +253,17 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
-import { useScrollCollapse } from '@/composables/useScrollCollapse.js'
 
 const router = useRouter()
 const store = useAppStore()
 
-// ===== 滚动监听：phone-screen 滚动 > 10px 时隐藏 Logo =====
-const { isScrolled } = useScrollCollapse(10)
+// ===== 滚动监听：直接监听 .scroll-content 的 scroll 事件 =====
+const scrollTop = ref(0)
+const scrollRef = ref(null)
 
-// 固定层高度常量
-const LOGO_HEIGHT = 54
-const TABS_HEIGHT = 36
-// spacer 高度：未滚动 = logo + tabs，滚动后 = 仅 tabs
-const spacerHeight = computed(() =>
-  isScrolled.value ? TABS_HEIGHT : LOGO_HEIGHT + TABS_HEIGHT
-)
+function handleScroll() {
+  scrollTop.value = scrollRef.value?.scrollTop ?? 0
+}
 
 // ===== 频道切换（同步标签池）=====
 const channelDisplayName = computed(() => {
@@ -349,50 +345,44 @@ function goUserProfile(uid) {
 </script>
 
 <style scoped>
-/* ===== 页面根容器 ===== */
+/* ═══════════════════════════════════════════ */
+/* 页面根：填充 phone-screen，自身不滚动          */
+/* ═══════════════════════════════════════════ */
 .page-root {
-  position: relative;
-  min-height: 100%;
-  background: var(--echo-bg);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
 }
 
 /* ═══════════════════════════════════════════ */
-/* 固定层：position:fixed 相对 phone-body      */
-/* phone-body 的 transform:translateZ(0) 创建  */
-/* 包含块，故 fixed 不相对 viewport 而相对手机壳 */
+/* 固定层：position:fixed，相对 phone-body       */
+/* phone-body 的 transform:translateZ(0) 是    */
+/* 包含块，故 fixed 不相对 viewport                */
 /* ═══════════════════════════════════════════ */
 .fixed-header {
   position: fixed;
-  top: 48px; /* 避让 48px 刘海区 */
-  left: 0;
-  width: 100%;
-  max-width: 375px;
-  z-index: 99; /* 低于 notch-area (100)，高于内容 (1) */
-  background: var(--echo-white);
-  box-sizing: border-box;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 375px;
+  z-index: 1000;
+  background: var(--echo-bg);
 }
 
-/* ── Logo 区：滚动后收缩隐藏 ── */
-.top-hero {
+/* ── Logo 区：滚动后 translateY 隐藏 ── */
+.logo-header {
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px 10px;
-  background: var(--echo-white);
-  max-height: 54px;
-  opacity: 1;
-  overflow: hidden;
-  transition:
-    max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.25s ease,
-    padding 0.25s ease;
+  box-sizing: border-box;
+  transition: all .2s ease;
 }
 
-.top-hero--hidden {
-  max-height: 0;
+.logo-header.hidden {
+  transform: translateY(-100%);
   opacity: 0;
-  padding-top: 0;
-  padding-bottom: 0;
 }
 
 .home-title {
@@ -407,7 +397,7 @@ function goUserProfile(uid) {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--echo-bg);
+  background: #e8edf2;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -421,33 +411,20 @@ function goUserProfile(uid) {
   transform: scale(0.95);
 }
 
-/* ── 大频道 Tab：始终可见 ── */
-.channel-tabs {
+/* ── 大频道栏：永久固定，禁止 sticky ── */
+.channel-header {
+  height: 60px;
   display: flex;
-  background: var(--echo-white);
-  border-bottom: 1px solid var(--echo-border);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  background: var(--echo-bg);
+  border-bottom: 1px solid var(--echo-divider);
 }
 
-/* ═══════════════════════════════════════════ */
-/* 滚动层：普通文档流，内容在占位符下方开始        */
-/* ═══════════════════════════════════════════ */
-.page-scroll {
-  position: relative;
-}
-
-/* 占位：高度由 JS 动态计算，确保内容不从固定区域上方开始 */
-.header-spacer {
-  transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ── 频道 Tab 项样式（与之前一致）── */
 .channel-tab {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 9px 0 7px;
+  justify-content: center;
   cursor: pointer;
   position: relative;
   transition: all 0.2s;
@@ -470,12 +447,27 @@ function goUserProfile(uid) {
 
 .channel-tab-bar {
   position: absolute;
-  bottom: 0;
+  bottom: 8px;
   width: 22px;
   height: 3px;
   border-radius: 2px;
   background: var(--echo-primary);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ═══════════════════════════════════════════ */
+/* 滚动层：独立 overflow-y:auto                   */
+/* ═══════════════════════════════════════════ */
+.scroll-content {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 硬编码占位：logo(56) + channel(60) = 116 */
+.header-spacer {
+  height: 116px;
 }
 
 /* ── 关注频道：用户头像横滑栏 ── */

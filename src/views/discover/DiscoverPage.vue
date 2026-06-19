@@ -1,19 +1,19 @@
 <template>
   <div class="page-root">
     <!-- ═══════════════════════════════════════════ -->
-    <!-- 固定层：脱离滚动流，始终在顶部                 -->
+    <!-- 固定层：position:fixed，脱离滚动流             -->
     <!-- ═══════════════════════════════════════════ -->
     <div class="fixed-header">
       <!-- 标题栏：滚动后隐藏 -->
-      <div class="top-hero" :class="{ 'top-hero--hidden': isScrolled }">
+      <div class="logo-header" :class="{ hidden: scrollTop > 10 }">
         <h1 class="discover-title">发现</h1>
         <div class="discover-search-btn" @click="$router.push('/search')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </div>
       </div>
 
-      <!-- Tab 栏：始终可见 -->
-      <div class="channel-tabs">
+      <!-- Tab 栏：永久固定 -->
+      <div class="channel-header">
         <div
           v-for="tab in tabs"
           :key="tab.key"
@@ -28,11 +28,11 @@
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- 滚动层：普通文档流，phone-screen 托管滚动      -->
+    <!-- 滚动层：独立 overflow-y:auto，与固定层彻底隔离    -->
     <!-- ═══════════════════════════════════════════ -->
-    <div class="page-scroll">
-      <!-- 占位：高度等于 fixed-header 总高度，确保内容永不侵入固定区域 -->
-      <div class="header-spacer" :style="{ height: spacerHeight + 'px' }"></div>
+    <div ref="scrollRef" class="scroll-content" @scroll="handleScroll">
+      <!-- 硬编码占位：标题(56) + Tab(60) = 116 -->
+      <div class="header-spacer"></div>
 
       <div class="discover-feed">
         <!-- 空状态 -->
@@ -93,7 +93,7 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                 {{ item.commentCount }}
               </span>
-              <!-- 热度图标 — 火焰 SVG，热榜 Tab 下显示内焰填充 -->
+              <!-- 热度图标 — 火焰 SVG -->
               <span
                 class="hot-post-action hot-post-action--heat"
                 :class="{ 'hot-post-action--heat-active': isHeatTab }"
@@ -117,20 +117,17 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
-import { useScrollCollapse } from '@/composables/useScrollCollapse.js'
 
 const router = useRouter()
 const store = useAppStore()
 
-// ===== 滚动监听：phone-screen 滚动 > 10px 时隐藏标题 =====
-const { isScrolled } = useScrollCollapse(10)
+// ===== 滚动监听：直接监听 .scroll-content =====
+const scrollTop = ref(0)
+const scrollRef = ref(null)
 
-// 固定层高度常量
-const LOGO_HEIGHT = 54
-const TABS_HEIGHT = 36
-const spacerHeight = computed(() =>
-  isScrolled.value ? TABS_HEIGHT : LOGO_HEIGHT + TABS_HEIGHT
-)
+function handleScroll() {
+  scrollTop.value = scrollRef.value?.scrollTop ?? 0
+}
 
 const tabs = [
   { key: 'hot', label: '热门' },
@@ -199,48 +196,42 @@ function goTag(tag) {
 </script>
 
 <style scoped>
-/* ===== 页面根容器 ===== */
+/* ═══════════════════════════════════════════ */
+/* 页面根：填充 phone-screen，自身不滚动          */
+/* ═══════════════════════════════════════════ */
 .page-root {
-  position: relative;
-  min-height: 100%;
-  background: var(--echo-bg);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
 }
 
 /* ═══════════════════════════════════════════ */
-/* 固定层：position:fixed 相对 phone-body      */
+/* 固定层：position:fixed，相对 phone-body       */
 /* ═══════════════════════════════════════════ */
 .fixed-header {
   position: fixed;
-  top: 48px; /* 避让 48px 刘海区 */
-  left: 0;
-  width: 100%;
-  max-width: 375px;
-  z-index: 99;
-  background: var(--echo-white);
-  box-sizing: border-box;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 375px;
+  z-index: 1000;
+  background: var(--echo-bg);
 }
 
-/* ── 标题栏：滚动后收缩隐藏 ── */
-.top-hero {
+/* ── 标题栏：滚动后隐藏 ── */
+.logo-header {
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px 10px;
-  background: var(--echo-white);
-  max-height: 54px;
-  opacity: 1;
-  overflow: hidden;
-  transition:
-    max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.25s ease,
-    padding 0.25s ease;
+  box-sizing: border-box;
+  transition: all .2s ease;
 }
 
-.top-hero--hidden {
-  max-height: 0;
+.logo-header.hidden {
+  transform: translateY(-100%);
   opacity: 0;
-  padding-top: 0;
-  padding-bottom: 0;
 }
 
 .discover-title {
@@ -255,7 +246,7 @@ function goTag(tag) {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--echo-bg);
+  background: #e8edf2;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -269,32 +260,20 @@ function goTag(tag) {
   transform: scale(0.95);
 }
 
-/* ── Tab 栏：始终可见 ── */
-.channel-tabs {
+/* ── Tab 栏：永久固定，禁止 sticky ── */
+.channel-header {
+  height: 60px;
   display: flex;
-  background: var(--echo-white);
-  border-bottom: 1px solid var(--echo-border);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  background: var(--echo-bg);
+  border-bottom: 1px solid var(--echo-divider);
 }
 
-/* ═══════════════════════════════════════════ */
-/* 滚动层                                          */
-/* ═══════════════════════════════════════════ */
-.page-scroll {
-  position: relative;
-}
-
-.header-spacer {
-  transition: height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ── Tab 项 ── */
 .discover-tab {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px 0 8px;
+  justify-content: center;
   cursor: pointer;
   position: relative;
   font-size: 14px;
@@ -311,12 +290,27 @@ function goTag(tag) {
 
 .discover-tab-bar {
   position: absolute;
-  bottom: 0;
+  bottom: 8px;
   width: 20px;
   height: 3px;
   border-radius: 2px;
   background: var(--echo-primary);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ═══════════════════════════════════════════ */
+/* 滚动层：独立 overflow-y:auto                   */
+/* ═══════════════════════════════════════════ */
+.scroll-content {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 硬编码占位：标题(56) + Tab(60) = 116 */
+.header-spacer {
+  height: 116px;
 }
 
 /* ── 帖子流 ── */
