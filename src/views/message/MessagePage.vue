@@ -22,13 +22,13 @@
             <div class="plus-menu-icon" style="background:#e8f5ee;">
               <van-icon name="friends-o" size="22" color="#4caf7d" />
             </div>
-            <span>创建群聊</span>
+            <span>创建圈子</span>
           </div>
           <div class="plus-menu-item" @click="onPlusAction('square')">
             <div class="plus-menu-icon" style="background:#fff3e0;">
               <van-icon name="fire-o" size="22" color="#ff6b35" />
             </div>
-            <span>群聊广场</span>
+            <span>圈子广场</span>
           </div>
           <div class="plus-menu-item" @click="onPlusAction('addFriend')">
             <div class="plus-menu-icon" style="background:#e3f2fd;">

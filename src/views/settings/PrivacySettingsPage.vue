@@ -36,7 +36,6 @@
           </div>
           <div class="entry-body">
             <div class="entry-title">学校信息可见性</div>
-            <div class="entry-desc">控制别人是否能看到你的学校信息</div>
           </div>
           <div class="entry-status">
             <span class="status-text">{{ store.visibilityLabels[store.schoolVisibility] }}</span>
@@ -53,7 +52,6 @@
           </div>
           <div class="entry-body">
             <div class="entry-title">搜索与推荐</div>
-            <div class="entry-desc">控制别人如何找到你，以及是否出现在推荐中</div>
           </div>
           <div class="entry-status">
             <span class="status-text">{{ store.scopeLabels[store.searchScope] }}</span>
@@ -70,7 +68,6 @@
           </div>
           <div class="entry-body">
             <div class="entry-title">互动权限</div>
-            <div class="entry-desc">控制私信、关注等互动行为的权限</div>
           </div>
           <div class="entry-status">
             <span class="status-text">{{ interactionSummary }}</span>
@@ -78,19 +75,19 @@
           </div>
         </div>
 
-        <!-- 卡片4：更多设置 -->
-        <div class="entry-card" @click="$router.push('/settings/privacy/more')">
-          <div class="entry-icon" style="background: #f3e5f5;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#9c27b0" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        <!-- 卡片4：默认发帖偏好 -->
+        <div class="entry-card" @click="$router.push('/settings/privacy/default-post')">
+          <div class="entry-icon" style="background: #ede7f6;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#673ab7" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
           </div>
           <div class="entry-body">
-            <div class="entry-title">更多设置</div>
-            <div class="entry-desc">匿名消息等其他隐私选项</div>
+            <div class="entry-title">默认发帖偏好</div>
           </div>
           <div class="entry-status">
-            <span class="status-text">{{ store.allowAnonMessage ? '接收匿名消息' : '拒绝匿名消息' }}</span>
+            <span class="status-text">{{ postPreferenceSummary }}</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
           </div>
         </div>
@@ -114,6 +111,11 @@ const store = useAppStore()
 const interactionSummary = computed(() => {
   const msg = store.messageLabels[store.messagePermission]
   return msg.length > 8 ? msg.slice(0, 7) + '…' : msg
+})
+
+// 默认发帖偏好摘要
+const postPreferenceSummary = computed(() => {
+  return store.defaultAnonPost ? '匿名' : '公开身份'
 })
 </script>
 
@@ -200,19 +202,16 @@ const interactionSummary = computed(() => {
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.entry-body { flex: 1; min-width: 0; }
+.entry-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
 .entry-title {
   font-size: var(--echo-text-md);
   font-weight: var(--echo-weight-semibold);
   color: var(--echo-text);
-  margin-bottom: 2px;
-}
-.entry-desc {
-  font-size: var(--echo-text-sm);
-  color: var(--echo-text-hint);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .entry-status {
   display: flex;

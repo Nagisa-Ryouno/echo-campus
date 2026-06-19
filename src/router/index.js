@@ -128,10 +128,10 @@ const routes = [
     meta: { title: '互动权限', tabBar: false }
   },
   {
-    path: '/settings/privacy/more',
-    name: 'MoreSettings',
-    component: () => import('@/views/settings/MoreSettingsPage.vue'),
-    meta: { title: '更多设置', tabBar: false }
+    path: '/settings/privacy/default-post',
+    name: 'DefaultPostPreference',
+    component: () => import('@/views/settings/DefaultPostPreferencePage.vue'),
+    meta: { title: '默认发帖偏好', tabBar: false }
   },
   {
     path: '/settings/content-visibility',

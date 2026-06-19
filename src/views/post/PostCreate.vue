@@ -176,7 +176,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
 import { showToast, showDialog } from 'vant'
@@ -194,6 +194,21 @@ const form = reactive({
   visibility: 'public',
   schoolOnly: false,
   isAnon: false
+})
+
+// 新建帖子时读取默认发帖偏好预填表单
+onMounted(() => {
+  form.isAnon = store.defaultAnonPost
+  form.visibility = store.defaultVisibility
+  form.schoolOnly = store.defaultSchoolOnly
+  // 如果默认匿名开启，确保联动规则生效
+  if (store.defaultAnonPost) {
+    form.visibility = 'public'
+    form.schoolOnly = false
+  }
+  if (store.defaultVisibility === 'private') {
+    form.schoolOnly = false
+  }
 })
 
 const topicTagOptions = topicTags
@@ -301,14 +316,14 @@ function onPublish() {
   }).then(() => {
     const post = store.createPost({ ...form })
     showToast('发布成功！')
-    // 重置表单
+    // 重置表单为默认偏好
     form.content = ''
     form.images = []
     form.categoryTag = ''
     form.topicTags = []
-    form.visibility = 'public'
-    form.schoolOnly = false
-    form.isAnon = false
+    form.isAnon = store.defaultAnonPost
+    form.visibility = store.defaultAnonPost ? 'public' : store.defaultVisibility
+    form.schoolOnly = store.defaultAnonPost ? false : (store.defaultVisibility === 'private' ? false : store.defaultSchoolOnly)
     // 跳转到帖子详情
     router.replace(`/post/${post.id}`)
   }).catch(() => {})

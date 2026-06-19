@@ -332,11 +332,17 @@ export const useAppStore = defineStore('app', () => {
   const allowRecommend = ref(true)
   const messagePermission = ref('everyone')
   const followPermission = ref('everyone')
-  const defaultVisibility = ref('everyone')
+  const defaultVisibility = ref('everyone')     // 默认可见范围（发帖偏好）
   const schoolOnlyContent = ref(false)
   const allowAnonPost = ref(true)
   const allowAnonComment = ref(true)
   const allowAnonMessage = ref(true)
+
+  // ===== 默认发帖偏好（补充）=====
+  const defaultAnonPost = ref(false)           // 默认匿名发布
+  const defaultSchoolOnly = ref(false)          // 默认仅本校可见
+
+  const defaultVisibilityLabels = { private: '完全私密', followers: '仅关注者可见', mutual: '仅互关者可见', everyone: '所有人可见' }
 
   // 内容级可见性（帖子/评论/收藏各独立控制）
   const postVisibility = ref('everyone')
@@ -402,6 +408,9 @@ export const useAppStore = defineStore('app', () => {
     messagePermission, followPermission,
     defaultVisibility, schoolOnlyContent,
     allowAnonPost, allowAnonComment, allowAnonMessage,
+    // 默认发帖偏好
+    defaultAnonPost, defaultSchoolOnly,
+    defaultVisibilityLabels,
     postVisibility, commentVisibility, collectionVisibility,
     visibilityLabels, scopeLabels,
     messageLabels, followLabels, contentVisibilityLabels,
