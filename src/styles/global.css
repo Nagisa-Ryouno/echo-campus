@@ -59,6 +59,18 @@
   --echo-radius-xl: 20px;
   --echo-radius-full: 9999px;
 
+  /* ===== Vant 主题色自定义覆写 ===== */
+  --van-primary-color: var(--echo-primary) !important;
+  --van-success-color: var(--echo-success) !important;
+  --van-danger-color: var(--echo-danger) !important;
+  --van-warning-color: var(--echo-warning) !important;
+  --van-info-color: var(--echo-info) !important;
+  --van-blue: var(--echo-primary) !important;
+  --van-button-primary-background: var(--echo-primary) !important;
+  --van-button-primary-border-color: var(--echo-primary) !important;
+  --van-dialog-confirm-button-text-color: var(--echo-primary) !important;
+  --van-switch-on-background: var(--echo-primary) !important;
+
   /* 间距 (基于 4px) */
   --echo-space-1: 4px;
   --echo-space-2: 8px;
@@ -393,4 +405,90 @@ a {
 
 .echo-safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ===== ActionSheet (举报/返回确认) 改为居中毛玻璃小卡片 ===== */
+.van-popup--bottom.van-action-sheet {
+  bottom: auto !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 290px !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  overflow: hidden !important;
+}
+
+/* 选项按钮，采用高保真白底半透明与灰底点击反馈 */
+.van-action-sheet__item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  font-size: 15px !important;
+  color: var(--echo-text) !important;
+  height: 48px !important;
+  line-height: normal !important;
+  padding: 0 !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  text-align: center !important;
+}
+.van-action-sheet__item:active {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 强制清除内部包裹文字名称的样式偏移 */
+.van-action-sheet__name {
+  line-height: normal !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 最后一个 item */
+.van-action-sheet__item:last-of-type {
+  border-bottom: none !important;
+}
+
+/* 标题区 */
+.van-action-sheet__header {
+  background: transparent !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  color: var(--echo-text) !important;
+  line-height: 48px !important;
+  height: 48px !important;
+}
+
+/* 取消按钮 */
+.van-action-sheet__cancel {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  color: var(--echo-text-secondary) !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+  height: 48px !important;
+  line-height: normal !important;
+  padding: 0 !important;
+}
+
+/* 去除选项与取消按钮之间多余的灰色 gap */
+.van-action-sheet__gap {
+  background: transparent !important;
+  height: 0 !important;
+  padding: 0 !important;
+}
+.van-action-sheet__cancel:active {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 移除底部安全区域内边距影响，确保居中对称 */
+.van-action-sheet--safe-area-inset-bottom {
+  padding-bottom: 0 !important;
 }

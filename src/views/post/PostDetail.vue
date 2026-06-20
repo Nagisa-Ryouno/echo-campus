@@ -176,7 +176,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" :fill="store.isPostCollected(post.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           <span>{{ post.collectCount || 0 }}</span>
         </div>
-        <!-- 站内转发 -->
+        <!-- 转发 -->
         <div
           class="bottom-action"
           :class="{ 'bottom-action--active': store.isPostForwarded(post.id) }"
@@ -206,10 +206,10 @@
       teleport="#phone-screen"
     />
 
-    <!-- 站内转发面板（绑定到手机壳内）-->
+    <!-- 转发面板（绑定到手机壳内）-->
     <van-action-sheet
       v-model:show="showForwardSheet"
-      title="站内转发"
+      title="转发"
       :actions="forwardActions"
       teleport="#phone-screen"
       @select="onForwardSelect"
@@ -311,12 +311,11 @@ function onShare() {
   showShareSheet.value = true
 }
 
-// 站内转发
+// 转发
 const showForwardSheet = ref(false)
 const forwardActions = [
-  { name: '站内好友', value: 'friend' },
-  { name: '已加入的圈子', value: 'circle' },
-  { name: '本校信息流', value: 'school' }
+  { name: '联系人', value: 'friend' },
+  { name: '圈子', value: 'circle' }
 ]
 
 function onForward() {
@@ -327,7 +326,7 @@ function onForwardSelect(action) {
   showForwardSheet.value = false
   if (!post.value) return
   store.toggleForward(post.value.id)
-  const targetMap = { friend: '站内好友', circle: '圈子', school: '本校信息流' }
+  const targetMap = { friend: '联系人', circle: '圈子' }
   showToast(`已转发至${targetMap[action.value] || action.name}`)
 }
 
@@ -678,7 +677,7 @@ function goUserProfile(uid) {
 /* ===== 底部常驻互动栏：fixed 定位 + 最高层级 ===== */
 .detail-bottom-bar {
   position: fixed;
-  bottom: 32px;
+  bottom: 0;
   left: 0;
   right: 0;
   width: 100%;

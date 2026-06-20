@@ -176,23 +176,25 @@ defineExpose({ showTabBar })
 /* 消息红点 */
 .tabbar-badge {
   position: absolute;
-  top: -2px;
-  right: calc(50% - 24px);
+  top: 1px;
+  right: calc(50% - 20px);
   min-width: 16px;
   height: 16px;
-  padding: 0 4px;
+  padding: 0 4.5px;
   background: #ff3b30;
   color: #fff;
-  font-size: 9px;
-  font-weight: 600;
-  border-radius: 8px;
-  border: 2px solid var(--echo-white);
-  box-shadow: 0 2px 6px rgba(255, 59, 48, 0.3);
+  font-size: 9.5px;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Helvetica, Arial, sans-serif;
+  border-radius: 10px;
+  border: 1.5px solid #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
   z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  line-height: 1;
 }
 
 /* 弧度分割线 */

@@ -221,25 +221,26 @@ function onJoin(circleId) {
 
 /* ===== 列表 ===== */
 .circle-body {
-  padding: 12px 16px;
+  padding: 0 0 20px 0;
 }
 
 .circle-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
 }
 
 /* ===== 圈子卡片 ===== */
 .circle-card {
   background: var(--echo-white);
-  border-radius: var(--echo-radius);
+  border-radius: 0;
   padding: 16px;
-  transition: all var(--echo-transition-fast);
+  border-bottom: 1px solid var(--echo-border);
+  transition: background-color var(--echo-transition-fast);
 }
 
 .circle-card:active {
-  transform: scale(0.99);
+  background: var(--echo-bg);
 }
 
 .circle-card-header {

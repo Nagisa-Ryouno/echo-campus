@@ -251,16 +251,15 @@ function onShare() {
   padding: 0 0 84px; /* 贴顶无内边距，大图贴边 */
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
 /* 基础卡片：大头像在卡片交界处 */
 .circle-base-card {
   background: var(--echo-white);
-  border-radius: var(--echo-radius-lg);
+  border-radius: 0;
   padding: 16px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.02);
-  margin: 12px 16px 0; /* 左右 16px，上方 12px 避开大图贴靠 */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.01);
+  margin: 0 0 8px 0; /* 上边紧贴大图，下边留 8px 外边距 */
   position: relative;
   z-index: 20;
 }
@@ -386,13 +385,13 @@ function onShare() {
 /* 成员分布卡片 */
 .member-stats-card {
   background: var(--echo-white);
-  border-radius: var(--echo-radius-lg);
+  border-radius: 0;
   padding: 16px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.02);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.01);
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin: 0 16px; /* 左右 16px 外边距对齐 */
+  margin: 0 0 8px 0; /* 左右紧贴，下边留 8px 外边距 */
 }
 .section-title {
   font-size: 13px;
@@ -441,13 +440,13 @@ function onShare() {
 /* 圈子须知 */
 .circle-tips-box {
   background: var(--echo-white);
-  border-radius: var(--echo-radius-lg);
+  border-radius: 0;
   padding: 16px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.02);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.01);
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin: 0 16px; /* 左右 16px 外边距对齐 */
+  margin: 0 0 8px 0; /* 左右紧贴，下边留 8px 外边距 */
 }
 .tips-list {
   display: flex;

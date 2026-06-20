@@ -33,10 +33,10 @@
       </transition>
     </Teleport>
 
-    <!-- 站内转发面板（仅好友 / 圈子，移除本校信息流） -->
+    <!-- 转发面板（仅联系人 / 圈子） -->
     <van-action-sheet
       v-model:show="showForwardSheet"
-      title="站内转发"
+      title="转发"
       :actions="forwardActions"
       teleport="#phone-screen"
       @select="onForwardSelect"
@@ -248,11 +248,11 @@ const uid = computed(() => route.params.uid)
 // 三点菜单
 const showMoreMenu = ref(false)
 
-// 站内转发
+// 转发
 const showForwardSheet = ref(false)
 const forwardActions = [
-  { name: '站内好友', value: 'friend' },
-  { name: '已加入的圈子', value: 'circle' }
+  { name: '联系人', value: 'friend' },
+  { name: '圈子', value: 'circle' }
 ]
 
 const profileUser = computed(() => {
@@ -462,7 +462,7 @@ function onReportFromProfile() {
 function onForwardSelect(action) {
   showForwardSheet.value = false
   if (!profileUser.value) return
-  const targetMap = { friend: '站内好友', circle: '圈子' }
+  const targetMap = { friend: '联系人', circle: '圈子' }
   showToast(`已转发至${targetMap[action.value] || action.name}`)
 }
 </script>
@@ -619,7 +619,7 @@ function onForwardSelect(action) {
 /* ===== 简介 ===== */
 .bio-section {
   margin-top: 12px;
-  padding: 0 12px;
+  padding: 0 4px;
 }
 .bio-text {
   font-size: 12.5px;
@@ -633,7 +633,7 @@ function onForwardSelect(action) {
   gap: 8px;
   margin-top: 14px;
   flex-wrap: wrap;
-  padding: 0 12px;
+  padding: 0 4px;
 }
 .unified-tag {
   font-size: 12px;
@@ -740,7 +740,7 @@ function onForwardSelect(action) {
   transition: all 0.15s;
   display: flex;
   border-bottom: 1px solid var(--echo-border);
-  padding: 0 14px;
+  padding: 0 8px;
 }
 .grid-post-card:active { background: #f5f7fa; }
 .grid-post-img {

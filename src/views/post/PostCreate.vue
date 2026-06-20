@@ -6,26 +6,18 @@
       <span class="create-back" @click="onBack">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
       </span>
-      <span class="create-title">发布帖子</span>
-      <span class="create-draft" @click="onSaveDraft">存入草稿</span>
+      <span class="create-title">发布</span>
+      <span class="create-draft" @click="onClickDraftIcon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+          <rect width="20" height="5" x="2" y="3" rx="1"/>
+          <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/>
+          <line x1="10" x2="14" y1="12" y2="12"/>
+        </svg>
+      </span>
     </div>
 
     <!-- 表单区域 -->
     <div class="create-body">
-      <!-- 分类标签（可选） -->
-      <div class="form-section">
-        <div class="tag-select-row" @click="onTagSelect">
-          <span class="tag-select-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            添加标签（可选）
-          </span>
-          <div v-if="form.categoryTag || form.topicTags.length" class="selected-tags-inline">
-            <span v-if="form.categoryTag" class="selected-tag-pill">{{ form.categoryTag }}</span>
-            <span v-for="t in form.topicTags" :key="t" class="selected-tag-pill">{{ t }}</span>
-          </div>
-        </div>
-      </div>
-
       <!-- 正文 -->
       <div class="form-section">
         <van-field
@@ -64,17 +56,17 @@
         </div>
       </div>
 
-      <!-- 二级话题标签 -->
+      <!-- 分类标签（可选）移动到添加图片下方 -->
       <div class="form-section">
-        <div class="form-label">话题标签</div>
-        <div class="topic-tags-inline">
-          <span
-            v-for="tag in topicTagOptions"
-            :key="tag"
-            class="form-tag form-tag--small"
-            :class="{ 'form-tag--active': form.topicTags.includes(tag) }"
-            @click="toggleTopicTag(tag)"
-          >#{{ tag }}</span>
+        <div class="tag-select-row" @click="onTagSelect">
+          <span class="tag-select-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            添加标签（可选）
+          </span>
+          <div v-if="form.categoryTag || form.topicTags.length" class="selected-tags-inline">
+            <span v-if="form.categoryTag" class="selected-tag-pill">{{ form.categoryTag }}</span>
+            <span v-for="t in form.topicTags" :key="t" class="selected-tag-pill">{{ t }}</span>
+          </div>
         </div>
       </div>
 
@@ -229,9 +221,13 @@ onMounted(() => {
 function loadTagsFromRoute() {
   const cat = route.query.categoryTag
   const topics = route.query.topicTags
+  const content = route.query.content
   if (cat) form.categoryTag = cat
   if (topics) {
     form.topicTags = decodeURIComponent(topics).split(',').filter(Boolean)
+  }
+  if (content) {
+    form.content = decodeURIComponent(content)
   }
 }
 
@@ -421,6 +417,19 @@ function onPublish() {
 }
 
 // ===== 草稿 =====
+function onClickDraftIcon() {
+  showDialog({
+    title: '提示',
+    message: '要加入草稿箱吗？',
+    showCancelButton: true,
+    confirmButtonText: '是',
+    cancelButtonText: '否',
+    teleport: '#phone-screen'
+  }).then(() => {
+    onSaveDraft()
+  }).catch(() => {})
+}
+
 function onSaveDraft() {
   if (isFormEmpty()) {
     showToast('暂无内容可保存')
@@ -450,15 +459,7 @@ function loadDraft(draft) {
 
 // ===== 返回 =====
 function isFormEmpty() {
-  return (
-    !form.content.trim() &&
-    form.images.length === 0 &&
-    !form.categoryTag &&
-    form.topicTags.length === 0 &&
-    !form.isAnon &&
-    form.visibility === 'public' &&
-    !form.schoolOnly
-  )
+  return !form.content.trim() && form.images.length === 0
 }
 
 function onBack() {
@@ -526,16 +527,23 @@ function resetForm() {
 }
 
 .create-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 17px;
   font-weight: 600;
   color: var(--echo-text);
 }
 
 .create-draft {
-  font-size: 14px;
-  color: var(--echo-primary);
+  color: var(--echo-text-secondary);
   cursor: pointer;
-  font-weight: 500;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+.create-draft:active {
+  color: var(--echo-primary);
 }
 
 /* 表单（顶部留出固定导航栏高度，跟随 phone-screen 滚动） */
@@ -713,8 +721,8 @@ function resetForm() {
 /* 选项行 */
 .option-row {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 4px;
+  flex-wrap: nowrap;
 }
 
 .option-row--between {
@@ -723,14 +731,17 @@ function resetForm() {
 }
 
 .option-chip {
-  padding: 8px 16px;
-  border-radius: 18px;
-  font-size: 13px;
+  padding: 6px 0;
+  border-radius: 14px;
+  font-size: 11px;
   background: var(--echo-bg);
   color: var(--echo-text-secondary);
   cursor: pointer;
   transition: all 0.2s;
   -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+  flex: 1;
+  text-align: center;
 }
 
 .option-chip--active {

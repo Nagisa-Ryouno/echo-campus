@@ -13,7 +13,7 @@
         </div>
         <div class="action-bar-right">
           <div class="text-action-btn" @click="$router.push('/edit-profile')">编辑主页</div>
-          <div class="icon-btn" @click="onShare">
+          <div class="icon-btn" @click="onForward">
             <van-icon name="share-o" size="19" />
           </div>
         </div>
@@ -76,16 +76,28 @@
       <!-- 功能入口：三个独立浅灰圆角方框 -->
       <div class="func-blocks">
         <div class="func-block" @click="onBrowseHistory">
-          <van-icon name="clock-o" size="16" color="#ff6b35" />
+          <svg class="func-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
           <span>浏览记录</span>
         </div>
         <div class="func-block" @click="onDrafts">
-          <van-icon name="orders-o" size="16" color="#ff6b35" />
+          <svg class="func-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="20" height="5" x="2" y="3" rx="1"/>
+            <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/>
+            <line x1="10" x2="14" y1="12" y2="12"/>
+          </svg>
           <span>草稿箱</span>
           <span v-if="store.drafts.length" class="func-badge">{{ store.drafts.length }}</span>
         </div>
         <div class="func-block" @click="$router.push('/circle')">
-          <van-icon name="cluster-o" size="16" color="#ff6b35" />
+          <svg class="func-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
           <span>我的圈子</span>
         </div>
       </div>
@@ -219,6 +231,16 @@
         <p>还没有赞过帖子</p>
       </div>
     </div>
+
+    <!-- 转发面板 -->
+    <van-action-sheet
+      v-model:show="showForwardSheet"
+      title="转发"
+      :actions="forwardActions"
+      teleport="#phone-screen"
+      cancel-text="取消"
+      @select="onForwardSelect"
+    />
   </div>
 </template>
 
@@ -267,7 +289,20 @@ const collectedPosts = computed(() => store.getUserCollectedPosts())
 const likedPosts = computed(() => store.getUserLikedPosts())
 
 function onEditProfile() { showToast('编辑主页（原型占位）') }
-function onShare() { showToast('已生成个人主页分享卡片') }
+const showForwardSheet = ref(false)
+const forwardActions = [
+  { name: '联系人', value: 'friend' },
+  { name: '圈子', value: 'circle' }
+]
+
+function onForward() {
+  showForwardSheet.value = true
+}
+
+function onForwardSelect(action) {
+  showForwardSheet.value = false
+  showToast(`已转发个人主页至${action.name}`)
+}
 function onBrowseHistory() { showToast('浏览记录（原型占位）') }
 function onDrafts() { showToast('草稿箱（原型占位）') }
 </script>
@@ -408,7 +443,7 @@ function onDrafts() { showToast('草稿箱（原型占位）') }
 /* ===== 简介 ===== */
 .bio-section {
   margin-top: 12px;
-  padding: 0 12px;
+  padding: 0 4px;
 }
 .bio-text {
   font-size: 12.5px;
@@ -422,7 +457,7 @@ function onDrafts() { showToast('草稿箱（原型占位）') }
   gap: 8px;
   margin-top: 14px;
   flex-wrap: wrap;
-  padding: 0 12px;
+  padding: 0 4px;
 }
 .unified-tag {
   font-size: 12px;
@@ -435,6 +470,11 @@ function onDrafts() { showToast('草稿箱（原型占位）') }
 }
 
 /* ===== 功能入口：三个独立浅灰圆角方框 ===== */
+.func-icon {
+  color: #ff6b35;
+  flex-shrink: 0;
+  display: block;
+}
 .func-blocks {
   display: flex;
   gap: 8px;
@@ -552,7 +592,7 @@ function onDrafts() { showToast('草稿箱（原型占位）') }
   transition: all 0.15s;
   display: flex;
   border-bottom: 1px solid var(--echo-border);
-  padding: 0 14px;
+  padding: 0 8px;
 }
 .grid-post-card:active { background: #f5f7fa; }
 .grid-post-img {

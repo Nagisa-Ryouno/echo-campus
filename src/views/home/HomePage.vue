@@ -22,11 +22,6 @@
           @click="onChannelSwitch(ch.key)"
         >
           <span class="channel-tab-text">
-            <!-- 💖 心形图标 - 遇见 (Meet) -->
-            <svg v-if="ch.key === 'meet' && store.activeChannel === 'meet'" class="channel-tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="var(--echo-primary)" stroke="var(--echo-primary)">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-            </svg>
-
             <!-- ⭐ 星星图标 - 关注 (Follow) -->
             <svg v-if="ch.key === 'follow' && store.activeChannel === 'follow'" class="channel-tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="var(--echo-primary)" stroke="var(--echo-primary)">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
@@ -41,12 +36,6 @@
             <svg v-if="ch.key === 'city' && store.activeChannel === 'city'" class="city-leaf-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 1.5 5.5-3 9.8a7 7 0 0 1-5 8.2z" fill="var(--echo-primary)" stroke="var(--echo-primary)"/>
               <path d="M19 2c-2.06 3-4.5 5.5-8 7" stroke="#fff" stroke-width="1.5"/>
-            </svg>
-
-            <!-- 🎓 学士帽图标 - 我的学校 (School) -->
-            <svg v-if="ch.key === 'school' && store.activeChannel === 'school'" class="channel-tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--echo-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-              <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" />
             </svg>
 
             {{ ch.label }}
@@ -205,7 +194,19 @@
             v-for="post in displayPosts"
             :key="post.id"
             class="post-card"
+            :class="{
+              'post-card--active-menu': activeLongPressPostId === post.id,
+              'post-card--hiding': hidingPostIds.has(post.id)
+            }"
             @click="goPostDetail(post.id)"
+            @touchstart="handleTouchStart(post.id, $event)"
+            @touchend="handleTouchEnd(post.id, $event)"
+            @touchmove="handleTouchMove(post.id, $event)"
+            @touchcancel="handleTouchCancel"
+            @mousedown="handleMouseDown(post.id, $event)"
+            @mouseup="handleMouseUp"
+            @mousemove="handleMouseMove"
+            @mouseleave="handleMouseLeave"
           >
             <div class="post-card-header">
               <div
@@ -274,10 +275,10 @@
       @close="closeTagPanel"
     />
 
-    <!-- ===== 站内转发面板 ===== -->
+    <!-- ===== 转发面板 ===== -->
     <van-action-sheet
       v-model:show="showForwardSheet"
-      title="站内转发"
+      title="转发"
       :actions="forwardActions"
       teleport="#phone-screen"
       @select="onForwardSelect"
@@ -296,6 +297,13 @@
         <van-field v-model="newCityName" placeholder="请输入城市名称" autofocus />
       </div>
     </van-dialog>
+
+    <!-- ===== 帖子长按操作菜单 ===== -->
+    <PostActionSheet
+      v-model:show="showPostActionSheet"
+      @select="onPostActionSelect"
+      @update:show="val => { if (!val) onPostActionCancel() }"
+    />
   </div>
 </template>
 
@@ -305,6 +313,7 @@ import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
 import { showToast } from 'vant'
 import ChannelManage from '@/components/ChannelManage.vue'
+import PostActionSheet from '@/components/common/PostActionSheet.vue'
 
 const router = useRouter()
 const store = useAppStore()
@@ -414,12 +423,12 @@ function closeTagPanel() {
   store.unlockPhoneScroll()
 }
 
-// ===== 站内转发面板 =====
+// ===== 转发面板 =====
 const showForwardSheet = ref(false)
 const forwardPostId = ref(null)
 const forwardActions = [
-  { name: '站内好友', value: 'friend' },
-  { name: '已加入的圈子', value: 'circle' }
+  { name: '联系人', value: 'friend' },
+  { name: '圈子', value: 'circle' }
 ]
 
 function onForward(postId) {
@@ -432,7 +441,7 @@ function onForwardSelect(action) {
   showForwardSheet.value = false
   if (!forwardPostId.value) return
   store.toggleForward(forwardPostId.value)
-  const targetMap = { friend: '站内好友', circle: '圈子' }
+  const targetMap = { friend: '联系人', circle: '圈子' }
   showToast(`已转发至${targetMap[action.value] || action.name}`)
   store.unlockPhoneScroll()
 }
@@ -470,7 +479,132 @@ function getAuthor(uid) {
   return store.getUserById(uid)
 }
 
+// ===== 长按操作菜单 =====
+const showPostActionSheet = ref(false)
+const selectedPostId = ref(null)
+const activeLongPressPostId = ref(null)
+const hidingPostIds = ref(new Set())
+const wasLongPressed = ref(false)
+let longPressTimer = null
+let isTouchActive = false
+
+function handleLongPressStart(postId, event) {
+  if (longPressTimer) clearTimeout(longPressTimer)
+  wasLongPressed.value = false
+  
+  longPressTimer = setTimeout(() => {
+    activeLongPressPostId.value = postId
+    selectedPostId.value = postId
+    showPostActionSheet.value = true
+    wasLongPressed.value = true
+    
+    if (navigator.vibrate) {
+      navigator.vibrate(15)
+    }
+    
+    store.lockPhoneScroll()
+    longPressTimer = null
+  }, 400)
+}
+
+function handleLongPressEnd() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
+function handleLongPressMove() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
+function handleTouchStart(postId, event) {
+  isTouchActive = true
+  handleLongPressStart(postId, event)
+}
+
+function handleTouchEnd() {
+  handleLongPressEnd()
+  setTimeout(() => {
+    isTouchActive = false
+  }, 100)
+}
+
+function handleTouchMove() {
+  handleLongPressMove()
+}
+
+function handleTouchCancel() {
+  handleLongPressEnd()
+  setTimeout(() => {
+    isTouchActive = false
+  }, 100)
+}
+
+function handleMouseDown(postId, event) {
+  if (isTouchActive) return
+  if (event.button !== 0) return // Only trigger for left-click
+  handleLongPressStart(postId, event)
+}
+
+function handleMouseUp() {
+  handleLongPressEnd()
+}
+
+function handleMouseMove() {
+  handleLongPressMove()
+}
+
+function handleMouseLeave() {
+  handleLongPressEnd()
+}
+
+function onPostActionSelect(actionType) {
+  const postId = selectedPostId.value
+  if (!postId) return
+  
+  hidingPostIds.value.add(postId)
+  
+  if (actionType === 'reduce') {
+    const post = store.posts.find(p => p.id === postId)
+    if (post) {
+      console.log(`降低标签权重: ${post.categoryTag}`)
+      console.log(`降低作者权重: ${post.authorId}`)
+      console.log(`降低圈子权重: ${post.channel}`)
+    } else {
+      console.log('降低标签权重')
+      console.log('降低作者权重')
+      console.log('降低圈子权重')
+    }
+    showToast('将减少此类内容的推荐')
+  } else {
+    showToast('将隐藏此条帖子')
+  }
+  
+  activeLongPressPostId.value = null
+  store.unlockPhoneScroll()
+  
+  setTimeout(() => {
+    store.hidePost(postId)
+    hidingPostIds.value.delete(postId)
+    selectedPostId.value = null
+  }, 250)
+}
+
+function onPostActionCancel() {
+  activeLongPressPostId.value = null
+  selectedPostId.value = null
+  store.unlockPhoneScroll()
+}
+
 function goPostDetail(postId) {
+  if (wasLongPressed.value) {
+    wasLongPressed.value = false
+    return
+  }
   router.push(`/post/${postId}`)
 }
 
@@ -501,7 +635,9 @@ function goUserProfile(uid) {
   transform: translateX(-50%);
   width: 375px;
   z-index: 1000;
-  background: var(--echo-bg);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 /* ── Logo 区：滚动后 translateY 隐藏 ── */
@@ -535,7 +671,7 @@ function goUserProfile(uid) {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #e8edf2;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -545,15 +681,15 @@ function goUserProfile(uid) {
 }
 
 .home-search:active {
-  background: var(--echo-border);
-  transform: scale(0.95);
+  background: rgba(0, 0, 0, 0.05);
+  transform: scale(0.92);
 }
 
 /* ── 大频道栏：永久固定，禁止 sticky ── */
 .channel-header {
   height: 48px;
   display: flex;
-  background: var(--echo-bg);
+  background: transparent;
   border-bottom: 1px solid var(--echo-divider);
 }
 
@@ -869,17 +1005,43 @@ function goUserProfile(uid) {
 /* ── 帖子卡片 ── */
 .post-card {
   background: var(--echo-white);
-  margin: 8px 12px;
-  border-radius: var(--echo-radius);
+  border-bottom: 1px solid var(--echo-border);
   padding: 14px 16px;
   cursor: pointer;
-  transition: all 0.2s;
-  max-width: calc(375px - 24px);
+  transition: all 250ms cubic-bezier(0.2, 0.8, 0.2, 1);
   box-sizing: border-box;
 }
 
 .post-card:active {
   transform: scale(0.99);
+}
+
+.post-card--active-menu {
+  transform: scale(0.98) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06) !important;
+  position: relative;
+  z-index: 2005 !important;
+}
+
+.post-card--active-menu::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.post-card--hiding {
+  opacity: 0 !important;
+  transform: translateY(-12px) !important;
+  max-height: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  overflow: hidden;
+  border: none !important;
 }
 
 .post-card-header {
@@ -986,7 +1148,6 @@ function goUserProfile(uid) {
   align-items: center;
   gap: 24px;
   padding-top: 8px;
-  border-top: 1px solid var(--echo-border);
 }
 
 .post-card-action {

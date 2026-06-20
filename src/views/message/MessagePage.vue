@@ -4,17 +4,17 @@
     <div class="msg-header">
       <h1 class="msg-title">消息</h1>
       <div class="msg-header-actions">
-        <!-- 一键已读刷子图标 -->
+        <!-- 一键已读扫把图标 -->
         <span class="broom-icon" :class="{ 'is-sweeping': sweepAnimating }" @click="markAllRead">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
-            <!-- 顶部半圆形提手 -->
-            <path d="M8,9 L8,6 Q8,3 12,3 Q16,3 16,6 L16,9" />
-            <!-- 刷子头部外框 -->
-            <path d="M5,9 L19,9 Q20,9 20,10 L20,17 Q20,20 17,20 L7,20 Q4,20 4,17 L4,10 Q4,9 5,9 Z" />
-            <!-- 底部刷毛（三个凸起） -->
-            <path d="M8,20 L8,17 Q8,16 9,16 Q10,16 10,17 L10,20" />
-            <path d="M11,20 L11,17.5 Q11,17 12,17 Q13,17 13,17.5 L13,20" />
-            <path d="M14,20 L14,17 Q14,16 15,16 Q16,16 16,17 L16,20" />
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+            <!-- 加粗扫把柄 -->
+            <line x1="19" y1="5" x2="11" y2="13" />
+            <!-- 扫帚头扎箍 -->
+            <line x1="14" y1="10" x2="8" y2="16" />
+            <!-- 扫帚毛外轮廓 -->
+            <path d="M8 16L3 21h5l3-5" />
+            <!-- 内部粗纹理线 -->
+            <line x1="11" y1="13" x2="5" y2="19" />
           </svg>
         </span>
         <van-icon name="search" size="20" @click="$router.push('/search?from=message')" />
@@ -36,13 +36,22 @@
             <div class="plus-bubble-arrow"></div>
             <div class="plus-bubble-item" @click="onPlusAction('group')">
               <div class="plus-bubble-icon" style="background:#e8f5ee;">
-                <van-icon name="friends-o" size="18" color="#4caf7d" />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4caf7d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  <line x1="12" y1="7" x2="12" y2="13"/>
+                  <line x1="9" y1="10" x2="15" y2="10"/>
+                </svg>
               </div>
               <span>创建圈子</span>
             </div>
             <div class="plus-bubble-item" @click="onPlusAction('square')">
               <div class="plus-bubble-icon" style="background:#fff3e0;">
-                <van-icon name="fire-o" size="18" color="#ff6b35" />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
               </div>
               <span>圈子广场</span>
             </div>
@@ -117,8 +126,7 @@
       </div>
     </div>
 
-    <!-- 分割线 -->
-    <div class="section-divider" />
+
 
     <!-- 聊天列表 -->
     <div class="chat-section">
@@ -127,7 +135,20 @@
         v-for="chat in store.visibleChatList"
         :key="chat.id"
         class="chat-item"
+        :class="{
+          'chat-item--pinned': chat.isPinned,
+          'chat-item--removing': removingChatId === chat.id,
+          'is-long-pressing': activePressTargetId === chat.id
+        }"
         @click="onChatClick(chat)"
+        @touchstart="onPressStart($event, 'chat', chat)"
+        @touchmove="onPressMove"
+        @touchend="onPressEnd"
+        @touchcancel="onPressEnd"
+        @mousedown="onPressStart($event, 'chat', chat)"
+        @mousemove="onPressMove"
+        @mouseup="onPressEnd"
+        @mouseleave="onPressEnd"
       >
         <div class="chat-avatar-wrap" :class="{ 'is-group': chat.isGroup }">
           <div
@@ -154,7 +175,23 @@
     </div>
 
     <!-- 匿名消息卡片 -->
-    <div class="anon-card" @click="$router.push('/message/anon')">
+    <div
+      v-if="!store.hideAnonCard"
+      class="anon-card"
+      :class="{
+        'anon-card--removing': removingAnon,
+        'is-long-pressing': activePressTargetId === 'anon'
+      }"
+      @click="onAnonClick"
+      @touchstart="onPressStart($event, 'anon')"
+      @touchmove="onPressMove"
+      @touchend="onPressEnd"
+      @touchcancel="onPressEnd"
+      @mousedown="onPressStart($event, 'anon')"
+      @mousemove="onPressMove"
+      @mouseup="onPressEnd"
+      @mouseleave="onPressEnd"
+    >
       <div class="anon-card-icon">
         <van-icon name="shield-o" size="22" color="#9b59b6" />
       </div>
@@ -172,21 +209,131 @@
 
     <!-- 聊天详情抽屉 -->
     <ChatWindow />
+
+    <!-- 小红书式长按悬浮菜单 -->
+    <ContextMenu
+      :show="contextMenuVisible"
+      :x="menuX"
+      :y="menuY"
+      :options="activeContextMenuOptions"
+      @close="closeContextMenu"
+      @select="handleMenuSelect"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, onBeforeUnmount } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
 import { showToast, showConfirmDialog } from 'vant'
 import ChatWindow from '@/components/ChatWindow.vue'
+import ContextMenu from '@/components/common/ContextMenu.vue'
 
 const router = useRouter()
 const store = useAppStore()
 
 const plusMenuVisible = ref(false)
 const sweepAnimating = ref(false)
+
+// 长按悬浮菜单相关状态
+const contextMenuVisible = ref(false)
+const menuX = ref(0)
+const menuY = ref(0)
+const currentPressTarget = ref(null) // { type: 'chat' | 'anon', item: chatObj }
+const activePressTargetId = ref(null) // chat.id or 'anon'
+const preventNextClick = ref(false)
+const removingChatId = ref(null)
+const removingAnon = ref(false)
+
+let pressTimer = null
+let startX = 0
+let startY = 0
+
+// SVG outline Icons
+const unreadIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`
+const readIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M9 10l2 2 4-4"/></svg>`
+const pinIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22" /><path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.78-3.5A2 2 0 0 1 15 9.26V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4.26a2 2 0 0 1-.78 1.56l-2.78 3.5A2 2 0 0 0 5 15.24z" /></svg>`
+const hideIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+const deleteIcon = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`
+
+const activeContextMenuOptions = computed(() => {
+  const target = currentPressTarget.value
+  if (!target) return []
+  
+  if (target.type === 'chat') {
+    const chat = target.item
+    if (!chat) return []
+    const isPinned = chat.isPinned
+    const hasUnread = chat.unread > 0
+    
+    if (chat.isStrangersFolder) {
+      return [
+        {
+          label: hasUnread ? '标为已读' : '标为未读',
+          value: 'toggle-unread',
+          icon: hasUnread ? readIcon : unreadIcon
+        },
+        {
+          label: '不显示',
+          value: 'hide',
+          icon: hideIcon
+        },
+        {
+          label: '删除',
+          value: 'delete',
+          icon: deleteIcon,
+          danger: true
+        }
+      ]
+    }
+    
+    return [
+      {
+        label: hasUnread ? '标为已读' : '标为未读',
+        value: 'toggle-unread',
+        icon: hasUnread ? readIcon : unreadIcon
+      },
+      {
+        label: isPinned ? '取消置顶' : '置顶聊天',
+        value: 'toggle-pin',
+        icon: pinIcon
+      },
+      {
+        label: '不显示',
+        value: 'hide',
+        icon: hideIcon
+      },
+      {
+        label: '删除',
+        value: 'delete',
+        icon: deleteIcon,
+        danger: true
+      }
+    ]
+  } else if (target.type === 'anon') {
+    const hasUnread = store.unreadAnonCount > 0
+    return [
+      {
+        label: hasUnread ? '标为已读' : '标为未读',
+        value: 'toggle-unread',
+        icon: hasUnread ? readIcon : unreadIcon
+      },
+      {
+        label: '不显示',
+        value: 'hide',
+        icon: hideIcon
+      },
+      {
+        label: '删除',
+        value: 'delete',
+        icon: deleteIcon,
+        danger: true
+      }
+    ]
+  }
+  return []
+})
 
 function openPlusMenu() {
   plusMenuVisible.value = true
@@ -201,6 +348,7 @@ function closePlusMenu() {
 // 组件卸载时恢复滚动
 onBeforeUnmount(() => {
   store.unlockPhoneScroll()
+  if (pressTimer) clearTimeout(pressTimer)
 })
 
 // 一键已读：确认弹窗 → 立即清除未读 → 极简扫光动画（0.3s）
@@ -225,12 +373,155 @@ async function markAllRead() {
   }
 }
 
+// 统一的双端长按事件处理逻辑
+function onPressStart(e, type, item = null) {
+  if (e.type === 'mousedown' && e.button !== 0) return
+  
+  const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX
+  const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY
+  
+  startX = clientX
+  startY = clientY
+  
+  currentPressTarget.value = { type, item }
+  
+  if (pressTimer) clearTimeout(pressTimer)
+  
+  pressTimer = setTimeout(() => {
+    preventNextClick.value = true
+    
+    const phoneBody = document.querySelector('.phone-body')
+    if (phoneBody) {
+      const rect = phoneBody.getBoundingClientRect()
+      menuX.value = clientX - rect.left
+      menuY.value = clientY - rect.top
+    } else {
+      menuX.value = clientX
+      menuY.value = clientY
+    }
+    
+    activePressTargetId.value = type === 'chat' ? item.id : 'anon'
+    
+    try {
+      if (navigator.vibrate) {
+        navigator.vibrate(15)
+      }
+    } catch (_) {}
+    
+    contextMenuVisible.value = true
+    store.lockPhoneScroll()
+  }, 400)
+}
+
+function onPressMove(e) {
+  if (!pressTimer) return
+  const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX
+  const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY
+  
+  if (Math.abs(clientX - startX) > 6 || Math.abs(clientY - startY) > 6) {
+    clearTimeout(pressTimer)
+    pressTimer = null
+    activePressTargetId.value = null
+  }
+}
+
+function onPressEnd() {
+  if (pressTimer) {
+    clearTimeout(pressTimer)
+    pressTimer = null
+  }
+  activePressTargetId.value = null
+}
+
+function closeContextMenu() {
+  contextMenuVisible.value = false
+  store.unlockPhoneScroll()
+}
+
+function handleMenuSelect(value) {
+  const target = currentPressTarget.value
+  if (!target) return
+  
+  if (value === 'toggle-unread') {
+    if (target.type === 'chat') {
+      if (target.item.isStrangersFolder) {
+        const hasUnread = store.strangerChats.some(c => c.unread > 0)
+        if (hasUnread) {
+          store.strangerChats.forEach(c => { c.unread = 0 })
+        } else {
+          if (store.strangerChats.length > 0) {
+            store.strangerChats[0].unread = 1
+          }
+        }
+      } else {
+        store.toggleChatUnread(target.item.id)
+      }
+    } else if (target.type === 'anon') {
+      store.toggleAnonUnread()
+    }
+    showToast('已标记')
+  } else if (value === 'toggle-pin') {
+    if (target.type === 'chat' && !target.item.isStrangersFolder) {
+      store.toggleChatPin(target.item.id)
+      showToast(target.item.isPinned ? '已取消置顶' : '已置顶')
+    }
+  } else if (value === 'hide') {
+    if (target.type === 'chat') {
+      removingChatId.value = target.item.id
+      setTimeout(() => {
+        if (target.item.isStrangersFolder) {
+          store.strangerChats.forEach(c => { store.hideChat(c.id) })
+        } else {
+          store.hideChat(target.item.id)
+        }
+        removingChatId.value = null
+      }, 200)
+    } else if (target.type === 'anon') {
+      removingAnon.value = true
+      setTimeout(() => {
+        store.hideAnonSession()
+        removingAnon.value = false
+      }, 200)
+    }
+  } else if (value === 'delete') {
+    if (target.type === 'chat') {
+      removingChatId.value = target.item.id
+      setTimeout(() => {
+        if (target.item.isStrangersFolder) {
+          store.strangerChats.forEach(c => { store.deleteChat(c.id) })
+        } else {
+          store.deleteChat(target.item.id)
+        }
+        removingChatId.value = null
+      }, 200)
+    } else if (target.type === 'anon') {
+      removingAnon.value = true
+      setTimeout(() => {
+        store.deleteAnonSessions()
+        removingAnon.value = false
+      }, 200)
+    }
+  }
+}
+
 function onChatClick(chat) {
+  if (preventNextClick.value) {
+    preventNextClick.value = false
+    return
+  }
   if (chat.isStrangersFolder) {
     router.push('/message/strangers')
   } else {
     store.openChat(chat.id)
   }
+}
+
+function onAnonClick() {
+  if (preventNextClick.value) {
+    preventNextClick.value = false
+    return
+  }
+  router.push('/message/anon')
 }
 
 function onPlusAction(type) {
@@ -257,7 +548,7 @@ function badgeText(count) {
 .message-page {
   min-height: 100%;
   background: var(--echo-bg);
-  padding-bottom: 8px;
+  padding-bottom: 12px;
 }
 
 /* ===== 顶部：普通文档流，随页面滚动消失 ===== */
@@ -499,11 +790,7 @@ function badgeText(count) {
   box-sizing: border-box;
 }
 
-/* ===== 分割线 ===== */
-.section-divider {
-  height: 8px;
-  background: var(--echo-bg);
-}
+
 
 /* ===== 聊天列表 ===== */
 .chat-section {
@@ -602,7 +889,7 @@ function badgeText(count) {
   align-items: center;
   gap: 12px;
   padding: 16px;
-  margin: 8px 12px;
+  margin: 8px 12px 104px; /* 底部预留 104px 外边距，使卡片滑动到最底下时距离底栏有优雅的间隔，不显得局促贴死 */
   background: linear-gradient(135deg, #f8f4fc, #fef5ff);
   border-radius: 14px;
   border: 1px dashed #e1bee7;
@@ -706,4 +993,32 @@ function badgeText(count) {
 .sweep-fade-leave-active { transition: opacity 0.4s ease; }
 .sweep-fade-enter-from,
 .sweep-fade-leave-to { opacity: 0; }
+
+/* 置顶聊天背景色 */
+.chat-item--pinned {
+  background-color: #fafafc !important;
+}
+
+/* 长按时的缩放与触感反馈 */
+.chat-item, .anon-card {
+  transition: transform 0.15s ease, background-color 0.15s ease, opacity 0.2s ease, height 0.2s cubic-bezier(0.4, 0, 0.2, 1), padding 0.2s ease, margin 0.2s ease;
+}
+.chat-item.is-long-pressing, .anon-card.is-long-pressing {
+  transform: scale(0.97) !important;
+  background-color: rgba(0, 0, 0, 0.02) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+/* 不显示或删除时的淡出与塌陷折叠动画 */
+.chat-item--removing, .anon-card--removing {
+  opacity: 0 !important;
+  transform: translateX(12px) !important;
+  height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  overflow: hidden !important;
+  border: none !important;
+}
 </style>

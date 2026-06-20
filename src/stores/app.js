@@ -71,6 +71,7 @@ export const useAppStore = defineStore('app', () => {
   const posts = ref([...mockPosts])
   const activeChannel = ref('recommend')
   const activeCategoryTag = ref('')
+  const hiddenPostIds = ref(new Set())
 
   const channelLabels = ref([...channels])
 
@@ -80,8 +81,13 @@ export const useAppStore = defineStore('app', () => {
     if (activeCategoryTag.value) {
       list = list.filter(p => p.categoryTag === activeCategoryTag.value)
     }
+    list = list.filter(p => !hiddenPostIds.value.has(p.id))
     return list
   })
+
+  function hidePost(postId) {
+    hiddenPostIds.value.add(postId)
+  }
 
   function setChannel(channelKey) {
     activeChannel.value = channelKey
@@ -401,12 +407,12 @@ export const useAppStore = defineStore('app', () => {
 
   // 正常聊天列表（群聊，或者互相发送过消息的私聊）
   const normalChats = computed(() => {
-    return chatListData.value.filter(c => c.isGroup || (c.sentByMeCount > 0 && c.sentByThemCount > 0))
+    return chatListData.value.filter(c => !c.isHidden && !c.isDeleted && (c.isGroup || (c.sentByMeCount > 0 && c.sentByThemCount > 0)))
   })
 
   // 陌生人聊天列表（未互发消息的私聊）
   const strangerChats = computed(() => {
-    return chatListData.value.filter(c => !c.isGroup && (c.sentByMeCount === 0 || c.sentByThemCount === 0))
+    return chatListData.value.filter(c => !c.isHidden && !c.isDeleted && !c.isGroup && (c.sentByMeCount === 0 || c.sentByThemCount === 0))
   })
 
   // 获取最新的陌生人消息
@@ -509,7 +515,12 @@ export const useAppStore = defineStore('app', () => {
   const unreadFollowerCount = computed(() =>
     followerNotifs.value.filter(n => !n.read).length
   )
-  const unreadAnonCount = computed(() => getAnonUnreadCount())
+  const hideAnonCard = ref(false)
+
+  const unreadAnonCount = computed(() => {
+    if (hideAnonCard.value) return 0
+    return anonSessionData.value.reduce((sum, s) => sum + s.unread, 0)
+  })
   const unreadChatCount = computed(() =>
     chatListData.value.reduce((sum, c) => sum + c.unread, 0)
   )
@@ -541,6 +552,65 @@ export const useAppStore = defineStore('app', () => {
   function markChatRead(chatId) {
     const chat = chatListData.value.find(c => c.id === chatId)
     if (chat) chat.unread = 0
+  }
+
+  // 置顶 / 取消置顶
+  function toggleChatPin(chatId) {
+    const chat = chatListData.value.find(c => c.id === chatId)
+    if (chat) {
+      chat.isPinned = !chat.isPinned
+    }
+  }
+
+  // 标记已读 / 标为未读
+  function toggleChatUnread(chatId) {
+    const chat = chatListData.value.find(c => c.id === chatId)
+    if (chat) {
+      chat.unread = chat.unread > 0 ? 0 : 1
+    }
+  }
+
+  // 不显示聊天
+  function hideChat(chatId) {
+    const chat = chatListData.value.find(c => c.id === chatId)
+    if (chat) {
+      chat.isHidden = true
+    }
+  }
+
+  // 删除聊天
+  function deleteChat(chatId) {
+    const chat = chatListData.value.find(c => c.id === chatId)
+    if (chat) {
+      chat.isDeleted = true
+      chat.unread = 0
+      if (messagesMap.value[chatId]) {
+        messagesMap.value[chatId] = []
+      }
+    }
+  }
+
+  // 标记匿名消息已读/未读
+  function toggleAnonUnread() {
+    const hasUnread = anonSessionData.value.some(s => s.unread > 0)
+    if (hasUnread) {
+      anonSessionData.value.forEach(s => { s.unread = 0 })
+    } else {
+      if (anonSessionData.value.length > 0) {
+        anonSessionData.value[0].unread = 1
+      }
+    }
+  }
+
+  // 不显示匿名消息卡片
+  function hideAnonSession() {
+    hideAnonCard.value = true
+  }
+
+  // 删除匿名消息卡片
+  function deleteAnonSessions() {
+    hideAnonCard.value = true
+    anonSessionData.value = []
   }
 
   // 获取用户发的帖子
@@ -964,7 +1034,7 @@ export const useAppStore = defineStore('app', () => {
 
     // 频道 & 帖子
     posts, activeChannel, activeCategoryTag, channelLabels,
-    filteredPosts, allPostTags,
+    filteredPosts, allPostTags, hiddenPostIds, hidePost,
     setChannel, setCategoryTag, searchPosts,
     getPostWithAuthor,
 
@@ -998,6 +1068,8 @@ export const useAppStore = defineStore('app', () => {
     activeChatId, isChatOpen, messagesMap, normalChats, strangerChats,
     latestStrangerChat, strangersFolderItem, visibleChatList, openChat, closeChat,
     sendChatMessage,
+    hideAnonCard, toggleChatPin, toggleChatUnread, hideChat, deleteChat,
+    toggleAnonUnread, hideAnonSession, deleteAnonSessions,
 
     // 用户内容
     getUserPosts, getUserCommentedPosts, getUserCollectedPosts, getUserLikedPosts,

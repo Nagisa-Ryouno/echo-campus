@@ -26,7 +26,7 @@ export const channels = [
   { key: 'follow', label: '关注' },
   { key: 'recommend', label: '推荐' },
   { key: 'city', label: '同城' },
-  { key: 'school', label: '我的学校' }
+  { key: 'school', label: '本校' }
 ]
 
 export const mockPosts = [

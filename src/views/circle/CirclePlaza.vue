@@ -607,26 +607,26 @@ function goCircleDetail(circleId) {
 .circle-list-container {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 16px;
+  padding: 0 0 20px 0;
 }
 .circles-plaza-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
 }
 .plaza-circle-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 12px;
+  padding: 14px 16px;
   background: var(--echo-white);
-  border-radius: var(--echo-radius-md);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  border-radius: 0;
+  border-bottom: 1px solid var(--echo-border);
   cursor: pointer;
-  transition: transform var(--echo-transition-fast);
+  transition: background-color var(--echo-transition-fast);
 }
 .plaza-circle-card:active {
-  transform: scale(0.985);
+  background: var(--echo-bg);
 }
 
 .circle-avatar-box {

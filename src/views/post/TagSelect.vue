@@ -195,7 +195,7 @@ function onBack() {
 /* 底部确认 */
 .select-footer {
   position: fixed;
-  bottom: 32px;
+  bottom: 0;
   left: 0;
   right: 0;
   width: 100%;

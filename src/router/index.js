@@ -107,7 +107,13 @@ const routes = [
     path: '/profile/:uid',
     name: 'UserProfile',
     component: () => import('@/views/profile/UserProfile.vue'),
-    meta: { title: '用户主页', tabBar: true }
+    meta: { title: '用户主页', tabBar: false }
+  },
+  {
+    path: '/trend/:id',
+    name: 'TrendDetail',
+    component: () => import('@/views/discover/TrendDetailPage.vue'),
+    meta: { title: '热点详情', tabBar: false }
   },
   {
     path: '/settings',

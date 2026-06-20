@@ -77,29 +77,7 @@
           </transition>
         </div>
 
-        <!-- 📖 近期浏览（仅来自首页搜索，且 store 中有浏览记录时显示） -->
-        <div v-if="fromSource === 'home' && store.browseHistory && store.browseHistory.length > 0" class="search-section">
-          <div class="section-header">
-            <span class="section-title">📖 近期浏览</span>
-            <span class="section-action-btn" @click="toggleBrowseVisible">
-              <van-icon :name="isBrowseVisible ? 'eye-o' : 'closed-eye'" size="16" />
-            </span>
-          </div>
-          <transition name="fade-collapse">
-            <div v-if="isBrowseVisible" class="browse-history-list">
-              <div 
-                v-for="history in store.browseHistory.slice(0, 3)" 
-                :key="history.postId" 
-                class="browse-history-item"
-                @click="$router.push(`/post/${history.postId}`)"
-              >
-                <span class="browse-title">{{ history.title }}</span>
-                <span class="browse-time">{{ history.time }}</span>
-              </div>
-            </div>
-            <div v-else class="collapsed-tip">近期浏览已折叠</div>
-          </transition>
-        </div>
+
 
         <!-- 🕒 搜索历史 -->
         <div class="search-section">
@@ -338,7 +316,6 @@ function setSearchScope(scope) {
 // 隐藏与折叠状态（使用 localStorage 进行状态持久化）
 const isGuessVisible = ref(localStorage.getItem('echo_guess_search_visible') !== 'false')
 const isHistoryVisible = ref(localStorage.getItem('echo_history_search_visible') !== 'false')
-const isBrowseVisible = ref(localStorage.getItem('echo_browse_search_visible') !== 'false')
 
 function toggleGuessVisible() {
   isGuessVisible.value = !isGuessVisible.value
@@ -348,11 +325,6 @@ function toggleGuessVisible() {
 function toggleHistoryVisible() {
   isHistoryVisible.value = !isHistoryVisible.value
   localStorage.setItem('echo_history_search_visible', String(isHistoryVisible.value))
-}
-
-function toggleBrowseVisible() {
-  isBrowseVisible.value = !isBrowseVisible.value
-  localStorage.setItem('echo_browse_search_visible', String(isBrowseVisible.value))
 }
 
 // 搜索历史记录列表

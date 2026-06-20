@@ -289,7 +289,7 @@ function goToUserProfile() {
   top: 48px;
   left: 0;
   right: 0;
-  bottom: 32px;
+  bottom: 0;
   background: var(--echo-bg);
   z-index: 10100;
   display: flex;

@@ -97,21 +97,27 @@ function onItemClick(item) {
 
 /* ===== 顶部 ===== */
 .notif-header {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 12px 16px;
   background: var(--echo-white);
 }
-.back-icon { cursor: pointer; }
+.back-icon {
+  position: absolute;
+  left: 16px;
+  cursor: pointer;
+}
 .notif-title {
   font-size: 18px;
   font-weight: 700;
   color: var(--echo-text);
-  flex: 1;
   text-align: center;
 }
 .mark-read-btn {
+  position: absolute;
+  right: 16px;
   font-size: 12px;
   color: var(--echo-primary);
   cursor: pointer;
