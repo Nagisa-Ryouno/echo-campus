@@ -9,7 +9,28 @@ export const useAppStore = defineStore('app', () => {
   // ===== 用户状态 =====
   const isLoggedIn = ref(false)
   const currentUser = ref(null)
-  const users = ref([...mockUsers])
+  const users = ref([
+    ...mockUsers,
+    {
+      id: 'u9',
+      nickname: '深蓝小哥',
+      echoId: 'echo_20240009',
+      avatar: '',
+      avatarColor: '#d35400',
+      school: '中央民族大学',
+      bio: '极简主义者 | 喜欢静静看书',
+      gender: 'male',
+      age: 21,
+      tags: ['阅读', '静心'],
+      followCount: 50,
+      fanCount: 80,
+      postCount: 10,
+      showSchool: 'public',
+      postVisibility: 'everyone',
+      commentVisibility: 'everyone',
+      collectionVisibility: 'private'
+    }
+  ])
 
   function getUserById(uid) {
     return users.value.find(u => u.id === uid) || null
@@ -277,10 +298,201 @@ export const useAppStore = defineStore('app', () => {
   const likedNotifs = ref([...notifications.receivedLikes])
   const commentAtNotifs = ref([...notifications.commentsAndAt])
   const followerNotifs = ref([...notifications.newFollowers])
-  const chatListData = ref([...chatList])
+  const chatListData = ref([
+    ...chatList.map(c => {
+      if (c.isGroup) return c
+      return {
+        ...c,
+        sentByMeCount: 5,
+        sentByThemCount: 5
+      }
+    }),
+    {
+      id: 'chat_stranger_1',
+      userId: 'u6', // 阿白不白
+      lastMsg: '你好，请问你是英语专业的吗？想向你请教一下六级备考。',
+      lastTime: '昨天 10:00',
+      unread: 1,
+      isGroup: false,
+      sentByMeCount: 0,
+      sentByThemCount: 1
+    },
+    {
+      id: 'chat_stranger_2',
+      userId: 'u8', // 管理员小助手
+      lastMsg: '欢迎使用校声！如果有任何问题，可以随时联系我哦。',
+      lastTime: '3天前',
+      unread: 0,
+      isGroup: false,
+      sentByMeCount: 0,
+      sentByThemCount: 1
+    },
+    {
+      id: 'chat_stranger_3',
+      userId: 'u9', // 深蓝小哥
+      lastMsg: '你好，请问这周末操场有活动吗？',
+      lastTime: '4天前',
+      unread: 0,
+      isGroup: false,
+      sentByMeCount: 1,
+      sentByThemCount: 0
+    }
+  ])
+
   const anonSessionData = ref([...anonSessions])
   const sysNotices = ref([...systemNotices])
   const plusMenuVisible = ref(false)
+
+  // 聊天详情相关状态
+  const activeChatId = ref(null)
+  const isChatOpen = ref(false)
+
+  // 消息历史记录
+  const messagesMap = ref({
+    'chat_1': [
+      { sender: 'them', text: '这周末学校有摄影讲座，你去吗？', time: '18:00' },
+      { sender: 'me', text: '想去啊，在哪个报告厅？', time: '18:02' },
+      { sender: 'them', text: '好的，明天中午食堂见！', time: '21:32' }
+    ],
+    'chat_2': [
+      { sender: 'me', text: '学长，那个报错怎么解决？', time: '19:00' },
+      { sender: 'them', text: '把 node_modules 删了重新 install 试试。', time: '19:10' },
+      { sender: 'them', text: '那个 bug 我修好了，你拉一下最新代码', time: '20:15' }
+    ],
+    'chat_5': [
+      { sender: 'them', text: '明天还去打篮球吗？', time: '17:50' }
+    ],
+    'chat_7': [
+      { sender: 'them', text: '谢谢你的资料！很有用🙏', time: '昨天 22:10' }
+    ],
+    'chat_8': [
+      { sender: 'them', text: '你的 Zotero 配置能再发一下吗？换了电脑找不到了', time: '昨天 15:40' }
+    ],
+    'chat_stranger_1': [
+      { sender: 'them', text: '你好，请问你是英语专业的吗？想向你请教一下六级备考。', time: '昨天 10:00' }
+    ],
+    'chat_stranger_2': [
+      { sender: 'them', text: '欢迎使用校声！如果有任何问题，可以随时联系我哦。', time: '3天前' }
+    ],
+    'chat_stranger_3': [
+      { sender: 'me', text: '你好，请问这周末操场有活动吗？', time: '4天前' }
+    ]
+  })
+
+  // 计算时间排序权重
+  function getTimeWeight(timeStr) {
+    if (!timeStr) return 0
+    if (timeStr.includes(':') && !timeStr.includes('昨天')) {
+      const [h, m] = timeStr.split(':').map(Number)
+      return 1000000 + h * 60 + m
+    }
+    if (timeStr.startsWith('昨天')) {
+      const timePart = timeStr.replace('昨天', '').trim()
+      const [h, m] = timePart.split(':').map(Number)
+      return 500000 + h * 60 + m
+    }
+    const match = timeStr.match(/(\d+)天前/)
+    if (match) {
+      const days = parseInt(match[1])
+      return 100000 - days * 1440
+    }
+    return 10000
+  }
+
+  // 正常聊天列表（群聊，或者互相发送过消息的私聊）
+  const normalChats = computed(() => {
+    return chatListData.value.filter(c => c.isGroup || (c.sentByMeCount > 0 && c.sentByThemCount > 0))
+  })
+
+  // 陌生人聊天列表（未互发消息的私聊）
+  const strangerChats = computed(() => {
+    return chatListData.value.filter(c => !c.isGroup && (c.sentByMeCount === 0 || c.sentByThemCount === 0))
+  })
+
+  // 获取最新的陌生人消息
+  const latestStrangerChat = computed(() => {
+    if (strangerChats.value.length === 0) return null
+    const sorted = [...strangerChats.value].sort((a, b) => getTimeWeight(b.lastTime) - getTimeWeight(a.lastTime))
+    return sorted[0]
+  })
+
+  // 陌生人消息文件夹卡片
+  const strangersFolderItem = computed(() => {
+    const latest = latestStrangerChat.value
+    if (!latest) return null
+    const totalUnread = strangerChats.value.reduce((sum, c) => sum + c.unread, 0)
+    return {
+      id: 'strangers_folder',
+      isStrangersFolder: true,
+      name: '陌生人消息',
+      lastMsg: latest.lastMsg,
+      lastTime: latest.lastTime,
+      unread: totalUnread
+    }
+  })
+
+  // 消息页面可见的聊天列表
+  const visibleChatList = computed(() => {
+    const list = [...normalChats.value]
+    if (strangersFolderItem.value) {
+      list.push(strangersFolderItem.value)
+    }
+    return list.sort((a, b) => getTimeWeight(b.lastTime) - getTimeWeight(a.lastTime))
+  })
+
+  function openChat(chatId) {
+    activeChatId.value = chatId
+    isChatOpen.value = true
+    const chat = chatListData.value.find(c => c.id === chatId)
+    if (chat) chat.unread = 0
+  }
+
+  function closeChat() {
+    isChatOpen.value = false
+    activeChatId.value = null
+  }
+
+  function sendChatMessage(chatId, text) {
+    const chat = chatListData.value.find(c => c.id === chatId)
+    if (!chat) return
+    if (!messagesMap.value[chatId]) {
+      messagesMap.value[chatId] = []
+    }
+    const now = new Date()
+    const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+    messagesMap.value[chatId].push({
+      sender: 'me',
+      text,
+      time: timeStr
+    })
+    chat.lastMsg = text
+    chat.lastTime = timeStr
+
+    if (!chat.isGroup) {
+      chat.sentByMeCount = (chat.sentByMeCount || 0) + 1
+      // 如果对方发过消息，且我刚发了第一条消息（达成双方互发）
+      if (chat.sentByMeCount === 1 && chat.sentByThemCount > 0) {
+        showToast(`双方已互发消息，${getUserById(chat.userId)?.nickname} 已移至普通聊天列表！`)
+      }
+      // 如果是我发起的第一条消息，对方还没有回过
+      else if (chat.sentByMeCount === 1 && chat.sentByThemCount === 0) {
+        // 1.2秒后模拟对方回复，以达成“互相发送消息”
+        setTimeout(() => {
+          const replyText = `（模拟自动回复）你好呀，我收到了你的消息！这周末操场没有大型活动，不过有小型的路演演出，可以来看看。`
+          const replyTime = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+          messagesMap.value[chatId].push({
+            sender: 'them',
+            text: replyText,
+            time: replyTime
+          })
+          chat.lastMsg = replyText
+          chat.lastTime = replyTime
+          chat.sentByThemCount = 1
+          showToast(`双方已互发消息，${getUserById(chat.userId)?.nickname} 已移至普通聊天列表！`)
+        }, 1200)
+      }
+    }
+  }
 
   // 未读计数
   const unreadLikeCount = computed(() =>
@@ -392,6 +604,350 @@ export const useAppStore = defineStore('app', () => {
   const followLabels = { everyone: '所有人可关注', require_approval: '关注需验证', nobody: '不允许陌生人关注' }
   const contentVisibilityLabels = { everyone: '所有人可见', followers: '仅关注者可见', mutual: '仅互关者可见', private: '仅自己可见' }
 
+  // ===== 圈子（Circles）状态与操作 =====
+  const circles = ref([
+    {
+      id: 'c1',
+      name: '摄影爱好者协会',
+      number: '112893049',
+      icon: '📷',
+      color: 'linear-gradient(135deg, #667eea, #764ba2)',
+      backgroundImage: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&auto=format&fit=crop&q=60',
+      description: '用镜头记录校园生活的美好瞬间，欢迎分享你的摄影作品与心得。',
+      memberCount: 1286,
+      maxMemberCount: 2000,
+      postCount: 3456,
+      unread: 3,
+      official: true,
+      isAnon: false,
+      latestPost: '本周六组织校园外拍活动，有意向的同学请接龙~',
+      category: '推荐',
+      city: '北京',
+      school: '中央民族大学',
+      createdAt: '2023/10/12',
+      joined: true,
+      memberStats: {
+        femalePercent: 48,
+        femaleCount: 617,
+        cityCount: 512,
+        post00sCount: 980,
+        recentActiveText: '最近有230人发言'
+      }
+    },
+    {
+      id: 'c2',
+      name: '考研交流群',
+      number: '552910394',
+      icon: '📖',
+      color: 'linear-gradient(135deg, #f093fb, #f5576c)',
+      backgroundImage: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60',
+      description: '考研资料分享、每日打卡、互相鼓励监督的学习社区。',
+      memberCount: 2340,
+      maxMemberCount: 3000,
+      postCount: 8900,
+      unread: 12,
+      official: false,
+      isAnon: false,
+      latestPost: '分享一套肖秀荣政治冲刺笔记，有需要的自取。',
+      category: '学习',
+      city: '北京',
+      school: '中央民族大学',
+      createdAt: '2024/09/01',
+      joined: true,
+      memberStats: {
+        femalePercent: 55,
+        femaleCount: 1287,
+        cityCount: 450,
+        post00sCount: 1980,
+        recentActiveText: '最近有890人发言'
+      }
+    },
+    {
+      id: 'c3',
+      name: '校园匿名树洞',
+      number: '990384102',
+      icon: '🌳',
+      color: 'linear-gradient(135deg, #4facfe, #00f2fe)',
+      backgroundImage: 'https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&auto=format&fit=crop&q=60',
+      description: '说出你不敢说的话，匿名吐槽、倾诉、分享心事。',
+      memberCount: 5600,
+      maxMemberCount: 10000,
+      postCount: 23400,
+      unread: 0,
+      official: false,
+      isAnon: true,
+      latestPost: '有时候真的很羡慕那些勇敢表达自己的人...',
+      category: '推荐',
+      city: '北京',
+      school: '北京大学',
+      createdAt: '2022/05/18',
+      joined: true,
+      memberStats: {
+        femalePercent: 50,
+        femaleCount: 2800,
+        cityCount: 1200,
+        post00sCount: 4800,
+        recentActiveText: '最近有1205人发言'
+      }
+    },
+    {
+      id: 'c4',
+      name: '日系摇滚同好会',
+      number: '448209384',
+      icon: '🎸',
+      color: 'linear-gradient(135deg, #fa709a, #fee140)',
+      backgroundImage: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800&auto=format&fit=crop&q=60',
+      description: 'ONE OK ROCK、RADWIMPS、凛として時雨... 日系摇滚爱好者聚集地。',
+      memberCount: 456,
+      maxMemberCount: 500,
+      postCount: 1230,
+      unread: 0,
+      official: false,
+      isAnon: false,
+      latestPost: '有人去看下个月的RADWIMPS演唱会吗？组队！',
+      category: '音乐',
+      city: '北京',
+      school: '清华大学',
+      createdAt: '2023/12/01',
+      joined: true,
+      memberStats: {
+        femalePercent: 35,
+        femaleCount: 160,
+        cityCount: 88,
+        post00sCount: 390,
+        recentActiveText: '最近有48人发言'
+      }
+    },
+    {
+      id: 'c5',
+      name: '渴望遗忘却总是苏醒的三角初华',
+      number: '975336438',
+      icon: '🎭',
+      color: 'linear-gradient(135deg, #30cfd0, #330867)',
+      backgroundImage: 'https://images.unsplash.com/photo-1518173946687-a4c8a383392e?w=800&auto=format&fit=crop&q=60',
+      description: '专注于讨论初华的群聊，希望能让你更懂她一点。欢迎加入！',
+      memberCount: 205,
+      maxMemberCount: 500,
+      postCount: 847,
+      unread: 0,
+      official: false,
+      isAnon: false,
+      latestPost: '三角初华本月新单曲太强了！大家觉得呢？',
+      category: '动漫',
+      city: '北京',
+      school: '中央民族大学',
+      createdAt: '2025/11/11',
+      joined: false,
+      memberStats: {
+        femalePercent: 28,
+        femaleCount: 57,
+        cityCount: 8,
+        post00sCount: 81,
+        recentActiveText: '最近有77人发言'
+      }
+    },
+    {
+      id: 'c6',
+      name: '未定乐队今天练琴了吗？',
+      number: '102934849',
+      icon: '🎸',
+      color: 'linear-gradient(135deg, #1e3c72, #2a5298)',
+      backgroundImage: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=800&auto=format&fit=crop&q=60',
+      description: '这里是未定乐队（MyGO!!!!!/Ave Mujica）同好交流圈，每天打卡练琴！',
+      memberCount: 1003,
+      maxMemberCount: 2000,
+      postCount: 3429,
+      unread: 0,
+      official: false,
+      isAnon: false,
+      latestPost: '今天练习了春日影，有人来合一下吗？',
+      category: '动漫',
+      city: '上海',
+      school: '复旦大学',
+      createdAt: '2025/06/15',
+      joined: false,
+      memberStats: {
+        femalePercent: 42,
+        femaleCount: 421,
+        cityCount: 15,
+        post00sCount: 650,
+        recentActiveText: '最近有342人发言'
+      }
+    },
+    {
+      id: 'c7',
+      name: 'bakaの咖啡厅（避风港）',
+      number: '884729104',
+      icon: '☕',
+      color: 'linear-gradient(135deg, #a8ff78, #78ffd6)',
+      backgroundImage: 'https://images.unsplash.com/photo-1447078806655-40579c2520d6?w=800&auto=format&fit=crop&q=60',
+      description: '一个位于朱拉大森林的城镇中的咖啡厅，欢迎各位baka和冒险者来闲聊歇脚。',
+      memberCount: 131,
+      maxMemberCount: 500,
+      postCount: 582,
+      unread: 0,
+      official: false,
+      isAnon: true,
+      latestPost: '今天老板不在，咖啡免费喝了啊',
+      category: '游戏',
+      city: '广州',
+      school: '北京大学',
+      createdAt: '2024/02/10',
+      joined: false,
+      memberStats: {
+        femalePercent: 15,
+        femaleCount: 20,
+        cityCount: 3,
+        post00sCount: 95,
+        recentActiveText: '最近有14人发言'
+      }
+    },
+    {
+      id: 'c8',
+      name: 'galgame大剧院',
+      number: '662810398',
+      icon: '🎮',
+      color: 'linear-gradient(135deg, #f857a6, #ff5858)',
+      backgroundImage: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=60',
+      description: '一切都是命运石之门的选择，galgame、视觉小说同好聚集地。',
+      memberCount: 196,
+      maxMemberCount: 200,
+      postCount: 421,
+      unread: 0,
+      official: false,
+      isAnon: false,
+      latestPost: '《白色相簿2》冬马线通关，胃疼中...',
+      category: '游戏',
+      city: '深圳',
+      school: '清华大学',
+      createdAt: '2026/02/20',
+      joined: false,
+      memberStats: {
+        femalePercent: 8,
+        femaleCount: 15,
+        cityCount: 5,
+        post00sCount: 180,
+        recentActiveText: '最近有7人发言'
+      }
+    },
+    {
+      id: 'c9',
+      name: '校园音乐节组委会',
+      number: '220394859',
+      icon: '🎵',
+      color: 'linear-gradient(135deg, #fbc2eb, #a6c1ee)',
+      backgroundImage: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop&q=60',
+      description: '一年一度校园音乐节的策划、组织、演出安排。',
+      memberCount: 320,
+      maxMemberCount: 500,
+      postCount: 567,
+      unread: 0,
+      official: true,
+      isAnon: false,
+      latestPost: '本届校园十佳歌手复赛名单已公示，大家快来围观！',
+      category: '音乐',
+      city: '北京',
+      school: '中央民族大学',
+      createdAt: '2025/08/10',
+      joined: false,
+      memberStats: {
+        femalePercent: 50,
+        femaleCount: 160,
+        cityCount: 120,
+        post00sCount: 280,
+        recentActiveText: '最近有45人发言'
+      }
+    },
+    {
+      id: 'c10',
+      name: '美剧英剧交流圈',
+      number: '772910394',
+      icon: '🎬',
+      color: 'linear-gradient(135deg, #13547a, #80d0c7)',
+      backgroundImage: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&auto=format&fit=crop&q=60',
+      description: '追剧不迷路！最新英剧美剧资源讨论、影评交流、无剧透推荐。',
+      memberCount: 85,
+      maxMemberCount: 200,
+      postCount: 188,
+      unread: 0,
+      official: false,
+      isAnon: false,
+      latestPost: '《权力的游戏》最终季到底算不算烂尾？大家聊聊',
+      category: '影视',
+      city: '深圳',
+      school: '清华大学',
+      createdAt: '2026/01/05',
+      joined: false,
+      memberStats: {
+        femalePercent: 45,
+        femaleCount: 38,
+        cityCount: 12,
+        post00sCount: 68,
+        recentActiveText: '最近有12人发言'
+      }
+    },
+    {
+      id: 'c11',
+      name: '夜跑打卡协会',
+      number: '334810293',
+      icon: '🏃',
+      color: 'linear-gradient(135deg, #ff9a9e, #fecfef)',
+      backgroundImage: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800&auto=format&fit=crop&q=60',
+      description: '每天夜跑，强身健体！欢迎大家在这里打卡跑步路线和数据，组队跑！',
+      memberCount: 95,
+      maxMemberCount: 500,
+      postCount: 219,
+      unread: 0,
+      official: false,
+      isAnon: false,
+      latestPost: '今晚8点操场见，打算跑5公里，有一起的吗？',
+      category: '运动',
+      city: '上海',
+      school: '复旦大学',
+      createdAt: '2025/09/20',
+      joined: false,
+      memberStats: {
+        femalePercent: 35,
+        femaleCount: 33,
+        cityCount: 18,
+        post00sCount: 78,
+        recentActiveText: '最近有15人发言'
+      }
+    }
+  ])
+
+  // 加入圈子
+  function joinCircle(circleId) {
+    const circle = circles.value.find(c => c.id === circleId)
+    if (circle && !circle.joined) {
+      circle.joined = true
+      circle.memberCount++
+      if (circle.memberStats) {
+        circle.memberStats.femaleCount = Math.round(circle.memberCount * (circle.memberStats.femalePercent / 100))
+        circle.memberStats.post00sCount++
+        circle.memberStats.cityCount++
+      }
+      return true
+    }
+    return false
+  }
+
+  // 退出圈子
+  function leaveCircle(circleId) {
+    const circle = circles.value.find(c => c.id === circleId)
+    if (circle && circle.joined) {
+      circle.joined = false
+      circle.memberCount = Math.max(0, circle.memberCount - 1)
+      if (circle.memberStats) {
+        circle.memberStats.femaleCount = Math.round(circle.memberCount * (circle.memberStats.femalePercent / 100))
+        circle.memberStats.post00sCount = Math.max(0, circle.memberStats.post00sCount - 1)
+        circle.memberStats.cityCount = Math.max(0, circle.memberStats.cityCount - 1)
+      }
+      return true
+    }
+    return false
+  }
+
   return {
     // 用户
     isLoggedIn, currentUser, users,
@@ -434,6 +990,9 @@ export const useAppStore = defineStore('app', () => {
     unreadAnonCount, unreadChatCount,
     markAllLikesRead, markAllCommentsRead, markAllFansRead, markChatRead,
     markAllMessagesRead,
+    activeChatId, isChatOpen, messagesMap, normalChats, strangerChats,
+    latestStrangerChat, strangersFolderItem, visibleChatList, openChat, closeChat,
+    sendChatMessage,
 
     // 用户内容
     getUserPosts, getUserCommentedPosts, getUserCollectedPosts, getUserLikedPosts,
@@ -454,6 +1013,9 @@ export const useAppStore = defineStore('app', () => {
     messageLabels, followLabels, contentVisibilityLabels,
 
     // 个人设置
-    profileActiveTab
+    profileActiveTab,
+
+    // 圈子模块
+    circles, joinCircle, leaveCircle
   }
 })

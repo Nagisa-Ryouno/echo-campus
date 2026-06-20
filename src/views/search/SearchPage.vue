@@ -1,6 +1,6 @@
 <template>
   <div class="search-page">
-    <!-- 紧凑定点块：搜索栏 + 结果 Tab -->
+    <!-- 紧凑定点块：搜索栏 + 结果 Tab / 频道联动选项 -->
     <div class="search-sticky-wrap" :class="{ 'is-scrolled': isScrolled }">
       <div class="search-header">
         <div class="search-input-wrap">
@@ -11,14 +11,33 @@
             type="text"
             class="search-input"
             :placeholder="isMessageSearch ? '搜索联系人、圈子、聊天记录' : '搜索用户、帖子、话题'"
-            @keyup.enter="doSearch"
+            @keyup.enter="handleEnterSearch"
             @input="onInput"
           />
-          <span v-if="keyword" class="search-clear" @click="keyword = ''; results = null">
+          <span v-if="keyword" class="search-clear" @click="clearSearch">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </span>
         </div>
         <span class="search-cancel" @click="$router.back()">取消</span>
+      </div>
+
+      <!-- 首页搜索频道联动过滤器 (仅当搜索有结果且来自首页时显示) -->
+      <div v-if="results && fromSource === 'home' && channelName" class="search-filter-row">
+        <span class="filter-title">搜索范围：</span>
+        <div 
+          class="filter-pill" 
+          :class="{ active: searchScope === 'channel' }" 
+          @click="setSearchScope('channel')"
+        >
+          当前频道 ({{ channelName }})
+        </div>
+        <div 
+          class="filter-pill" 
+          :class="{ active: searchScope === 'all' }" 
+          @click="setSearchScope('all')"
+        >
+          全站
+        </div>
       </div>
 
       <!-- 结果 Tab（仅在搜索后有结果时显示） -->
@@ -36,40 +55,77 @@
       </div>
     </div>
 
-    <!-- 默认页：根据搜索模式显示不同内容 -->
+    <!-- 默认引导页：未搜索状态 -->
     <div v-if="!keyword && !results" class="search-default">
 
-      <!-- 非消息搜索：热门搜索 + 推荐用户 -->
+      <!-- 非消息搜索：猜你想搜 + 近期浏览（仅首页） + 搜索历史 -->
       <template v-if="!isMessageSearch">
-        <!-- 热门搜索 -->
+        
+        <!-- 💡 猜你想搜 -->
         <div class="search-section">
           <div class="section-header">
-            <span class="section-title">🔥 热门搜索</span>
+            <span class="section-title">💡 猜你想搜</span>
+            <span class="section-action-btn" @click="toggleGuessVisible">
+              <van-icon :name="isGuessVisible ? 'eye-o' : 'closed-eye'" size="16" />
+            </span>
           </div>
-          <div class="hot-tags">
-            <span v-for="t in hotSearches" :key="t" class="hot-tag" @click="keyword = t; doSearch()">{{ t }}</span>
-          </div>
+          <transition name="fade-collapse">
+            <div v-if="isGuessVisible" class="hot-tags">
+              <span v-for="t in dynamicGuessKeywords" :key="t" class="hot-tag" @click="selectTagSearch(t)">{{ t }}</span>
+            </div>
+            <div v-else class="collapsed-tip">推荐话题已隐藏</div>
+          </transition>
         </div>
 
-        <!-- 推荐用户 -->
-        <div class="search-section">
+        <!-- 📖 近期浏览（仅来自首页搜索，且 store 中有浏览记录时显示） -->
+        <div v-if="fromSource === 'home' && store.browseHistory && store.browseHistory.length > 0" class="search-section">
           <div class="section-header">
-            <span class="section-title">👥 推荐用户</span>
+            <span class="section-title">📖 近期浏览</span>
+            <span class="section-action-btn" @click="toggleBrowseVisible">
+              <van-icon :name="isBrowseVisible ? 'eye-o' : 'closed-eye'" size="16" />
+            </span>
           </div>
-          <div class="user-list">
-            <div
-              v-for="u in recommendUsers"
-              :key="u.id"
-              class="search-user-item"
-              @click="$router.push(`/profile/${u.id}`)"
-            >
-              <div class="su-avatar" :style="{ background: u.avatarColor }">{{ u.nickname.slice(0, 1) }}</div>
-              <div class="su-info">
-                <div class="su-name">{{ u.nickname }}</div>
-                <div class="su-school">{{ u.school }}</div>
+          <transition name="fade-collapse">
+            <div v-if="isBrowseVisible" class="browse-history-list">
+              <div 
+                v-for="history in store.browseHistory.slice(0, 3)" 
+                :key="history.postId" 
+                class="browse-history-item"
+                @click="$router.push(`/post/${history.postId}`)"
+              >
+                <span class="browse-title">{{ history.title }}</span>
+                <span class="browse-time">{{ history.time }}</span>
               </div>
             </div>
+            <div v-else class="collapsed-tip">近期浏览已折叠</div>
+          </transition>
+        </div>
+
+        <!-- 🕒 搜索历史 -->
+        <div class="search-section">
+          <div class="section-header">
+            <span class="section-title">🕒 搜索历史</span>
+            <div class="section-actions">
+              <span v-if="searchHistory.length > 0" class="section-action-btn delete-btn" @click="clearHistory">
+                <van-icon name="delete-o" size="16" />
+              </span>
+              <span class="section-action-btn" @click="toggleHistoryVisible">
+                <van-icon :name="isHistoryVisible ? 'eye-o' : 'closed-eye'" size="16" />
+              </span>
+            </div>
           </div>
+          <transition name="fade-collapse">
+            <div v-if="isHistoryVisible">
+              <div v-if="searchHistory.length === 0" class="empty-history">暂无搜索历史</div>
+              <div v-else class="history-tags">
+                <span v-for="(h, idx) in searchHistory" :key="idx" class="history-tag" @click="selectTagSearch(h)">
+                  {{ h }}
+                  <span class="tag-delete-cross" @click.stop="deleteHistoryItem(idx)">×</span>
+                </span>
+              </div>
+            </div>
+            <div v-else class="collapsed-tip">搜索历史已隐藏</div>
+          </transition>
         </div>
       </template>
 
@@ -156,6 +212,7 @@
           v-for="t in filteredTopics"
           :key="t.name"
           class="search-topic-item"
+          @click="selectTagSearch(t.name)"
         >
           <div class="st-icon">#</div>
           <div class="st-info">
@@ -257,7 +314,86 @@ const results = ref(null)
 const activeResultTab = ref('posts')
 const inputRef = ref(null)
 
-// ===== 消息搜索模式检测 =====
+// 区分搜索来源与大频道
+const fromSource = computed(() => route.query.from || '')
+const activeChannelKey = computed(() => route.query.channel || '')
+
+const channelName = computed(() => {
+  const map = {
+    meet: '遇见',
+    follow: '关注',
+    recommend: '推荐',
+    city: '同城',
+    school: '我的学校'
+  }
+  return map[activeChannelKey.value] || ''
+})
+
+// 频道联动过滤（仅首页搜索支持）
+const searchScope = ref('channel') // 'channel' | 'all'
+function setSearchScope(scope) {
+  searchScope.value = scope
+}
+
+// 隐藏与折叠状态（使用 localStorage 进行状态持久化）
+const isGuessVisible = ref(localStorage.getItem('echo_guess_search_visible') !== 'false')
+const isHistoryVisible = ref(localStorage.getItem('echo_history_search_visible') !== 'false')
+const isBrowseVisible = ref(localStorage.getItem('echo_browse_search_visible') !== 'false')
+
+function toggleGuessVisible() {
+  isGuessVisible.value = !isGuessVisible.value
+  localStorage.setItem('echo_guess_search_visible', String(isGuessVisible.value))
+}
+
+function toggleHistoryVisible() {
+  isHistoryVisible.value = !isHistoryVisible.value
+  localStorage.setItem('echo_history_search_visible', String(isHistoryVisible.value))
+}
+
+function toggleBrowseVisible() {
+  isBrowseVisible.value = !isBrowseVisible.value
+  localStorage.setItem('echo_browse_search_visible', String(isBrowseVisible.value))
+}
+
+// 搜索历史记录列表
+const searchHistory = ref([])
+
+onMounted(() => {
+  const saved = localStorage.getItem('echo_search_history')
+  if (saved) {
+    try {
+      searchHistory.value = JSON.parse(saved)
+    } catch (_) {
+      searchHistory.value = []
+    }
+  }
+  inputRef.value?.focus()
+})
+
+function saveHistory() {
+  localStorage.setItem('echo_search_history', JSON.stringify(searchHistory.value))
+}
+
+function deleteHistoryItem(index) {
+  searchHistory.value.splice(index, 1)
+  saveHistory()
+}
+
+function clearHistory() {
+  searchHistory.value = []
+  saveHistory()
+}
+
+function handleEnterSearch() {
+  doSearch(keyword.value)
+}
+
+function selectTagSearch(tagText) {
+  keyword.value = tagText
+  doSearch(tagText)
+}
+
+// 消息搜索模式检测
 const isMessageSearch = computed(() => route.query.from === 'message')
 
 const defaultTabs = [
@@ -274,18 +410,50 @@ const messageTabs = [
 
 const currentTabs = computed(() => isMessageSearch.value ? messageTabs : defaultTabs)
 
-const hotSearches = ['考研', '四六级', '摄影', '二手闲置', '健身房', '美食探店', '实习', '恋爱']
+// 动态“猜你想搜”词条池
+const dynamicGuessKeywords = computed(() => {
+  if (fromSource.value === 'home') {
+    if (activeChannelKey.value === 'school') {
+      return ['二手闲置', '学习干货', '失物招领', '表白墙', '校园活动', '选课攻略', '社团招新']
+    } else if (activeChannelKey.value === 'city') {
+      return ['同城搭子', '美食探店', '周末去哪儿', '自习室', '租房合租', '同城演出', '周末爬山']
+    } else if (activeChannelKey.value === 'recommend') {
+      return ['摄影约拍', '高分电影', '宝藏音乐', '新番动漫', '好物安利', '穿搭日常', '读书打卡']
+    } else if (activeChannelKey.value === 'follow' || activeChannelKey.value === 'meet') {
+      return ['同频交友', '声望达人', '社恐日常', '匿名树洞', '配对挑战', '恋爱物语']
+    }
+  }
+  // 发现页或默认全平台热搜
+  return ['考研党', '期末复习', '四六级', '校园穿搭', '失物招领', '实习招募', '食堂测评', '宿舍日常']
+})
 
 const recommendUsers = computed(() =>
   store.users.filter(u => u.id !== 'u1').slice(0, 5)
 )
 
-// ===== 搜索结果 =====
+// ===== 搜索结果与联动过滤逻辑 =====
 const filteredPosts = computed(() => {
   if (!keyword.value) return []
   const kw = keyword.value.toLowerCase()
-  return store.posts
-    .filter(p => p.visibility === 'public')
+  let list = store.posts.filter(p => p.visibility === 'public')
+  
+  // 首页搜索联动规则
+  if (fromSource.value === 'home' && searchScope.value === 'channel' && activeChannelKey.value) {
+    const ch = activeChannelKey.value
+    if (ch === 'school') {
+      // 搜本校或 school 频道的贴子
+      list = list.filter(p => p.channel === 'school' || p.schoolOnly === true)
+    } else if (ch === 'city') {
+      list = list.filter(p => p.channel === 'city')
+    } else if (ch === 'recommend') {
+      list = list.filter(p => p.channel === 'recommend')
+    } else if (ch === 'follow') {
+      // 仅搜索关注者发布的帖子
+      list = list.filter(p => store.isFollowing(p.authorId))
+    }
+  }
+  
+  return list
     .filter(p =>
       p.content.toLowerCase().includes(kw) ||
       (p.topicTags || []).some(t => t.toLowerCase().includes(kw)) ||
@@ -323,7 +491,6 @@ const filteredTopics = computed(() => {
 })
 
 // ===== 消息搜索专用结果 =====
-// 联系人：匹配昵称或学校
 const msgContacts = computed(() => {
   if (!isMessageSearch.value || !keyword.value) return []
   const kw = keyword.value.toLowerCase()
@@ -333,7 +500,6 @@ const msgContacts = computed(() => {
   ).slice(0, 20)
 })
 
-// 圈子：匹配群聊名称
 const msgCircles = computed(() => {
   if (!isMessageSearch.value || !keyword.value) return []
   const kw = keyword.value.toLowerCase()
@@ -342,7 +508,6 @@ const msgCircles = computed(() => {
   ).slice(0, 20)
 })
 
-// 聊天记录：匹配所有私聊和圈子会话的 lastMsg
 const msgChatRecords = computed(() => {
   if (!isMessageSearch.value || !keyword.value) return []
   const kw = keyword.value.toLowerCase()
@@ -351,15 +516,11 @@ const msgChatRecords = computed(() => {
   ).slice(0, 20)
 })
 
-// ===== 最近聊天列表（消息搜索默认页）=====
-// 按未读状态 + 时间倒序排列
 const recentChats = computed(() => {
   const list = [...store.chatListData]
-  // 解析时间字符串为可排序的数值
   const parseTime = (t) => {
     if (!t) return 0
     if (t.includes(':')) {
-      // "21:32" → 21 * 60 + 32
       const [h, m] = t.split(':').map(Number)
       return h * 60 + m
     }
@@ -367,11 +528,9 @@ const recentChats = computed(() => {
     return 0
   }
   return list.sort((a, b) => {
-    // 有未读消息的排前面
     if ((b.unread || 0) !== (a.unread || 0)) {
       return (b.unread || 0) - (a.unread || 0)
     }
-    // 然后按最后消息时间倒序
     return parseTime(b.lastTime) - parseTime(a.lastTime)
   }).slice(0, 20)
 })
@@ -397,17 +556,23 @@ function highlightMatch(text) {
 }
 
 function onInput() {
-  if (keyword.value.trim()) {
-    doSearch()
-  } else {
+  if (!keyword.value.trim()) {
     results.value = null
   }
 }
 
-function doSearch() {
-  if (!keyword.value.trim()) return
+// 统一执行搜索逻辑
+function doSearch(kw) {
+  const text = (kw || '').trim()
+  if (!text) return
+  
+  keyword.value = text
   results.value = true
-  // 消息搜索默认显示联系人
+
+  // 保存搜索历史（去重置顶，最多 10 条）
+  searchHistory.value = [text, ...searchHistory.value.filter(h => h !== text)].slice(0, 10)
+  saveHistory()
+
   if (isMessageSearch.value) {
     activeResultTab.value = 'contacts'
   } else {
@@ -415,13 +580,16 @@ function doSearch() {
   }
 }
 
-// 消息搜索：点击圈子
+function clearSearch() {
+  keyword.value = ''
+  results.value = null
+}
+
 function onCircleClick(circle) {
   store.markChatRead(circle.id)
   showToast('进入群聊（原型占位）')
 }
 
-// 消息搜索：点击聊天记录
 function onChatRecordClick(chat) {
   store.markChatRead(chat.id)
   if (chat.isGroup) {
@@ -431,7 +599,6 @@ function onChatRecordClick(chat) {
   }
 }
 
-// 消息搜索默认页：点击最近聊天
 function onRecentChatClick(chat) {
   store.markChatRead(chat.id)
   if (chat.isGroup) {
@@ -440,19 +607,17 @@ function onRecentChatClick(chat) {
     showToast(`与 ${store.getUserById(chat.userId)?.nickname || '用户'} 的私聊（原型占位）`)
   }
 }
-
-onMounted(() => {
-  inputRef.value?.focus()
-})
 </script>
 
 <style scoped>
 .search-page {
   min-height: 100%;
   background: var(--echo-bg);
+  display: flex;
+  flex-direction: column;
 }
 
-/* ===== 紧凑粘性锚定块（搜索栏 + 结果 Tab）===== */
+/* ===== 紧凑定点粘性栏 ===== */
 .search-sticky-wrap {
   position: sticky;
   top: 0;
@@ -460,15 +625,9 @@ onMounted(() => {
   background: var(--echo-white);
   max-width: 375px;
   box-sizing: border-box;
-  box-shadow: none;
-  transition:
-    background 0.25s ease,
-    box-shadow 0.25s ease,
-    backdrop-filter 0.25s ease,
-    -webkit-backdrop-filter 0.25s ease;
+  transition: all 0.25s ease;
 }
 
-/* 滚动后：毛玻璃 + 双层阴影 */
 .search-sticky-wrap.is-scrolled {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: saturate(180%) blur(16px);
@@ -478,7 +637,7 @@ onMounted(() => {
     0 6px 20px rgba(0, 0, 0, 0.07);
 }
 
-/* ===== 搜索栏（紧凑）===== */
+/* ===== 搜索头部 ===== */
 .search-header {
   display: flex;
   align-items: center;
@@ -528,6 +687,8 @@ onMounted(() => {
   color: var(--echo-text-hint);
   cursor: pointer;
   padding: 2px;
+  display: flex;
+  align-items: center;
 }
 
 .search-cancel {
@@ -542,36 +703,103 @@ onMounted(() => {
   opacity: 0.7;
 }
 
-/* ===== 默认状态 ===== */
+/* ===== 联动过滤 Pills 行 ===== */
+.search-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px 10px;
+  background: var(--echo-white);
+}
+
+.filter-title {
+  font-size: 11px;
+  color: var(--echo-text-hint);
+}
+
+.filter-pill {
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: var(--echo-bg);
+  color: var(--echo-text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.filter-pill.active {
+  background: var(--echo-primary-light);
+  color: var(--echo-primary);
+  border-color: var(--echo-primary);
+  font-weight: 600;
+}
+
+/* ===== 默认引导页 ===== */
 .search-default {
-  padding: 20px 16px;
+  padding: 16px 14px;
 }
 
 .search-section {
-  margin-bottom: 24px;
+  background: var(--echo-white);
+  border-radius: var(--echo-radius);
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: var(--echo-shadow-xs);
 }
 
 .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 12px;
 }
 
 .section-title {
-  font-size: var(--echo-text-lg);
-  font-weight: var(--echo-weight-semibold);
+  font-size: 14px;
+  font-weight: var(--echo-weight-bold);
   color: var(--echo-text);
+  letter-spacing: 0.3px;
 }
 
-.hot-tags {
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-action-btn {
+  color: var(--echo-text-hint);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.section-action-btn:active {
+  color: var(--echo-text-secondary);
+}
+
+.delete-btn {
+  color: var(--echo-text-hint);
+}
+
+.delete-btn:active {
+  color: var(--echo-danger);
+}
+
+/* ── 标签布局 ── */
+.hot-tags, .history-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
 .hot-tag {
-  padding: 6px 16px;
-  border-radius: var(--echo-radius-full);
-  background: var(--echo-bg-card);
-  font-size: var(--echo-text-sm);
+  padding: 5px 12px;
+  border-radius: 14px;
+  background: var(--echo-bg-input);
+  font-size: 12px;
   color: var(--echo-text-secondary);
   cursor: pointer;
   transition: all var(--echo-transition-fast);
@@ -584,60 +812,81 @@ onMounted(() => {
   border-color: var(--echo-primary);
 }
 
-/* ===== 用户列表 ===== */
-.user-list {
+.history-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 12px;
+  border-radius: 14px;
+  background: var(--echo-bg);
+  font-size: 12px;
+  color: var(--echo-text-secondary);
+  cursor: pointer;
+  border: 1px solid var(--echo-border);
+  transition: all var(--echo-transition-fast);
+}
+
+.history-tag:active {
+  background: var(--echo-bg-hover);
+}
+
+.tag-delete-cross {
+  font-size: 14px;
+  color: var(--echo-text-hint);
+  font-weight: 300;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.tag-delete-cross:active {
+  color: var(--echo-danger);
+}
+
+.empty-history, .collapsed-tip {
+  font-size: 12px;
+  color: var(--echo-text-hint);
+  padding: 4px 0;
+}
+
+.collapsed-tip {
+  color: var(--echo-text-placeholder);
+  font-style: italic;
+}
+
+/* ── 近期浏览（首页专享） ── */
+.browse-history-list {
   display: flex;
   flex-direction: column;
 }
 
-.search-user-item {
+.browse-history-item {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 12px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--echo-divider);
   cursor: pointer;
-  transition: background var(--echo-transition-fast);
 }
 
-.search-user-item:active {
-  background: var(--echo-bg);
+.browse-history-item:last-child {
+  border-bottom: none;
 }
 
-.su-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 18px;
-  font-weight: var(--echo-weight-bold);
-  flex-shrink: 0;
+.browse-title {
+  font-size: 12px;
+  color: var(--echo-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
 }
 
-.su-info {
-  flex: 1;
-}
-
-.su-name {
-  font-size: var(--echo-text-md);
-  font-weight: var(--echo-weight-semibold);
-  color: var(--echo-text);
-}
-
-.su-school {
-  font-size: var(--echo-text-sm);
+.browse-time {
+  font-size: 10px;
   color: var(--echo-text-hint);
-  margin-top: 2px;
 }
 
-/* ===== 搜索结果 ===== */
-.search-results {
-  padding: 0;
-}
-
+/* ===== 列表及结果 Tab ===== */
 .result-tabs {
   display: flex;
   background: var(--echo-white);
@@ -648,7 +897,7 @@ onMounted(() => {
   flex: 1;
   text-align: center;
   padding: 8px 0;
-  font-size: var(--echo-text-base);
+  font-size: 13px;
   color: var(--echo-text-secondary);
   cursor: pointer;
   position: relative;
@@ -657,7 +906,7 @@ onMounted(() => {
 
 .result-tab.active {
   color: var(--echo-primary);
-  font-weight: var(--echo-weight-semibold);
+  font-weight: var(--echo-weight-bold);
 }
 
 .result-tab.active::after {
@@ -666,38 +915,77 @@ onMounted(() => {
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 24px;
-  height: 3px;
-  border-radius: 2px;
+  width: 20px;
+  height: 2.5px;
+  border-radius: 1px;
   background: var(--echo-primary);
 }
 
 .result-count {
-  font-size: var(--echo-text-2xs);
+  font-size: 10px;
   color: var(--echo-text-hint);
   margin-left: 2px;
 }
 
 .result-list {
   padding: 0 16px;
+  background: var(--echo-white);
+  flex: 1;
 }
 
-/* ===== 帖子搜索结果 ===== */
+/* ===== 搜索结果卡片 ===== */
+.search-user-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--echo-divider);
+  cursor: pointer;
+}
+
+.su-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 16px;
+  font-weight: var(--echo-weight-bold);
+  flex-shrink: 0;
+}
+
+.su-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.su-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--echo-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.su-school {
+  font-size: 11px;
+  color: var(--echo-text-hint);
+  margin-top: 2px;
+}
+
 .search-post-item {
   padding: 14px 0;
   border-bottom: 1px solid var(--echo-divider);
   cursor: pointer;
-  transition: background var(--echo-transition-fast);
-}
-
-.search-post-item:active {
-  background: var(--echo-bg);
 }
 
 .sp-content {
-  font-size: var(--echo-text-base);
+  font-size: 13.5px;
   color: var(--echo-text);
-  line-height: 1.6;
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -709,61 +997,50 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: var(--echo-text-sm);
+  font-size: 11px;
   color: var(--echo-text-hint);
 }
 
-.sp-stats {
-  color: var(--echo-text-hint);
+.sp-author {
+  font-weight: 500;
 }
 
-/* 搜索高亮 */
-:deep(.highlight) {
-  color: var(--echo-accent);
-  font-weight: var(--echo-weight-semibold);
-  font-style: normal;
-  background: var(--echo-accent-light);
-  padding: 0 2px;
-  border-radius: 2px;
-}
-
-/* ===== 话题搜索结果 ===== */
 .search-topic-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--echo-divider);
   cursor: pointer;
 }
 
 .st-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: var(--echo-primary-light);
   color: var(--echo-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  font-weight: var(--echo-weight-bold);
+  font-size: 16px;
+  font-weight: 700;
   flex-shrink: 0;
 }
 
 .st-name {
-  font-size: var(--echo-text-md);
-  font-weight: var(--echo-weight-semibold);
+  font-size: 13.5px;
+  font-weight: 600;
   color: var(--echo-text);
 }
 
 .st-count {
-  font-size: var(--echo-text-sm);
+  font-size: 11px;
   color: var(--echo-text-hint);
   margin-top: 2px;
 }
 
-/* ===== 最近聊天列表（消息搜索默认页）===== */
+/* ===== 消息搜索专属 ===== */
 .recent-chat-list {
   display: flex;
   flex-direction: column;
@@ -776,22 +1053,17 @@ onMounted(() => {
   padding: 12px 0;
   border-bottom: 1px solid var(--echo-divider);
   cursor: pointer;
-  transition: background var(--echo-transition-fast);
-}
-
-.recent-chat-item:active {
-  background: var(--echo-bg);
 }
 
 .rc-avatar {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: var(--echo-weight-bold);
   flex-shrink: 0;
 }
@@ -802,8 +1074,8 @@ onMounted(() => {
 }
 
 .rc-name {
-  font-size: var(--echo-text-md);
-  font-weight: var(--echo-weight-semibold);
+  font-size: 14px;
+  font-weight: 600;
   color: var(--echo-text);
   display: flex;
   align-items: center;
@@ -813,32 +1085,61 @@ onMounted(() => {
 .rc-unread {
   background: var(--echo-danger);
   color: #fff;
-  font-size: 11px;
-  font-weight: var(--echo-weight-bold);
-  min-width: 18px;
-  height: 18px;
-  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 5px;
+  padding: 0 4px;
   flex-shrink: 0;
 }
 
 .rc-last-msg {
-  font-size: var(--echo-text-sm);
+  font-size: 12px;
   color: var(--echo-text-hint);
-  margin-top: 4px;
+  margin-top: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .rc-time {
-  font-size: var(--echo-text-xs);
+  font-size: 11px;
   color: var(--echo-text-hint);
   flex-shrink: 0;
   align-self: flex-start;
   margin-top: 2px;
+}
+
+.search-results {
+  background: var(--echo-white);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 高亮样式 */
+:deep(.highlight) {
+  color: var(--echo-accent);
+  font-weight: 600;
+  font-style: normal;
+  background: var(--echo-accent-light);
+  padding: 0 1px;
+  border-radius: 2px;
+}
+
+/* 折叠过渡动画 */
+.fade-collapse-enter-active, .fade-collapse-leave-active {
+  transition: all 0.25s ease;
+  max-height: 200px;
+  overflow: hidden;
+}
+
+.fade-collapse-enter-from, .fade-collapse-leave-to {
+  opacity: 0;
+  max-height: 0;
 }
 </style>

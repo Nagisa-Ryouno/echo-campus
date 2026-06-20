@@ -74,6 +74,12 @@ const routes = [
     meta: { title: '匿名消息', tabBar: false }
   },
   {
+    path: '/message/strangers',
+    name: 'StrangersMessage',
+    component: () => import('@/views/message/StrangersMessagePage.vue'),
+    meta: { title: '陌生人消息', tabBar: false }
+  },
+  {
     path: '/message/likes',
     name: 'NotificationLikes',
     component: () => import('@/views/message/notification/NotificationLikes.vue'),
@@ -167,7 +173,19 @@ const routes = [
     path: '/circle',
     name: 'Circle',
     component: () => import('@/views/circle/CirclePage.vue'),
-    meta: { title: '圈子', tabBar: false }
+    meta: { title: '我的圈子', tabBar: false }
+  },
+  {
+    path: '/circle/plaza',
+    name: 'CirclePlaza',
+    component: () => import('@/views/circle/CirclePlaza.vue'),
+    meta: { title: '圈子广场', tabBar: false }
+  },
+  {
+    path: '/circle/:id',
+    name: 'CircleHome',
+    component: () => import('@/views/circle/CircleHome.vue'),
+    meta: { title: '圈子主页', tabBar: false }
   }
 ]
 

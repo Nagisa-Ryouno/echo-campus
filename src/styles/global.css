@@ -12,6 +12,7 @@
 
 /* ===== 设计令牌 ===== */
 :root {
+  --echo-white: #ffffff;
   /* 品牌色 */
   --echo-primary: #4caf7d;
   --echo-primary-light: #e8f5ee;
@@ -251,24 +252,27 @@ a {
   position: absolute;
   min-width: 18px;
   height: 18px;
-  line-height: 18px;
-  text-align: center;
   padding: 0 5px;
-  background: var(--echo-danger);
+  background: #ff3b30;
   color: #fff;
   font-size: var(--echo-text-2xs);
-  font-weight: var(--echo-weight-bold);
-  border-radius: 10px;
+  font-weight: 600;
+  border-radius: 9px;
   border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(231, 76, 60, 0.4);
+  box-shadow: 0 2px 6px rgba(255, 59, 48, 0.3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .echo-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--echo-danger);
+  background: #ff3b30;
   border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(255, 59, 48, 0.3);
 }
 
 /* ===== 空状态规范 ===== */

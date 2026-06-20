@@ -1,5 +1,20 @@
 <template>
   <div class="tabbar-wrapper">
+    <!-- 弧形分割线 -->
+    <svg class="tabbar-border-svg" viewBox="0 0 375 16" preserveAspectRatio="none">
+      <!-- 仅用于填充白色背景以遮挡下方内容，无边框 -->
+      <path
+        d="M -1 15 L 148 15 C 162 15, 168 1, 187.5 1 C 207 1, 213 15, 227 15 L 376 15 L 376 16 L -1 16 Z"
+        fill="var(--echo-white)"
+      />
+      <!-- 仅用于描绘顶部分割线 -->
+      <path
+        d="M -1 15 L 148 15 C 162 15, 168 1, 187.5 1 C 207 1, 213 15, 227 15 L 376 15"
+        fill="none"
+        stroke="var(--echo-border)"
+        stroke-width="1.2"
+      />
+    </svg>
     <div
       v-for="item in tabs"
       :key="item.key"
@@ -95,7 +110,7 @@ defineExpose({ showTabBar })
   width: 100%;
   height: 56px;
   background: var(--echo-white);
-  border-top: 1px solid var(--echo-border);
+  border-top: none; /* 去掉平直的 border-top */
   display: flex;
   align-items: center;
   justify-content: space-around;
@@ -151,6 +166,7 @@ defineExpose({ showTabBar })
   justify-content: center;
   box-shadow: 0 4px 12px rgba(76, 175, 125, 0.4);
   margin-top: -14px;
+  z-index: 5; /* 确保层叠在弧线之上 */
 }
 
 .tabbar-item--publish .tabbar-label {
@@ -164,16 +180,30 @@ defineExpose({ showTabBar })
   right: calc(50% - 24px);
   min-width: 16px;
   height: 16px;
-  line-height: 16px;
-  text-align: center;
   padding: 0 4px;
-  background: var(--echo-danger);
+  background: #ff3b30;
   color: #fff;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 600;
   border-radius: 8px;
   border: 2px solid var(--echo-white);
-  box-shadow: 0 1px 4px rgba(231, 76, 60, 0.4);
+  box-shadow: 0 2px 6px rgba(255, 59, 48, 0.3);
   z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* 弧度分割线 */
+.tabbar-border-svg {
+  position: absolute;
+  top: -15px; /* y=15 刚好与 TabBar 的 top=0 对齐 */
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 16px;
+  pointer-events: none;
+  z-index: 1;
 }
 </style>

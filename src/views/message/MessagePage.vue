@@ -124,7 +124,7 @@
     <div class="chat-section">
       <div class="section-label">聊天</div>
       <div
-        v-for="chat in store.chatListData"
+        v-for="chat in store.visibleChatList"
         :key="chat.id"
         class="chat-item"
         @click="onChatClick(chat)"
@@ -132,17 +132,17 @@
         <div class="chat-avatar-wrap" :class="{ 'is-group': chat.isGroup }">
           <div
             class="chat-avatar"
-            :style="{ backgroundColor: chat.isGroup ? chat.avatarColor : (store.getUserById(chat.userId)?.avatarColor || '#ccc') }"
+            :style="{ backgroundColor: chat.isStrangersFolder ? '#7f8c8d' : (chat.isGroup ? chat.avatarColor : (store.getUserById(chat.userId)?.avatarColor || '#ccc')) }"
           >
             <span class="chat-avatar-text">
-              {{ chat.isGroup ? chat.name.charAt(0) : (store.getUserById(chat.userId)?.nickname?.charAt(0) || '?') }}
+              {{ chat.isStrangersFolder ? '陌' : (chat.isGroup ? chat.name.charAt(0) : (store.getUserById(chat.userId)?.nickname?.charAt(0) || '?')) }}
             </span>
           </div>
           <div v-if="chat.isGroup" class="group-badge">圈</div>
         </div>
         <div class="chat-body">
           <div class="chat-line1">
-            <span class="chat-name">{{ chat.isGroup ? chat.name : (store.getUserById(chat.userId)?.nickname || '未知') }}</span>
+            <span class="chat-name">{{ chat.isStrangersFolder ? chat.name : (chat.isGroup ? chat.name : (store.getUserById(chat.userId)?.nickname || '未知')) }}</span>
             <span class="chat-time">{{ chat.lastTime }}</span>
           </div>
           <div class="chat-line2">
@@ -169,6 +169,9 @@
         <van-icon name="arrow" size="14" color="#c0c4cc" />
       </div>
     </div>
+
+    <!-- 聊天详情抽屉 -->
+    <ChatWindow />
   </div>
 </template>
 
@@ -177,6 +180,7 @@ import { ref, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
 import { showToast, showConfirmDialog } from 'vant'
+import ChatWindow from '@/components/ChatWindow.vue'
 
 const router = useRouter()
 const store = useAppStore()
@@ -222,19 +226,21 @@ async function markAllRead() {
 }
 
 function onChatClick(chat) {
-  store.markChatRead(chat.id)
-  if (chat.isGroup) {
-    showToast('进入群聊（原型占位）')
+  if (chat.isStrangersFolder) {
+    router.push('/message/strangers')
   } else {
-    showToast(`与 ${store.getUserById(chat.userId)?.nickname || '用户'} 的私聊（原型占位）`)
+    store.openChat(chat.id)
   }
 }
 
 function onPlusAction(type) {
   closePlusMenu()
+  if (type === 'square') {
+    router.push('/circle/plaza')
+    return
+  }
   const actions = {
-    group: '创建群聊（原型占位）',
-    square: '群聊广场（原型占位）',
+    group: '创建圈子（原型占位）',
     addFriend: '添加好友（原型占位）',
     scan: '扫一扫（原型占位）'
   }
@@ -470,25 +476,27 @@ function badgeText(count) {
   line-height: 1;
 }
 
-/* 未读角标 —— 绝对定位在图标块右下角，与块边缘叠加 */
+/* 未读角标 —— 绝对定位在图标块右上角，防止覆盖文字 */
 .entry-badge {
   position: absolute;
-  right: -6px;
-  bottom: -6px;
-  min-width: 20px;
-  height: 20px;
-  line-height: 20px;
-  padding: 0 6px;
-  background: var(--echo-danger);
+  right: -4px;
+  top: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: #ff3b30;
   color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  border-radius: 11px;
-  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   white-space: nowrap;
   border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(231, 76, 60, 0.4);
+  box-shadow: 0 2px 6px rgba(255, 59, 48, 0.3);
   z-index: 2;
+  box-sizing: border-box;
 }
 
 /* ===== 分割线 ===== */
@@ -571,17 +579,21 @@ function badgeText(count) {
   flex: 1;
 }
 .chat-badge {
-  font-size: 10px;
-  background: var(--echo-danger);
+  background: #ff3b30;
   color: #fff;
-  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  height: 18px;
   min-width: 18px;
-  height: 16px;
-  line-height: 16px;
-  text-align: center;
+  border-radius: 9px;
   padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(255, 59, 48, 0.25);
   margin-left: 8px;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 /* ===== 匿名消息卡片 ===== */
@@ -631,9 +643,11 @@ function badgeText(count) {
   flex-shrink: 0;
 }
 .anon-red-dot {
-  width: 8px; height: 8px;
-  background: var(--echo-danger);
+  width: 8px;
+  height: 8px;
+  background: #ff3b30;
   border-radius: 50%;
+  box-shadow: 0 0 0 2px #fff, 0 1px 4px rgba(255, 59, 48, 0.4);
 }
 
 /* ===== 一键已读扫光反馈：增强版渐变扫光 + 粒子尾迹 ===== */

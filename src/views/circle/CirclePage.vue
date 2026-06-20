@@ -35,6 +35,7 @@
           v-for="circle in joinedCircles"
           :key="circle.id"
           class="circle-card"
+          @click="$router.push('/circle/' + circle.id)"
         >
           <div class="circle-card-header">
             <div class="circle-icon" :style="{ background: circle.color }">
@@ -57,13 +58,14 @@
           </div>
         </div>
       </div>
-
+ 
       <!-- 推荐圈子 -->
       <div v-if="activeTab === 'recommend'" class="circle-list">
         <div
           v-for="circle in recommendCircles"
           :key="circle.id"
           class="circle-card"
+          @click="$router.push('/circle/' + circle.id)"
         >
           <div class="circle-card-header">
             <div class="circle-icon" :style="{ background: circle.color }">
@@ -77,7 +79,7 @@
               </div>
               <div class="circle-meta">{{ circle.memberCount }} 成员 · {{ circle.postCount }} 帖子</div>
             </div>
-            <button class="join-btn" @click="onJoin(circle.id)">
+            <button class="join-btn" @click.stop="onJoin(circle.id)">
               {{ circle.joined ? '已加入' : '+ 加入' }}
             </button>
           </div>
@@ -105,116 +107,21 @@ const tabs = [
   { key: 'recommend', label: '推荐' }
 ]
 
-const joinedCircles = reactive([
-  {
-    id: 'c1',
-    name: '摄影爱好者协会',
-    icon: '📷',
-    color: 'linear-gradient(135deg, #667eea, #764ba2)',
-    description: '用镜头记录校园生活的美好瞬间，欢迎分享你的摄影作品与心得',
-    memberCount: 1286,
-    postCount: 3456,
-    unread: 3,
-    official: true,
-    isAnon: false,
-    latestPost: '本周六组织校园外拍活动，有意向的同学请接龙~'
-  },
-  {
-    id: 'c2',
-    name: '考研交流群',
-    icon: '📖',
-    color: 'linear-gradient(135deg, #f093fb, #f5576c)',
-    description: '考研资料分享、每日打卡、互相鼓励监督的学习社区',
-    memberCount: 2340,
-    postCount: 8900,
-    unread: 12,
-    official: false,
-    isAnon: false,
-    latestPost: '分享一套肖秀荣政治冲刺笔记，有需要的自取'
-  },
-  {
-    id: 'c3',
-    name: '校园匿名树洞',
-    icon: '🌳',
-    color: 'linear-gradient(135deg, #4facfe, #00f2fe)',
-    description: '说出你不敢说的话，匿名吐槽、倾诉、分享心事',
-    memberCount: 5600,
-    postCount: 23400,
-    unread: 0,
-    official: false,
-    isAnon: true,
-    latestPost: '有时候真的很羡慕那些勇敢表达自己的人...'
-  },
-  {
-    id: 'c4',
-    name: '日系摇滚同好会',
-    icon: '🎸',
-    color: 'linear-gradient(135deg, #fa709a, #fee140)',
-    description: 'ONE OK ROCK、RADWIMPS、凛として時雨... 日系摇滚爱好者聚集地',
-    memberCount: 456,
-    postCount: 1230,
-    unread: 0,
-    official: false,
-    isAnon: false,
-    latestPost: '有人去看下个月的RADWIMPS演唱会吗？组队！'
-  }
-])
+import { computed } from 'vue'
+import { showToast } from 'vant'
 
-const recommendCircles = reactive([
-  {
-    id: 'c5',
-    name: 'Coser聚集地',
-    icon: '🎭',
-    color: 'linear-gradient(135deg, #a18cd1, #fbc2eb)',
-    description: '动漫Cosplay、JK/DK制服、Lolita，二次元同好交流',
-    memberCount: 890,
-    postCount: 4500,
-    official: false,
-    isAnon: false,
-    joined: false
-  },
-  {
-    id: 'c6',
-    name: '校园音乐节组委会',
-    icon: '🎵',
-    color: 'linear-gradient(135deg, #ffecd2, #fcb69f)',
-    description: '一年一度校园音乐节的策划、组织、演出安排',
-    memberCount: 320,
-    postCount: 567,
-    official: true,
-    isAnon: false,
-    joined: false
-  },
-  {
-    id: 'c7',
-    name: '二手闲置交易',
-    icon: '🔄',
-    color: 'linear-gradient(135deg, #89f7fe, #66a6ff)',
-    description: '课本、电子产品、生活用品，低价转卖闲置好物',
-    memberCount: 3200,
-    postCount: 12000,
-    official: false,
-    isAnon: false,
-    joined: true
-  },
-  {
-    id: 'c8',
-    name: '日语学习小组',
-    icon: '🗾',
-    color: 'linear-gradient(135deg, #fddb92, #d1fdff)',
-    description: '一起学日语！N5到N1，每周单词打卡 + 口语练习',
-    memberCount: 567,
-    postCount: 2300,
-    official: false,
-    isAnon: false,
-    joined: false
-  }
-])
+const joinedCircles = computed(() => {
+  return store.circles.filter(c => c.joined)
+})
+
+const recommendCircles = computed(() => {
+  return store.circles.filter(c => !c.joined)
+})
 
 function onJoin(circleId) {
-  const circle = recommendCircles.find(c => c.id === circleId)
-  if (circle) {
-    circle.joined = !circle.joined
+  const success = store.joinCircle(circleId)
+  if (success) {
+    showToast('加入圈子成功')
   }
 }
 </script>

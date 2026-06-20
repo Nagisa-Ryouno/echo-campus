@@ -7,7 +7,7 @@
       <!-- LOGO 区：滚动后隐藏 -->
       <div class="logo-header" :class="{ hidden: scrollTop > 10 }">
         <h1 class="home-title">校声</h1>
-        <div class="home-search" @click="$router.push('/search')">
+        <div class="home-search" @click="$router.push(`/search?from=home&channel=${store.activeChannel}`)">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </div>
       </div>
@@ -21,7 +21,43 @@
           :class="{ 'channel-tab--active': store.activeChannel === ch.key }"
           @click="onChannelSwitch(ch.key)"
         >
-          <span class="channel-tab-text">{{ ch.label }}</span>
+          <span class="channel-tab-text">
+            <!-- 💖 心形图标 - 遇见 (Meet) -->
+            <svg v-if="ch.key === 'meet' && store.activeChannel === 'meet'" class="channel-tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="var(--echo-primary)" stroke="var(--echo-primary)">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+
+            <!-- ⭐ 星星图标 - 关注 (Follow) -->
+            <svg v-if="ch.key === 'follow' && store.activeChannel === 'follow'" class="channel-tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="var(--echo-primary)" stroke="var(--echo-primary)">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+
+            <!-- ✨ 闪烁推荐 - 推荐 (Recommend) -->
+            <svg v-if="ch.key === 'recommend' && store.activeChannel === 'recommend'" class="channel-tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="var(--echo-primary)" stroke="var(--echo-primary)">
+              <path d="M12 2s.5 4 4.5 4.5c0 0-4 .5-4.5 4.5 0 0-.5-4-4.5-4.5 0 0 4-.5 4.5-4.5zm7 11s.3 2 2.5 2.3c0 0-2 .2-2.3 2.2 0 0-.2-2-2.2-2.2 0 0 2-.3 2.3-2.3z"/>
+            </svg>
+
+            <!-- 🍃 绿叶图标 - 同城 (City) -->
+            <svg v-if="ch.key === 'city' && store.activeChannel === 'city'" class="city-leaf-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 1.5 5.5-3 9.8a7 7 0 0 1-5 8.2z" fill="var(--echo-primary)" stroke="var(--echo-primary)"/>
+              <path d="M19 2c-2.06 3-4.5 5.5-8 7" stroke="#fff" stroke-width="1.5"/>
+            </svg>
+
+            <!-- 🎓 学士帽图标 - 我的学校 (School) -->
+            <svg v-if="ch.key === 'school' && store.activeChannel === 'school'" class="channel-tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--echo-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+              <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" />
+            </svg>
+
+            {{ ch.label }}
+
+            <!-- Caret arrow for city channel (when active) -->
+            <span v-if="ch.key === 'city' && store.activeChannel === 'city'" class="city-expand-arrow">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="{ 'rotated': isCityPanelExpanded }">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </span>
+          </span>
           <span v-if="store.activeChannel === ch.key" class="channel-tab-bar"></span>
         </div>
       </div>
@@ -77,7 +113,34 @@
         </div>
 
         <!-- 推荐 / 同城 / 我的学校 → 小标签横向滑动 -->
-        <div v-else-if="store.currentChannelTags.length > 0" class="sub-tags-area">
+        <div v-else-if="store.currentChannelTags.length > 0" class="sub-tags-area" style="position: relative;">
+          <!-- 城市选择栏：遮挡住小频道 -->
+          <transition name="city-panel-fade">
+            <div v-if="store.activeChannel === 'city' && isCityPanelExpanded" class="city-selector-overlay">
+              <div class="city-selector-scroll">
+                <div
+                  v-for="(city, idx) in userCities"
+                  :key="city"
+                  class="city-pill"
+                  :class="{ 'city-pill--active': activeCity === city }"
+                  @click="selectCity(city)"
+                >
+                  <span class="city-pill-text">{{ city }}</span>
+                  <span v-if="idx === 0" class="city-pill-priority-badge">优先</span>
+                  <!-- 允许用户删除添加的城市 -->
+                  <div v-if="idx > 0" class="city-pill-delete" @click.stop="removeCity(idx)">
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </div>
+                </div>
+                <!-- 添加按钮 -->
+                <div class="city-pill city-pill-add" @click="openAddCityDialog">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <!-- 常规小频道滚动列表 -->
           <div class="sub-tags-scroll">
             <div
               v-for="tag in store.visibleTags"
@@ -220,11 +283,24 @@
       @select="onForwardSelect"
       cancel-text="取消"
     />
+
+    <!-- ===== 添加城市弹窗 ===== -->
+    <van-dialog
+      v-model:show="showAddCityDialog"
+      title="添加城市"
+      show-cancel-button
+      teleport="#phone-screen"
+      @confirm="handleAddCity"
+    >
+      <div style="padding: 16px 20px;">
+        <van-field v-model="newCityName" placeholder="请输入城市名称" autofocus />
+      </div>
+    </van-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
 import { showToast } from 'vant'
@@ -241,6 +317,69 @@ function handleScroll() {
   scrollTop.value = scrollRef.value?.scrollTop ?? 0
 }
 
+// ===== 同城频道城市选择 =====
+const isCityPanelExpanded = ref(false)
+const userCities = ref(['北京'])
+const activeCity = ref('北京')
+const showAddCityDialog = ref(false)
+const newCityName = ref('')
+
+onMounted(() => {
+  const saved = localStorage.getItem('echo_user_cities')
+  if (saved) {
+    userCities.value = JSON.parse(saved)
+  } else {
+    userCities.value = ['北京']
+  }
+  const savedActive = localStorage.getItem('echo_active_city')
+  if (savedActive && userCities.value.includes(savedActive)) {
+    activeCity.value = savedActive
+  } else {
+    activeCity.value = userCities.value[0] || '北京'
+  }
+})
+
+function saveCities() {
+  localStorage.setItem('echo_user_cities', JSON.stringify(userCities.value))
+}
+
+function toggleCityPanel() {
+  isCityPanelExpanded.value = !isCityPanelExpanded.value
+}
+
+function selectCity(city) {
+  activeCity.value = city
+  localStorage.setItem('echo_active_city', city)
+  showToast(`已切换城市为: ${city}`)
+}
+
+function openAddCityDialog() {
+  newCityName.value = ''
+  showAddCityDialog.value = true
+}
+
+function handleAddCity() {
+  const city = newCityName.value.trim()
+  if (!city) return
+  if (userCities.value.includes(city)) {
+    showToast('该城市已在列表中')
+    return
+  }
+  userCities.value.push(city)
+  saveCities()
+  selectCity(city)
+}
+
+function removeCity(index) {
+  const removed = userCities.value[index]
+  userCities.value.splice(index, 1)
+  saveCities()
+  showToast(`已删除城市: ${removed}`)
+  if (activeCity.value === removed) {
+    selectCity(userCities.value[0] || '北京')
+  }
+}
+
 // ===== 频道切换（同步标签池）=====
 const channelDisplayName = computed(() => {
   const ch = store.channelLabels.find(c => c.key === store.activeChannel)
@@ -248,8 +387,13 @@ const channelDisplayName = computed(() => {
 })
 
 function onChannelSwitch(key) {
+  if (key === 'city' && store.activeChannel === 'city') {
+    toggleCityPanel()
+    return
+  }
   store.setChannel(key)
   store.syncTagsToChannel(key)
+  isCityPanelExpanded.value = false
 }
 
 // 首次加载同步推荐频道标签
@@ -302,10 +446,16 @@ function closeForwardSheet() {
 const followFilterUid = ref(null)
 
 const displayPosts = computed(() => {
+  let list = store.filteredPosts
   if (store.activeChannel === 'follow' && followFilterUid.value) {
-    return store.filteredPosts.filter(p => p.authorId === followFilterUid.value)
+    list = list.filter(p => p.authorId === followFilterUid.value)
+  } else if (store.activeChannel === 'city' && activeCity.value) {
+    list = list.filter(p => {
+      const postCity = p.city || '北京'
+      return postCity === activeCity.value
+    })
   }
-  return store.filteredPosts
+  return list
 })
 
 function onFollowManage() {}
@@ -426,6 +576,7 @@ function goUserProfile(uid) {
   font-weight: 500;
   transition: all 0.2s;
   white-space: nowrap;
+  position: relative;
 }
 
 .channel-tab--active .channel-tab-text {
@@ -957,5 +1108,136 @@ function goUserProfile(uid) {
 .panel-slide-enter-from .tag-panel-sheet,
 .panel-slide-leave-to .tag-panel-sheet {
   transform: translateY(100%);
+}
+
+/* ── 同城城市选择面板 ── */
+.city-leaf-icon,
+.channel-tab-icon {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.city-expand-arrow {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 4px;
+  color: var(--echo-text-secondary);
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+
+.city-expand-arrow svg {
+  transition: transform 0.25s ease;
+  display: block;
+}
+
+.city-expand-arrow svg.rotated {
+  transform: rotate(180deg);
+}
+
+.city-selector-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--echo-white);
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+}
+
+.city-selector-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  width: 100%;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.city-selector-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.city-pill {
+  position: relative;
+  flex-shrink: 0;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  background: var(--echo-white);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--echo-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.city-pill--active {
+  border-color: var(--echo-primary);
+  color: var(--echo-primary);
+  background: rgba(76, 175, 125, 0.05);
+  font-weight: 600;
+}
+
+.city-pill-priority-badge {
+  position: absolute;
+  top: -8px;
+  right: 0;
+  background: var(--echo-primary);
+  color: #fff;
+  font-size: 8px;
+  padding: 1px 4px;
+  border-radius: 6px 6px 6px 0;
+  font-weight: 500;
+  transform: scale(0.85) translate(15%, 0);
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(76, 175, 125, 0.3);
+}
+
+.city-pill-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--echo-text-secondary);
+  transition: all 0.2s;
+  margin-left: 2px;
+}
+
+.city-pill-delete:active {
+  background: rgba(255, 80, 80, 0.2);
+  color: #ff5050;
+}
+
+.city-pill-add {
+  justify-content: center;
+  border-style: dashed;
+  color: var(--echo-text-hint);
+  background: transparent;
+  padding: 5px 12px;
+}
+
+/* ── 城市面板淡入淡出动画 ── */
+.city-panel-fade-enter-active,
+.city-panel-fade-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.city-panel-fade-enter-from,
+.city-panel-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
 }
 </style>

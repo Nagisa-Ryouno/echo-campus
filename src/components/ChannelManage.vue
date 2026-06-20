@@ -87,6 +87,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useAppStore } from '@/stores/app.js'
 import { showToast } from 'vant'
+import { allCategoryTags } from '@/mock/posts.js'
 
 const props = defineProps({
   visible: { type: Boolean, default: false }
@@ -103,9 +104,7 @@ const channelDisplayName = computed(() => {
 })
 
 const allPoolTags = computed(() => {
-  return store.currentChannelTags.length > 0
-    ? [...store.currentChannelTags]
-    : [...(store.userTags || [])]
+  return allCategoryTags
 })
 
 const myChannels = ref([])
@@ -185,46 +184,29 @@ function onClose() {
   emit('close')
 }
 
-// 同步本地频道数据到全局仓库（修复hiddenTags不可遍历报错）
+// 同步本地频道数据到全局仓库
 function syncToStore() {
-  // 兜底：保证hiddenTags一定是数组
-  if (!Array.isArray(store.hiddenTags.value)) {
-    store.hiddenTags.value = []
-  }
-  const previousVisible = new Set(store.visibleTags || [])
-  const currentMySet = new Set(myChannels.value)
-
-  // 新增隐藏标签
-  const newHidden = []
-  for (const t of previousVisible) {
-    if (!currentMySet.has(t) && !store.hiddenTags.value.includes(t)) {
-      newHidden.push(t)
-    }
-  }
-  store.hiddenTags.value = [...store.hiddenTags.value, ...newHidden]
-
-  // 从隐藏列表移除已添加的标签
-  store.hiddenTags.value = store.hiddenTags.value.filter(t => !currentMySet.has(t))
-  // 同步当前可见频道
-  store.visibleTags = [...myChannels.value]
+  store.userTags = [...myChannels.value]
+  store.hiddenTags = []
 }
 </script>
 
 <style scoped>
 .cm-overlay {
   position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(240, 242, 245, 0.95);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  top: 48px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(240, 242, 245, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   z-index: 9999;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
   overflow: hidden;
-  padding-top: max(44px, env(safe-area-inset-top));
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .cm-container {
@@ -351,13 +333,16 @@ function syncToStore() {
   transform: scale(0.95);
 }
 .cm-tag--mine {
-  background: rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   color: var(--echo-text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 .cm-tag--mine:hover {
-  background: rgba(0, 0, 0, 0.07);
-  border-color: rgba(0, 0, 0, 0.14);
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.7);
 }
 .cm-tag--editing {
   padding-right: 12px;
@@ -392,16 +377,20 @@ function syncToStore() {
   transform: scale(1.2);
 }
 .cm-tag--recommend {
-  background: transparent;
-  border: 1px dashed rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px dashed rgba(0, 0, 0, 0.15);
   color: var(--echo-text-secondary);
   gap: 3px;
 }
 .cm-tag--recommend:active {
-  background: rgba(76, 175, 125, 0.08);
+  background: rgba(76, 175, 125, 0.15);
   border-style: solid;
   border-color: var(--echo-primary);
   color: var(--echo-primary);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .cm-tag-plus {
   flex-shrink: 0;

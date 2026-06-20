@@ -33,7 +33,7 @@
         <!-- 选择学校 -->
         <div class="form-group">
           <label class="field-label">学校</label>
-          <div class="select-wrap" @click="showSchoolPicker = true">
+          <div class="select-wrap" @click="openSchoolPicker">
             <span :class="{ placeholder: !form.school }">{{ form.school || '请选择学校' }}</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
           </div>
@@ -121,18 +121,40 @@
       </div>
     </div>
 
-    <!-- 学校选择弹窗（简易版） -->
+    <!-- 学校选择弹窗 -->
     <Teleport to="#phone-screen">
-      <transition name="panel-slide">
+      <transition name="dialog-fade">
         <div v-if="showSchoolPicker" class="picker-overlay" @click.self="showSchoolPicker = false">
           <div class="picker-sheet">
             <div class="picker-header">
               <h3>选择学校</h3>
-              <span class="picker-close" @click="showSchoolPicker = false">取消</span>
+              <span class="picker-close" @click="showSchoolPicker = false">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </span>
             </div>
+
+            <!-- 搜索栏 -->
+            <div class="picker-search-bar">
+              <svg class="picker-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input
+                v-model="schoolSearchQuery"
+                type="text"
+                class="picker-search-input"
+                placeholder="搜索学校名称"
+              />
+              <span v-if="schoolSearchQuery" class="picker-search-clear" @click="schoolSearchQuery = ''">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </span>
+            </div>
+
+            <!-- 学校列表 -->
             <div class="picker-list">
+              <div v-if="filteredSchools.length === 0" class="picker-empty">
+                未找到相关学校
+              </div>
               <div
-                v-for="s in schoolList"
+                v-else
+                v-for="s in filteredSchools"
                 :key="s"
                 class="picker-item"
                 :class="{ active: form.school === s }"
@@ -175,6 +197,13 @@ const schoolList = [
   '中国传媒大学', '北京邮电大学', '北京航空航天大学'
 ]
 
+const schoolSearchQuery = ref('')
+const filteredSchools = computed(() => {
+  const q = schoolSearchQuery.value.trim().toLowerCase()
+  if (!q) return schoolList
+  return schoolList.filter(s => s.toLowerCase().includes(q))
+})
+
 const canSendCode = computed(() =>
   form.school && form.email.trim().includes('.edu.cn')
 )
@@ -184,9 +213,15 @@ const canComplete = computed(() =>
   form.password.length >= 8 && form.password === form.confirmPassword
 )
 
+function openSchoolPicker() {
+  schoolSearchQuery.value = ''
+  showSchoolPicker.value = true
+}
+
 function selectSchool(s) {
   form.school = s
   showSchoolPicker.value = false
+  schoolSearchQuery.value = ''
 }
 
 function sendCode() {
@@ -457,79 +492,170 @@ function goHome() {
 .picker-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.45);
+  background: rgba(18, 18, 24, 0.65); /* 暗灰色蒙层 */
   z-index: 500;
   display: flex;
-  align-items: flex-end;
+  align-items: center; /* 居中 */
+  justify-content: center; /* 居中 */
   max-width: 375px;
   box-sizing: border-box;
 }
 
 .picker-sheet {
-  width: 100%;
-  max-width: 375px;
-  background: var(--echo-white);
-  border-radius: 16px 16px 0 0;
-  padding: 20px 16px 36px;
+  width: 300px; /* 居中长条菜单宽度 */
+  max-height: 480px; /* 限高 */
+  background: rgba(240, 242, 245, 0.85); /* 灰色背景 */
+  backdrop-filter: blur(16px); /* 毛玻璃 */
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+  padding: 18px 16px 20px;
   box-sizing: border-box;
-  max-height: 55vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .picker-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  flex-shrink: 0;
 }
 
 .picker-header h3 {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
+  color: var(--echo-text);
+  margin: 0;
 }
 
 .picker-close {
-  font-size: 15px;
-  color: var(--echo-primary);
+  display: flex;
+  align-items: center;
+  color: var(--echo-text-secondary);
   cursor: pointer;
+  padding: 2px;
+  transition: color 0.2s;
+}
+.picker-close:active {
+  color: var(--echo-danger);
 }
 
-.picker-list {
+/* 搜索栏样式 */
+.picker-search-bar {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  padding: 0 10px;
+  height: 36px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.picker-search-icon {
+  color: var(--echo-text-hint);
+  flex-shrink: 0;
+}
+
+.picker-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--echo-text);
+  padding: 0;
+}
+
+.picker-search-input::placeholder {
+  color: var(--echo-text-hint);
+}
+
+.picker-search-clear {
+  color: var(--echo-text-hint);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+/* 学校列表滚动区 */
+.picker-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 2px;
+}
+
+.picker-list::-webkit-scrollbar {
+  width: 4px;
+}
+.picker-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
 }
 
 .picker-item {
-  padding: 14px 0;
-  font-size: 15px;
+  padding: 12px 10px;
+  font-size: 14px;
   color: var(--echo-text);
-  border-bottom: 1px solid var(--echo-border);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
   cursor: pointer;
   transition: all 0.15s;
+  border-radius: 8px;
+  margin-bottom: 2px;
+}
+
+.picker-item:last-child {
+  border-bottom: none;
 }
 
 .picker-item.active {
   color: var(--echo-primary);
+  background: rgba(76, 175, 125, 0.08);
   font-weight: 600;
 }
 
-.picker-item:active {
-  background: var(--echo-bg);
+.picker-item:active:not(.active) {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.picker-empty {
+  text-align: center;
+  padding: 32px 0;
+  color: var(--echo-text-hint);
+  font-size: 13px;
 }
 
 /* ===== 动画 ===== */
-.panel-slide-enter-active,
-.panel-slide-leave-active {
-  transition: all 0.3s ease;
+.dialog-fade-enter-active,
+.dialog-fade-leave-active {
+  transition: opacity 0.25s ease;
 }
 
-.panel-slide-enter-from,
-.panel-slide-leave-to {
+.dialog-fade-enter-from,
+.dialog-fade-leave-to {
   opacity: 0;
 }
 
-.panel-slide-enter-from .picker-sheet,
-.panel-slide-leave-to .picker-sheet {
-  transform: translateY(100%);
+.dialog-fade-enter-active .picker-sheet {
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dialog-fade-leave-active .picker-sheet {
+  transition: transform 0.18s ease;
+}
+
+.dialog-fade-enter-from .picker-sheet {
+  transform: scale(0.9) translateY(10px);
+}
+
+.dialog-fade-leave-to .picker-sheet {
+  transform: scale(0.95) translateY(5px);
 }
 </style>

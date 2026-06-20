@@ -311,7 +311,26 @@ export const mockPosts = [
     collectCount: 7,
     forwardCount: 27,
     createdAt: '2026-06-18 11:00',
-    channel: 'city'
+    channel: 'city',
+    city: '北京'
+  },
+  {
+    id: 'p016_sh',
+    authorId: 'u3',
+    content: '在上海五角场附近求个周末自习搭子，一起去五角场创智天地自习室刷题～ 📖',
+    images: [],
+    categoryTag: '搭子',
+    topicTags: ['自习', '搭子'],
+    visibility: 'public',
+    schoolOnly: false,
+    isAnon: false,
+    likeCount: 12,
+    commentCount: 4,
+    collectCount: 2,
+    forwardCount: 1,
+    createdAt: '2026-06-19 14:00',
+    channel: 'city',
+    city: '上海'
   },
 
   // ===== 更多推荐 =====
