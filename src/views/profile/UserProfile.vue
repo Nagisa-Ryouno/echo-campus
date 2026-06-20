@@ -619,7 +619,7 @@ function onForwardSelect(action) {
 /* ===== 简介 ===== */
 .bio-section {
   margin-top: 12px;
-  padding: 0;
+  padding: 0 12px;
 }
 .bio-text {
   font-size: 12.5px;
@@ -633,6 +633,7 @@ function onForwardSelect(action) {
   gap: 8px;
   margin-top: 14px;
   flex-wrap: wrap;
+  padding: 0 12px;
 }
 .unified-tag {
   font-size: 12px;
@@ -739,6 +740,7 @@ function onForwardSelect(action) {
   transition: all 0.15s;
   display: flex;
   border-bottom: 1px solid var(--echo-border);
+  padding: 0 14px;
 }
 .grid-post-card:active { background: #f5f7fa; }
 .grid-post-img {
