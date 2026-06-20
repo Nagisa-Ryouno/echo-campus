@@ -322,6 +322,7 @@ function goTag(tag) {
 /* ── 帖子流 ── */
 .discover-feed {
   padding: 0;
+  min-height: calc(100% - 48px + 45px);
 }
 
 /* ── 热帖卡片 ── */

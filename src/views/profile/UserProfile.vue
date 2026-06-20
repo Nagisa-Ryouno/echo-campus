@@ -807,6 +807,7 @@ function onForwardSelect(action) {
     0 2px 8px rgba(0, 0, 0, 0.08);
   padding: 6px 0;
   overflow: visible;
+  transform-origin: top right;
 }
 
 /* 三角箭头 —— 指向上方的三点按钮 */
@@ -872,18 +873,15 @@ function onForwardSelect(action) {
   from {
     opacity: 0;
     transform: scale(0.75);
-    transform-origin: top right;
   }
   to {
     opacity: 1;
     transform: scale(1);
-    transform-origin: top right;
   }
 }
 
 @keyframes morePopOut {
   to    { opacity: 0; transform: scale(0.85); }
   from  { opacity: 1; transform: scale(1); }
-  transform-origin: top right;
 }
 </style>

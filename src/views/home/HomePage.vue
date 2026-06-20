@@ -689,6 +689,10 @@ function goUserProfile(uid) {
 }
 
 /* ── 帖子流 ── */
+.post-list {
+  min-height: calc(100% - 48px + 45px);
+}
+
 .post-feed {
   padding: 0;
 }
