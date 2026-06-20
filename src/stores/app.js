@@ -437,7 +437,12 @@ export const useAppStore = defineStore('app', () => {
     if (strangersFolderItem.value) {
       list.push(strangersFolderItem.value)
     }
-    return list.sort((a, b) => getTimeWeight(b.lastTime) - getTimeWeight(a.lastTime))
+    return list.sort((a, b) => {
+      const pinA = a.isPinned ? 1 : 0
+      const pinB = b.isPinned ? 1 : 0
+      if (pinA !== pinB) return pinB - pinA
+      return getTimeWeight(b.lastTime) - getTimeWeight(a.lastTime)
+    })
   })
 
   function openChat(chatId) {

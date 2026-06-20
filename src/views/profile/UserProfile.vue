@@ -7,17 +7,26 @@
         <div v-if="showMoreMenu" class="more-menu-overlay" @click.self="closeMoreMenu">
           <div class="more-bubble">
             <div class="more-bubble-arrow"></div>
+            <!-- 1. 转发 -->
+            <div class="more-bubble-item" @click="onForwardFromProfile">
+              <div class="more-bubble-icon" style="background:#e3f2fd;">
+                <van-icon name="share-o" size="14" color="#1976d2" />
+              </div>
+              <span>转发</span>
+            </div>
+            <!-- 2. 拉黑 -->
             <div class="more-bubble-item" @click="onBlock">
               <div class="more-bubble-icon" style="background:#fdecea;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="4" x2="20" y2="20"/><circle cx="12" cy="12" r="10"/></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="4" x2="20" y2="20"/><circle cx="12" cy="12" r="10"/></svg>
               </div>
               <span>拉黑</span>
             </div>
-            <div class="more-bubble-item" @click="onForwardFromProfile">
-              <div class="more-bubble-icon" style="background:#e3f2fd;">
-                <van-icon name="share-o" size="18" color="#1976d2" />
+            <!-- 3. 举报 -->
+            <div class="more-bubble-item" @click="onReportFromProfile">
+              <div class="more-bubble-icon" style="background:#fff3e0;">
+                <van-icon name="warning-o" size="14" color="#e65100" />
               </div>
-              <span>转发</span>
+              <span>举报</span>
             </div>
           </div>
         </div>
@@ -445,6 +454,11 @@ function onForwardFromProfile() {
   showForwardSheet.value = true
 }
 
+function onReportFromProfile() {
+  showMoreMenu.value = false
+  showToast('举报已提交，平台将在24小时内审核处理')
+}
+
 function onForwardSelect(action) {
   showForwardSheet.value = false
   if (!profileUser.value) return
@@ -463,9 +477,9 @@ function onForwardSelect(action) {
 /* ===== 英雄大卡片：贴边，无外边距，圆角底部 ===== */
 .profile-hero-card {
   background: var(--echo-white);
-  border-radius: 0 0 20px 20px;
+  border-radius: 0;
   padding: 0 16px 16px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.03);
   /* 左右贴边，无 margin */
 }
 
@@ -604,12 +618,14 @@ function onForwardSelect(action) {
 
 /* ===== 简介 ===== */
 .bio-section {
-  margin-top: 14px;
-  padding: 12px;
-  background: var(--echo-bg);
-  border-radius: 8px;
+  margin-top: 12px;
+  padding: 0;
 }
-.bio-text { font-size: 13px; color: var(--echo-text-secondary); line-height: 1.5; }
+.bio-text {
+  font-size: 12.5px;
+  color: var(--echo-text-secondary);
+  line-height: 1.5;
+}
 
 /* ===== 统一标签区 ===== */
 .tags-row {
@@ -634,7 +650,7 @@ function onForwardSelect(action) {
   align-items: center;
   gap: 0;
   padding: 0 12px;
-  margin-top: 8px;
+  margin-top: 0;
   background: var(--echo-white);
   border-top: 1px solid var(--echo-border);
   border-bottom: 1px solid var(--echo-border);
@@ -796,9 +812,9 @@ function onForwardSelect(action) {
 
 .more-bubble {
   position: absolute;
-  top: 85px;
+  top: 46px;
   right: 8px;
-  min-width: 128px;
+  min-width: 120px;
   z-index: 10000;
   background: #ffffff;
   border-radius: 12px;
@@ -826,8 +842,8 @@ function onForwardSelect(action) {
 .more-bubble-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
+  gap: 8px;
+  padding: 8px 14px;
   cursor: pointer;
   transition: background 0.12s;
   -webkit-tap-highlight-color: transparent;
@@ -838,7 +854,7 @@ function onForwardSelect(action) {
 .more-bubble-item:last-child  { border-radius: 0 0 12px 12px; }
 .more-bubble-item:active { background: var(--echo-bg); }
 .more-bubble-item span {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--echo-text);
   white-space: nowrap;
@@ -846,8 +862,8 @@ function onForwardSelect(action) {
 
 /* 菜单项左侧圆形图标 */
 .more-bubble-icon {
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   display: flex;
   align-items: center;

@@ -282,9 +282,9 @@ function onDrafts() { showToast('草稿箱（原型占位）') }
 /* ===== 英雄大卡片：贴边，无外边距，圆角底部 ===== */
 .profile-hero-card {
   background: var(--echo-white);
-  border-radius: 0 0 20px 20px;
+  border-radius: 0;
   padding: 0 16px 16px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.03);
   /* 左右贴边，无 margin */
 }
 
@@ -407,12 +407,14 @@ function onDrafts() { showToast('草稿箱（原型占位）') }
 
 /* ===== 简介 ===== */
 .bio-section {
-  margin-top: 14px;
-  padding: 12px;
-  background: var(--echo-bg);
-  border-radius: 8px;
+  margin-top: 12px;
+  padding: 0;
 }
-.bio-text { font-size: 13px; color: var(--echo-text-secondary); line-height: 1.5; }
+.bio-text {
+  font-size: 12.5px;
+  color: var(--echo-text-secondary);
+  line-height: 1.5;
+}
 
 /* ===== 统一标签区：年龄 + 兴趣标签 ===== */
 .tags-row {
@@ -476,7 +478,7 @@ function onDrafts() { showToast('草稿箱（原型占位）') }
   align-items: center;
   gap: 0;
   padding: 0 12px;
-  margin-top: 8px;
+  margin-top: 0;
   background: var(--echo-white);
   border-top: 1px solid var(--echo-border);
   border-bottom: 1px solid var(--echo-border);
