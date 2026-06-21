@@ -39,3 +39,5 @@ dist-ssr/
 
 # Temporary python scripts
 overwrite_walkthrough.py
+
+.workbuddy/
