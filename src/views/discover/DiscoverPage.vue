@@ -4,23 +4,6 @@
     <!-- 固定层：position:fixed，绝对定位在手机屏幕顶部      -->
     <!-- ═══════════════════════════════════════════ -->
     <div class="fixed-header">
-      <!-- 标题栏：随滚动隐藏，高度收缩为0 -->
-      <div class="logo-header" :class="{ hidden: scrollTop > 10 }">
-        <div class="discover-header-left">
-          <h1 class="discover-title">发现</h1>
-          <span class="trend-intro-btn" @click="showTrendIntro">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-          </span>
-        </div>
-        <div class="discover-search-btn" @click="$router.push('/search?from=discover')">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        </div>
-      </div>
-
       <!-- Tab大频道栏：永久固定在顶部 -->
       <div class="channel-header">
         <div
@@ -34,154 +17,247 @@
           <span v-if="activeTab === tab.key" class="discover-tab-bar"></span>
         </div>
       </div>
+
+      <!-- "更多" 子小频道标签流 -->
+      <transition name="drawer-fade">
+        <div v-if="activeTab === 'more'" class="sub-channel-menu">
+          <span
+            v-for="sub in subChannels"
+            :key="sub.key"
+            class="sub-channel-tag"
+            :class="{ 'sub-channel-tag--active': activeSmallChannel === sub.key }"
+            @click="switchSmallChannel(sub.key)"
+          >
+            {{ sub.label }}
+          </span>
+        </div>
+      </transition>
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- 滚动层：独立 overflow-y:auto，与固定层彻底隔离    -->
     <!-- ═══════════════════════════════════════════ -->
     <div ref="scrollRef" class="scroll-content" @scroll="handleScroll">
-      <!-- 动态占位：标题显示时 92px，隐藏后 48px -->
+      <!-- 动态占位：常驻频道时 48px，展开更多标签时自动拓展为 136px -->
       <div
         class="header-spacer"
         :style="{
-          height: (scrollTop > 10 ? 48 : 92) + 'px',
+          height: (activeTab === 'more' ? 136 : 48) + 'px',
           transition: 'height 0.2s ease'
         }"
       ></div>
 
-      <div class="discover-container">
-        
-        <!-- ========================================== -->
-        <!-- 1. 热点榜单区（除“圈子”大Tab外的所有大频道展示） -->
-        <!-- ========================================== -->
-        <div v-if="activeTab !== 'circle'" class="trend-section-card">
-          <div class="section-title-row">
-            <span class="section-title-icon">🔥</span>
-            <span class="section-title-text">{{ currentTrendTitle }}</span>
-          </div>
-
-          <div class="trend-list">
-            <div
-              v-for="(item, idx) in currentTrends"
-              :key="item.id"
-              class="trend-item"
-              @click="goTrendDetail(item.id)"
-            >
-              <!-- 排名数字 -->
-              <div class="trend-rank" :class="{ 'trend-rank--top': idx < 3 }">
-                {{ idx + 1 }}
-              </div>
-              <!-- 中间内容 -->
-              <div class="trend-info">
-                <div class="trend-item-title">{{ item.title }}</div>
-                <div class="trend-item-desc" v-if="item.desc">{{ item.desc }}</div>
-                <div class="trend-item-meta">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 2px; vertical-align: middle;">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                  </svg>
-                  <span>{{ item.heat }} 讨论</span>
+      <!-- 切屏微移与淡入淡出动效 -->
+      <transition name="fade-slide" mode="out-in">
+        <div :key="activeTab + '_' + activeSmallChannel" class="discover-container">
+          
+          <!-- 1. 「我的」频道 -->
+          <div v-if="activeTab === 'mine'">
+            <div class="channel-description">根据你的浏览、点赞与圈子行为推荐</div>
+            
+            <div class="hot-trend-section">
+              <div class="section-sub-title">猜你喜欢</div>
+              <div class="trend-list-density">
+                <div
+                  v-for="(item, idx) in mineLikes"
+                  :key="item.id"
+                  class="trend-item-density"
+                  @click="goTrendDetail(item.id)"
+                >
+                  <!-- 排名 -->
+                  <div class="trend-rank" :class="'rank-' + (idx + 1)">{{ idx + 1 }}</div>
+                  
+                  <!-- 话题名与简述 -->
+                  <div class="trend-main-info">
+                    <div class="trend-title-row">
+                      <span class="trend-title">{{ item.title }}</span>
+                      <span v-if="item.trend === 'hot'" class="status-badge status-badge--hot">爆</span>
+                      <span v-else-if="item.trend === 'up'" class="status-badge status-badge--up">热</span>
+                      <span v-else-if="item.trend === 'new'" class="status-badge status-badge--new">新</span>
+                    </div>
+                    <div class="trend-desc" v-if="item.desc">{{ item.desc }}</div>
+                  </div>
+                  
+                  <!-- 热度 -->
+                  <div class="trend-heat">{{ item.heat }}</div>
                 </div>
               </div>
-              <!-- 右侧气泡及跳转 -->
-              <div class="trend-right">
-                <span v-if="item.trend === 'hot'" class="trend-badge trend-badge--hot">爆</span>
-                <span v-else-if="item.trend === 'up'" class="trend-badge trend-badge--up">↑</span>
-                <span v-else-if="item.trend === 'new'" class="trend-badge trend-badge--new">新</span>
-                <van-icon name="arrow" size="14" color="#c8c9cc" />
-              </div>
             </div>
-          </div>
-        </div>
 
-        <!-- ========================================== -->
-        <!-- 2. 趋势专题区（微博/小红书话题聚合卡片，横向滑动） -->
-        <!-- ========================================== -->
-        <div class="topic-section-card">
-          <div class="section-title-row">
-            <span class="section-title-icon">✨</span>
-            <span class="section-title-text">今日趋势专题</span>
-          </div>
-          <div class="topic-scroll-row">
-            <div
-              v-for="topic in mockTopics"
-              :key="topic.id"
-              class="topic-card"
-              :style="{ background: topic.gradient }"
-              @click="goTopicTag(topic.relatedTag)"
-            >
-              <div class="topic-card-icon">{{ topic.icon }}</div>
-              <div class="topic-card-info">
-                <div class="topic-card-name">#{{ topic.name }}</div>
-                <div class="topic-card-desc">{{ topic.desc }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- 3. 圈子热度榜（在“圈子”大Tab或作为版块展示）     -->
-        <!-- ========================================== -->
-        <div class="circle-section-card" :class="{ 'circle-section-card--highlight': activeTab === 'circle' }">
-          <div class="section-title-row">
-            <span class="section-title-icon">👥</span>
-            <span class="section-title-text">{{ activeTab === 'circle' ? '全站圈子热度总榜' : '热门圈子推荐' }}</span>
-          </div>
-
-          <div class="circle-rank-list">
-            <div
-              v-for="(circle, idx) in displayCircles"
-              :key="circle.id"
-              class="circle-rank-item"
-              @click="goCircle(circle.id)"
-            >
-              <!-- 排名数字（在圈子Tab下显示） -->
-              <div v-if="activeTab === 'circle'" class="circle-rank-num" :class="{ 'circle-rank-num--top': idx < 3 }">
-                {{ idx + 1 }}
-              </div>
-              <div class="circle-rank-avatar" :style="{ background: circle.color }">
-                {{ circle.icon }}
-              </div>
-              <div class="circle-rank-info">
-                <div class="circle-rank-name">{{ circle.name }}</div>
-                <div class="circle-rank-desc">{{ circle.description }}</div>
-                <div class="circle-rank-meta">
-                  <span>{{ circle.memberCount }} 成员</span>
-                  <span class="dot">·</span>
-                  <span>{{ circle.postCount }} 帖子</span>
+            <!-- 最近浏览 -->
+            <div class="hot-trend-section recent-section">
+              <div class="section-sub-title">最近浏览</div>
+              <div class="trend-list-density recent-list">
+                <div
+                  v-for="item in recentViews"
+                  :key="item.id"
+                  class="trend-item-density recent-item"
+                  @click="goTrendDetail(item.id)"
+                >
+                  <span class="recent-dot"></span>
+                  <span class="recent-title">{{ item.title }}</span>
+                  <span class="recent-desc" v-if="item.desc">- {{ item.desc }}</span>
+                  <span class="recent-heat">{{ item.heat }}</span>
                 </div>
               </div>
-              <div class="circle-rank-action">
-                <span class="circle-active-badge">
-                  <span class="active-dot"></span>
-                  今日活跃
-                </span>
-                <van-icon name="arrow" size="14" color="#c8c9cc" />
+            </div>
+          </div>
+
+          <!-- 2. 「热门」频道 -->
+          <div v-else-if="activeTab === 'hot'">
+            <div class="channel-description">当前全平台实时讨论热度最高的话题</div>
+            
+            <div class="hot-trend-section">
+              <div class="section-sub-title">实时热榜</div>
+              <div class="trend-list-density">
+                <div
+                  v-for="(item, idx) in hotTrends"
+                  :key="item.id"
+                  class="trend-item-density"
+                  @click="goTrendDetail(item.id)"
+                >
+                  <!-- 排名 -->
+                  <div class="trend-rank" :class="'rank-' + (idx + 1)">{{ idx + 1 }}</div>
+                  
+                  <!-- 话题名与简述 -->
+                  <div class="trend-main-info">
+                    <div class="trend-title-row">
+                      <span class="trend-title">{{ item.title }}</span>
+                      <span v-if="item.trend === 'hot'" class="status-badge status-badge--hot">爆</span>
+                      <span v-else-if="item.trend === 'up'" class="status-badge status-badge--up">热</span>
+                      <span v-else-if="item.trend === 'new'" class="status-badge status-badge--new">新</span>
+                    </div>
+                    <div class="trend-desc" v-if="item.desc">{{ item.desc }}</div>
+                  </div>
+                  
+                  <!-- 热度 -->
+                  <div class="trend-heat">{{ item.heat }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 实时上升 -->
+            <div class="hot-trend-section rising-section">
+              <div class="section-sub-title">实时上升</div>
+              <div class="trend-list-density">
+                <div
+                  v-for="(item, idx) in risingTrends"
+                  :key="item.id"
+                  class="trend-item-density"
+                  @click="goTrendDetail(item.id)"
+                >
+                  <div class="trend-rank rank-rising">↑</div>
+                  <div class="trend-main-info">
+                    <div class="trend-title-row">
+                      <span class="trend-title">{{ item.title }}</span>
+                      <span class="status-badge status-badge--new">新</span>
+                    </div>
+                    <div class="trend-desc" v-if="item.desc">{{ item.desc }}</div>
+                  </div>
+                  <div class="trend-heat">{{ item.heat }}</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- ========================================== -->
-        <!-- 4. 猜你感兴趣（标签云形式，轻量化不占屏）          -->
-        <!-- ========================================== -->
-        <div class="interest-section-card">
-          <div class="section-title-row">
-            <span class="section-title-icon">💡</span>
-            <span class="section-title-text">猜你想搜</span>
+          <!-- 3. 「同城」频道 -->
+          <div v-else-if="activeTab === 'city'">
+            <div class="channel-description">你所在城市高校圈正在讨论的话题</div>
+            <div class="trend-list-density">
+              <div
+                v-for="(item, idx) in cityTrends"
+                :key="item.id"
+                class="trend-item-density"
+                @click="goTrendDetail(item.id)"
+              >
+                <!-- 排名 -->
+                <div class="trend-rank" :class="'rank-' + (idx + 1)">{{ idx + 1 }}</div>
+                
+                <!-- 话题名与简述 -->
+                <div class="trend-main-info">
+                  <div class="trend-title-row">
+                    <span class="trend-title">{{ item.title }}</span>
+                    <span v-if="item.trend === 'hot'" class="status-badge status-badge--hot">爆</span>
+                    <span v-else-if="item.trend === 'up'" class="status-badge status-badge--up">热</span>
+                    <span v-else-if="item.trend === 'new'" class="status-badge status-badge--new">新</span>
+                  </div>
+                  <div class="trend-desc" v-if="item.desc">{{ item.desc }}</div>
+                </div>
+                
+                <!-- 热度 -->
+                <div class="trend-heat">{{ item.heat }}</div>
+              </div>
+            </div>
           </div>
-          <div class="interest-tags">
-            <span
-              v-for="tag in mockInterestTags"
-              :key="tag"
-              class="interest-tag-pill"
-              @click="goInterestSearch(tag)"
-            >
-              #{{ tag }}
-            </span>
-          </div>
-        </div>
 
-      </div>
+          <!-- 4. 「本校」频道 -->
+          <div v-else-if="activeTab === 'school'">
+            <div class="channel-description">来自你所在学校的实时讨论，最有校园感</div>
+            <div class="trend-list-density">
+              <div
+                v-for="(item, idx) in schoolTrends"
+                :key="item.id"
+                class="trend-item-density"
+                @click="goTrendDetail(item.id)"
+              >
+                <!-- 排名 -->
+                <div class="trend-rank" :class="'rank-' + (idx + 1)">{{ idx + 1 }}</div>
+                
+                <!-- 话题名与简述 -->
+                <div class="trend-main-info">
+                  <div class="trend-title-row">
+                    <span class="trend-title">{{ item.title }}</span>
+                    <span v-if="item.trend === 'hot'" class="status-badge status-badge--hot">爆</span>
+                    <span v-else-if="item.trend === 'up'" class="status-badge status-badge--up">热</span>
+                    <span v-else-if="item.trend === 'new'" class="status-badge status-badge--new">新</span>
+                  </div>
+                  <div class="trend-desc" v-if="item.desc">{{ item.desc }}</div>
+                </div>
+                
+                <!-- 热度 -->
+                <div class="trend-heat">{{ item.heat }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. 「更多」频道：切换小标签获取对应的话题榜 -->
+          <div v-else-if="activeTab === 'more'">
+            <div class="channel-description">
+              分类话题中心：{{ currentSubChannelLabel }}话题榜
+            </div>
+            
+            <div class="trend-list-density" v-if="moreChannelTrends.length">
+              <div
+                v-for="(item, idx) in moreChannelTrends"
+                :key="item.id"
+                class="trend-item-density"
+                @click="goTrendDetail(item.id)"
+              >
+                <!-- 排名 -->
+                <div class="trend-rank" :class="'rank-' + (idx + 1)">{{ idx + 1 }}</div>
+                
+                <!-- 话题内容 -->
+                <div class="trend-main-info">
+                  <div class="trend-title-row">
+                    <span class="trend-title">{{ item.title }}</span>
+                    <span v-if="item.trend === 'hot'" class="status-badge status-badge--hot">爆</span>
+                    <span v-else-if="item.trend === 'up'" class="status-badge status-badge--up">热</span>
+                    <span v-else-if="item.trend === 'new'" class="status-badge status-badge--new">新</span>
+                  </div>
+                  <div class="trend-desc" v-if="item.desc">{{ item.desc }}</div>
+                </div>
+                
+                <!-- 热度 -->
+                <div class="trend-heat">{{ item.heat }}</div>
+              </div>
+            </div>
+            <div v-else class="list-empty">
+              该频道暂无讨论话题，点击上方标签切换看看吧
+            </div>
+          </div>
+
+        </div>
+      </transition>
     </div>
   </div>
 </template>
@@ -189,14 +265,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAppStore } from '@/stores/app.js'
-import { showDialog, showToast } from 'vant'
-import { mockTrends, mockTopics, mockInterestTags } from '@/mock/trends.js'
+import { mockTrends } from '@/mock/trends.js'
 
 const router = useRouter()
-const store = useAppStore()
 
-// ===== 滚动监听 =====
+// ===== 滚动与固定栏 =====
 const scrollTop = ref(0)
 const scrollRef = ref(null)
 
@@ -204,69 +277,89 @@ function handleScroll() {
   scrollTop.value = scrollRef.value?.scrollTop ?? 0
 }
 
-// ===== Tab 大频道 =====
+// ===== Tab大频道 =====
 const tabs = [
+  { key: 'mine', label: '我的' },
   { key: 'hot', label: '热门' },
-  { key: 'newest', label: '最新' },
-  { key: 'school', label: '本校' },
   { key: 'city', label: '同城' },
-  { key: 'circle', label: '圈子' }
+  { key: 'school', label: '本校' },
+  { key: 'more', label: '更多' }
 ]
 
 const activeTab = ref('hot')
 
+// ===== 更多子小频道 =====
+const subChannels = [
+  { key: 'photography', label: '摄影' },
+  { key: 'anime', label: '动漫' },
+  { key: 'music', label: '音乐' },
+  { key: 'gaming', label: '游戏' },
+  { key: 'ootd', label: '穿搭' },
+  { key: 'postgrad', label: '考研' },
+  { key: 'gossip', label: '吃瓜' },
+  { key: 'lost_found', label: '失物招领' },
+  { key: 'wall', label: '校园墙' },
+  { key: 'second_hand', label: '二手' }
+]
+
+const activeSmallChannel = ref('photography')
+
+const currentSubChannelLabel = computed(() => {
+  const ch = subChannels.find(c => c.key === activeSmallChannel.value)
+  return ch ? ch.label : ''
+})
+
 function switchTab(key) {
   activeTab.value = key
+  if (key === 'more') {
+    activeSmallChannel.value = 'photography'
+  }
 }
 
-// ===== 趋势列表过滤 =====
-const currentTrends = computed(() => {
-  return mockTrends.filter(t => t.category === activeTab.value)
+function switchSmallChannel(key) {
+  activeSmallChannel.value = key
+}
+
+// ===== 各大频道数据源过滤 =====
+
+// 我的 - 猜你喜欢 (10条)
+const mineLikes = computed(() => {
+  return mockTrends.filter(t => t.category === 'mine').slice(0, 10)
 })
 
-const currentTrendTitle = computed(() => {
-  const map = {
-    hot: '实时热度排行榜',
-    newest: '最新讨论上升榜',
-    school: '本校专属讨论话题',
-    city: '同城高校热议中心'
-  }
-  return map[activeTab.value] || '讨论排行榜'
+// 我的 - 最近浏览 (3条)
+const recentViews = computed(() => {
+  return mockTrends.filter(t => t.category === 'hot').slice(4, 7)
 })
 
-// ===== 热门圈子推荐 =====
-const displayCircles = computed(() => {
-  // 从 store 中获取所有的圈子数据，按照成员数由大到小排序
-  const sorted = [...store.circles].sort((a, b) => b.memberCount - a.memberCount)
-  // 如果是圈子 Tab 展示 8 个，如果是其他 Tab 作为板块推荐展示 4 个
-  return activeTab.value === 'circle' ? sorted.slice(0, 8) : sorted.slice(0, 4)
+// 热门 - 实时热榜 (10条)
+const hotTrends = computed(() => {
+  return mockTrends.filter(t => t.category === 'hot').slice(0, 10)
 })
 
-// ===== 交互跳转 =====
+// 热门 - 实时上升 (3条)
+const risingTrends = computed(() => {
+  return mockTrends.filter(t => t.category === 'school').slice(3, 6)
+})
+
+// 同城
+const cityTrends = computed(() => {
+  return mockTrends.filter(t => t.category === 'city')
+})
+
+// 本校
+const schoolTrends = computed(() => {
+  return mockTrends.filter(t => t.category === 'school')
+})
+
+// 更多 - 对应小频道的话题榜
+const moreChannelTrends = computed(() => {
+  return mockTrends.filter(t => t.category === activeSmallChannel.value)
+})
+
+// ===== 页面跳转 =====
 function goTrendDetail(trendId) {
   router.push(`/trend/${trendId}`)
-}
-
-function goTopicTag(tag) {
-  // 携带 tag 参数跳转到搜索结果页或者大搜索页
-  router.push(`/search?from=discover&keyword=${encodeURIComponent(tag)}`)
-}
-
-function goCircle(circleId) {
-  router.push(`/circle/${circleId}`)
-}
-
-function goInterestSearch(tag) {
-  router.push(`/search?from=discover&keyword=${encodeURIComponent(tag)}`)
-}
-
-function showTrendIntro() {
-  showDialog({
-    title: '关于发现·趋势榜单',
-    message: '发现页榜单数据根据校声用户对相关话题的发帖数、互动量（赞/评/藏）以及热度上升趋势实时计算生成。分享校园热点，看见正在发生的校园生活。',
-    confirmButtonText: '我知道了',
-    teleport: '#phone-screen'
-  })
 }
 </script>
 
@@ -278,11 +371,11 @@ function showTrendIntro() {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: #f6f7f9; /* 柔和浅灰底色，与纯白卡片相得益彰 */
+  background: var(--echo-white);
 }
 
 /* ═══════════════════════════════════════════ */
-/* 固定层：position:fixed，不透明纯白背景，层级最高  */
+/* 固定层：永久置顶大Tab及更多频道下拉子抽屉          */
 /* ═══════════════════════════════════════════ */
 .fixed-header {
   position: fixed;
@@ -293,73 +386,10 @@ function showTrendIntro() {
   z-index: 1000;
   background: var(--echo-white);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-/* ── 标题栏 ── */
-.logo-header {
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 16px 6px;
   box-sizing: border-box;
-  transition: height 0.2s ease, padding 0.2s ease, opacity 0.2s ease;
-  overflow: hidden;
-  background: var(--echo-white);
 }
 
-.logo-header.hidden {
-  height: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  opacity: 0;
-}
-
-.discover-header-left {
-  display: flex;
-  align-items: center;
-}
-
-.discover-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--echo-text);
-  letter-spacing: 0.5px;
-  margin: 0;
-}
-
-.trend-intro-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--echo-text-secondary);
-  cursor: pointer;
-  padding: 4px;
-  transition: color 0.2s;
-}
-.trend-intro-btn:active {
-  color: var(--echo-primary);
-}
-
-.discover-search-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--echo-text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.discover-search-btn:active {
-  background: rgba(0, 0, 0, 0.05);
-  transform: scale(0.92);
-}
-
-/* ── Tab 大频道栏 ── */
+/* 大频道栏样式 */
 .channel-header {
   height: 48px;
   display: flex;
@@ -374,10 +404,10 @@ function showTrendIntro() {
   justify-content: center;
   cursor: pointer;
   position: relative;
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--echo-text-secondary);
   font-weight: 500;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -388,15 +418,44 @@ function showTrendIntro() {
 
 .discover-tab-bar {
   position: absolute;
-  bottom: 4px;
-  width: 20px;
+  bottom: 0;
+  width: 22px;
   height: 3px;
   border-radius: 2px;
   background: var(--echo-primary);
 }
 
+/* 小频道菜单流：大Tab下方展开，flex-wrap 样式 */
+.sub-channel-menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--echo-white);
+  border-top: 1px solid rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
+}
+
+.sub-channel-tag {
+  font-size: 11px;
+  color: var(--echo-text-secondary);
+  background: var(--echo-bg);
+  padding: 5px 11px;
+  border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.sub-channel-tag--active {
+  background: var(--echo-primary-light);
+  color: var(--echo-primary);
+  font-weight: 600;
+}
+
 /* ═══════════════════════════════════════════ */
-/* 滚动层：独立滚动容器                            */
+/* 滚动层：独立高密度滚动列表                        */
 /* ═══════════════════════════════════════════ */
 .scroll-content {
   height: 100%;
@@ -406,334 +465,241 @@ function showTrendIntro() {
   box-sizing: border-box;
 }
 
+/* 动态过渡 spacer 样式 */
+.header-spacer {
+  background: var(--echo-white);
+}
+
 .discover-container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px 12px 84px; /* 底部预留安全距离避开TabBar */
+  padding-bottom: 84px; /* 底部预留安全距离避开TabBar */
 }
 
-/* ===== 统一卡片容器基础样式 ===== */
-.trend-section-card,
-.topic-section-card,
-.circle-section-card,
-.interest-section-card {
-  background: var(--echo-white);
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.015);
-  box-sizing: border-box;
-}
-
-.section-title-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 14px;
-}
-
-.section-title-icon {
-  font-size: 15px;
-}
-
-.section-title-text {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--echo-text);
-}
-
-/* ===== 1. 热点榜单区 ===== */
-.trend-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.trend-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  cursor: pointer;
-  padding: 4px 0;
-  border-radius: 8px;
-}
-.trend-item:active {
-  opacity: 0.7;
-}
-
-.trend-rank {
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
-  background: #eef0f3;
-  color: #7f8c8d;
-  font-size: 11px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.trend-rank--top {
-  background: linear-gradient(135deg, #ff6b35 0%, #e74c3c 100%);
-  color: #ffffff;
-}
-
-.trend-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.trend-item-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--echo-text);
-  line-height: 1.4;
-  margin-bottom: 2px;
-  word-break: break-all;
-}
-
-.trend-item-desc {
-  font-size: 12px;
-  color: var(--echo-text-secondary);
-  line-height: 1.5;
-  margin-bottom: 4px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.trend-item-meta {
-  display: flex;
-  align-items: center;
+/* 频道顶部背景小说明 */
+.channel-description {
+  padding: 10px 16px;
   font-size: 11px;
   color: var(--echo-text-hint);
-}
-
-.trend-right {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  align-self: center;
-}
-
-.trend-badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 1px 4px;
-  border-radius: 4px;
-  line-height: 1.2;
-}
-.trend-badge--hot {
-  background: #fff0f0;
-  color: #e74c3c;
-}
-.trend-badge--up {
-  background: #fbf5e6;
-  color: #f39c12;
-}
-.trend-badge--new {
-  background: #eafaf1;
-  color: #2ecc71;
-}
-
-/* ===== 2. 趋势专题区 ===== */
-.topic-scroll-row {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  scrollbar-width: none; /* Firefox */
-  padding-bottom: 4px;
-}
-.topic-scroll-row::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
-}
-
-.topic-card {
-  flex-shrink: 0;
-  width: 146px;
-  height: 80px;
-  border-radius: 12px;
-  padding: 12px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  cursor: pointer;
-  transition: transform 0.15s;
-}
-.topic-card:active {
-  transform: scale(0.96);
-}
-
-.topic-card-icon {
-  font-size: 18px;
-  background: rgba(255, 255, 255, 0.4);
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.topic-card-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  height: 100%;
-}
-
-.topic-card-name {
-  font-size: 12px;
-  font-weight: 700;
-  color: #1a1a2e;
-  margin-bottom: 1px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.topic-card-desc {
-  font-size: 10px;
-  color: rgba(26, 26, 46, 0.65);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-/* ===== 3. 圈子推荐与榜单 ===== */
-.circle-rank-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.circle-rank-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  padding: 4px 0;
-}
-.circle-rank-item:active {
-  opacity: 0.75;
-}
-
-.circle-rank-num {
-  width: 18px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--echo-text-hint);
-  text-align: center;
-  flex-shrink: 0;
-}
-.circle-rank-num--top {
-  color: #ff6b35;
-  font-size: 14px;
-}
-
-.circle-rank-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-}
-
-.circle-rank-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.circle-rank-name {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--echo-text);
-  margin-bottom: 1px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.circle-rank-desc {
-  font-size: 11px;
-  color: var(--echo-text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 2px;
-}
-
-.circle-rank-meta {
-  font-size: 10px;
-  color: var(--echo-text-hint);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.circle-rank-action {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.circle-active-badge {
-  font-size: 10px;
-  color: #2ecc71;
-  background: #eafaf1;
-  padding: 2px 6px;
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
+  background: var(--echo-bg);
   font-weight: 500;
 }
 
-.active-dot {
-  width: 5px;
-  height: 5px;
-  background: #2ecc71;
-  border-radius: 50%;
-}
-
-.circle-section-card--highlight {
-  border: 1.5px solid rgba(76, 175, 125, 0.12);
-  box-shadow: 0 4px 16px rgba(76, 175, 125, 0.04);
-}
-
-/* ===== 4. 猜你想搜 ===== */
-.interest-tags {
+.hot-trend-section {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
 }
 
-.interest-tag-pill {
+.section-sub-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--echo-text-secondary);
+  padding: 12px 16px 6px;
+  background: var(--echo-white);
+}
+
+/* 微博热搜式高密度列表 */
+.trend-list-density {
+  display: flex;
+  flex-direction: column;
+  background: var(--echo-white);
+}
+
+.trend-item-density {
+  display: flex;
+  align-items: center;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--echo-border);
+  background: var(--echo-white);
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+  box-sizing: border-box;
+}
+
+.trend-item-density:active {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* 排名视觉样式 */
+.trend-rank {
+  width: 28px;
+  font-size: 14px;
+  font-weight: 850;
+  color: var(--echo-text-hint);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-shrink: 0;
+}
+
+.rank-1 { color: #ff3b30; } /* 微博橙红 */
+.rank-2 { color: #ff9500; } /* 微博橙 */
+.rank-3 { color: #ffcc00; } /* 微博黄 */
+
+.rank-rising {
+  color: #34c759;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* 内容板块 */
+.trend-main-info {
+  flex: 1;
+  min-width: 0;
+  padding-right: 12px;
+}
+
+.trend-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trend-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--echo-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 状态标签新/热/爆 */
+.status-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 3px;
+  border-radius: 3px;
+  line-height: 1.1;
+  flex-shrink: 0;
+}
+
+.status-badge--hot {
+  background: #fff0f0;
+  color: #ff3b30;
+}
+
+.status-badge--up {
+  background: #fbf5e6;
+  color: #ff9500;
+}
+
+.status-badge--new {
+  background: #eafaf1;
+  color: #34c759;
+}
+
+.trend-desc {
   font-size: 11.5px;
   color: var(--echo-text-secondary);
-  background: #f1f2f5;
-  padding: 5px 12px;
-  border-radius: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
+  margin-top: 2.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.interest-tag-pill:active {
-  background: var(--echo-primary-light);
-  color: var(--echo-primary);
-  transform: scale(0.95);
+
+.trend-heat {
+  font-size: 11px;
+  color: var(--echo-text-hint);
+  font-weight: 500;
+  flex-shrink: 0;
+  text-align: right;
+  min-width: 40px;
+}
+
+/* 最近浏览版块样式（更轻量级） */
+.recent-section {
+  margin-top: 16px;
+  border-top: 5px solid var(--echo-bg);
+}
+
+.recent-list {
+  padding-top: 2px;
+}
+
+.recent-item {
+  display: flex;
+  align-items: center;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--echo-border);
+  font-size: 12.5px;
+  color: var(--echo-text-secondary);
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.recent-dot {
+  width: 5px;
+  height: 5px;
+  background: var(--echo-text-hint);
+  border-radius: 50%;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.recent-title {
+  font-weight: 550;
+  color: var(--echo-text-secondary);
+  margin-right: 6px;
+  white-space: nowrap;
+}
+
+.recent-desc {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--echo-text-hint);
+  font-size: 11.5px;
+}
+
+.recent-heat {
+  font-size: 11px;
+  color: var(--echo-text-hint);
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+/* 实时上升版块 */
+.rising-section {
+  margin-top: 16px;
+  border-top: 5px solid var(--echo-bg);
+}
+
+/* 更多空状态 */
+.list-empty {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--echo-text-hint);
+  font-size: 13.5px;
+  background: var(--echo-white);
+}
+
+/* 更多小标签展开淡入淡出 */
+.drawer-fade-enter-active,
+.drawer-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.drawer-fade-enter-from,
+.drawer-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* Tab 切换微移横滑淡入淡出过渡动画 */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateX(10px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-10px);
 }
 </style>
