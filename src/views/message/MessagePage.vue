@@ -27,8 +27,8 @@
       </div>
     </div>
 
-    <!-- 加号展开菜单 —— 右上角气泡弹出式（Teleport 到 phone-screen，锁定背景滚动）-->
-    <Teleport to="#phone-screen">
+    <!-- 加号展开菜单 —— 右上角气泡弹出式（Teleport 到 phone-body，覆盖底栏）-->
+    <Teleport to=".phone-body">
       <transition name="plus-fade">
         <div v-if="plusMenuVisible" class="plus-menu-overlay" @click.self="closePlusMenu">
           <!-- 气泡卡片：右上角弹出，三角箭头指向 + 按钮 -->
@@ -615,7 +615,7 @@ function badgeText(count) {
 /* 气泡卡片：右上角弹出，三角箭头指向 + 按钮 */
 .plus-bubble {
   position: absolute;
-  top: 46px;
+  top: 94px; /* Teleport 到了 phone-body，增加 notch 高度 48px */
   right: 8px;
   min-width: 136px;
   z-index: 10000;

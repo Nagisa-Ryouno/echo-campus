@@ -54,10 +54,10 @@
         <div class="filter-actions">
           <div
             class="filter-dropdown-btn"
-            :class="{ 'filter-dropdown-btn--active': selectedTag }"
+            :class="{ 'filter-dropdown-btn--active': selectedTags.length > 0 }"
             @click="openTagDrawer"
           >
-            <span>{{ selectedTag || '标签选择' }}</span>
+            <span>{{ selectedTags.length > 0 ? (selectedTags.length === 1 ? selectedTags[0] : `标签(${selectedTags.length})`) : '标签选择' }}</span>
             <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="6 9 12 15 18 9"/>
             </svg>
@@ -77,11 +77,11 @@
       </div>
 
       <!-- 4. 筛选状态汇总条：非默认状态下显示，支持一键清除 -->
-      <div class="filter-status-banner" v-if="activeChannel !== 'meet' && activeChannel !== 'follow' && (selectedTag || selectedTime !== 'all')">
+      <div class="filter-status-banner" v-if="activeChannel !== 'meet' && activeChannel !== 'follow' && (selectedTags.length > 0 || selectedTime !== 'all')">
         <div class="status-tags">
           <span class="status-tag-item">{{ channelLabelMap[activeChannel] }}</span>
           <span class="status-tag-item">{{ sortMode === 'hot' ? '热门' : '最新' }}</span>
-          <span class="status-tag-item" v-if="selectedTag">{{ selectedTag }}</span>
+          <span class="status-tag-item" v-for="tag in selectedTags" :key="tag">{{ tag }}</span>
           <span class="status-tag-item" v-if="selectedTime !== 'all'">{{ timeLabelMap[selectedTime] }}</span>
         </div>
         <div class="status-reset-btn" @click="resetFilters">
@@ -282,105 +282,109 @@
     <!-- ═══════════════════════════════════════════ -->
 
     <!-- A. 标签选择滑动 Drawer 改为液态玻璃中心弹窗 -->
-    <transition name="glass-modal-fade">
-      <div v-if="showTagDrawer" class="glass-overlay" @click.self="closeTagDrawer">
-        <div class="glass-modal tag-glass-modal">
-          <div class="glass-modal-header">
-            <span class="glass-modal-title">⭐ 分类标签</span>
-            <button class="glass-modal-edit-btn" @click="isTagEditing = !isTagEditing">
-              {{ isTagEditing ? '完成' : '编辑' }}
-            </button>
-          </div>
+    <teleport to=".phone-body">
+      <transition name="glass-modal-fade">
+        <div v-if="showTagDrawer" class="glass-overlay" @click.self="closeTagDrawer">
+          <div class="glass-modal tag-glass-modal">
+            <div class="glass-modal-header">
+              <span class="glass-modal-title">⭐ 分类标签</span>
+              <button class="glass-modal-edit-btn" @click="isTagEditing = !isTagEditing">
+                {{ isTagEditing ? '完成' : '编辑' }}
+              </button>
+            </div>
 
-          <div class="glass-modal-body">
-            <!-- 1. 常看频道 -->
-            <div class="glass-section">
-              <div class="glass-section-hdr">
-                <span class="glass-section-title">常看频道</span>
-                <span class="glass-section-subtitle">{{ isTagEditing ? '拖动排序或点击移除' : '长按编辑/点击筛选' }}</span>
+            <div class="glass-modal-body">
+              <!-- 1. 常看频道 -->
+              <div class="glass-section">
+                <div class="glass-section-hdr">
+                  <span class="glass-section-title">常看频道</span>
+                  <span class="glass-section-subtitle">{{ isTagEditing ? '拖动排序或点击移除' : '点击筛选' }}</span>
+                </div>
+                <div class="tag-grid" @dragover.prevent>
+                  <div
+                    v-for="(tag, idx) in frequentTags"
+                    :key="tag"
+                    class="drawer-tag-item"
+                    :class="{
+                      'drawer-tag-item--editing': isTagEditing,
+                      'drawer-tag-item--selected': selectedTags.includes(tag)
+                    }"
+                    :draggable="isTagEditing"
+                    @dragstart="onTagDragStart(idx, $event)"
+                    @dragover.prevent="onTagDragOver(idx, $event)"
+                    @drop="onTagDrop(idx, $event)"
+                    @click="onTagClick(tag)"
+                  >
+                    <span class="tag-text-span">{{ tag }}</span>
+                    <div v-if="isTagEditing" class="tag-remove-btn" @click.stop="removeFrequentTag(tag, idx)">
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="tag-grid" @dragover.prevent>
-                <div
-                  v-for="(tag, idx) in frequentTags"
-                  :key="tag"
-                  class="drawer-tag-item"
-                  :class="{
-                    'drawer-tag-item--editing': isTagEditing,
-                    'drawer-tag-item--selected': selectedTag === tag
-                  }"
-                  draggable="true"
-                  @dragstart="onTagDragStart(idx, $event)"
-                  @dragover.prevent="onTagDragOver(idx, $event)"
-                  @drop="onTagDrop(idx, $event)"
-                  @click="onTagClick(tag)"
-                >
-                  <span class="tag-text-span">{{ tag }}</span>
-                  <div v-if="isTagEditing" class="tag-remove-btn" @click.stop="removeFrequentTag(tag, idx)">
-                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+
+              <!-- 2. 推荐频道 -->
+              <div class="glass-section" style="margin-top: 16px;">
+                <div class="glass-section-hdr">
+                  <span class="glass-section-title">💡 推荐添加</span>
+                </div>
+                <div class="tag-grid">
+                  <div
+                    v-for="tag in recommendedTags"
+                    :key="tag"
+                    class="drawer-tag-item drawer-tag-item--recommend"
+                    @click="addFrequentTag(tag)"
+                  >
+                    <svg class="tag-plus-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                     </svg>
+                    <span class="tag-text-span">{{ tag }}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- 2. 推荐频道 -->
-            <div class="glass-section" style="margin-top: 16px;">
-              <div class="glass-section-hdr">
-                <span class="glass-section-title">💡 推荐添加</span>
-              </div>
-              <div class="tag-grid">
-                <div
-                  v-for="tag in recommendedTags"
-                  :key="tag"
-                  class="drawer-tag-item drawer-tag-item--recommend"
-                  @click="addFrequentTag(tag)"
-                >
-                  <svg class="tag-plus-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                  </svg>
-                  <span class="tag-text-span">{{ tag }}</span>
-                </div>
-              </div>
+            <div class="glass-modal-footer">
+              <button class="glass-close-btn" @click="closeTagDrawer">确定</button>
             </div>
           </div>
-
-          <div class="glass-modal-footer">
-            <button class="glass-close-btn" @click="closeTagDrawer">确定</button>
-          </div>
         </div>
-      </div>
-    </transition>
+      </transition>
+    </teleport>
 
     <!-- B. 时间筛选面板 改为液态玻璃中心弹窗 -->
-    <transition name="glass-modal-fade">
-      <div v-if="showTimeSheet" class="glass-overlay" @click.self="closeTimeSheet">
-        <div class="glass-modal time-glass-modal">
-          <div class="glass-modal-header">
-            <span class="glass-modal-title">📅 选择发布时间</span>
-          </div>
+    <teleport to=".phone-body">
+      <transition name="glass-modal-fade">
+        <div v-if="showTimeSheet" class="glass-overlay" @click.self="closeTimeSheet">
+          <div class="glass-modal time-glass-modal">
+            <div class="glass-modal-header">
+              <span class="glass-modal-title">📅 选择发布时间</span>
+            </div>
 
-          <div class="glass-modal-body time-actions-list">
-            <div
-              v-for="action in timeActions"
-              :key="action.value"
-              class="glass-time-item"
-              :class="{ 'glass-time-item--active': selectedTime === action.value }"
-              @click="onTimeSelect(action)"
-            >
-              <span>{{ action.name }}</span>
-              <svg v-if="selectedTime === action.value" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
+            <div class="glass-modal-body time-actions-list">
+              <div
+                v-for="action in timeActions"
+                :key="action.value"
+                class="glass-time-item"
+                :class="{ 'glass-time-item--active': selectedTime === action.value }"
+                @click="onTimeSelect(action)"
+              >
+                <span>{{ action.name }}</span>
+                <svg v-if="selectedTime === action.value" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </div>
+            </div>
+
+            <div class="glass-modal-footer" style="margin-top: 12px;">
+              <button class="glass-close-btn" @click="closeTimeSheet">取消</button>
             </div>
           </div>
-
-          <div class="glass-modal-footer" style="margin-top: 12px;">
-            <button class="glass-close-btn" @click="closeTimeSheet">取消</button>
-          </div>
         </div>
-      </div>
-    </transition>
+      </transition>
+    </teleport>
 
     <!-- C. 城市选择面板 (同城 L1 激活且再次点击时触发) -->
     <van-action-sheet
@@ -489,7 +493,7 @@ onBeforeUnmount(() => {
 // ===== 筛选控制状态 =====
 const activeChannel = ref('recommend') // 'meet' | 'recommend' | 'city' | 'school' | 'follow'
 const sortMode = ref('hot') // 'hot' | 'latest'
-const selectedTag = ref('')
+const selectedTags = ref([])
 const selectedTime = ref('all') // 'all' | 'today' | 'week' | 'month' | 'half_year' | 'year'
 
 const followFilterUid = ref(null)
@@ -614,9 +618,12 @@ function openTagDrawer() {
 
 function onTagClick(tag) {
   if (isTagEditing.value) return
-  selectedTag.value = selectedTag.value === tag ? '' : tag
-  showTagDrawer.value = false
-  store.unlockPhoneScroll()
+  const idx = selectedTags.value.indexOf(tag)
+  if (idx > -1) {
+    selectedTags.value.splice(idx, 1)
+  } else {
+    selectedTags.value.push(tag)
+  }
   
   // 模拟系统自动学习
   recordTagAction(tag, 1)
@@ -628,9 +635,7 @@ function removeFrequentTag(tag, idx) {
   if (!recommendedTags.value.includes(tag)) {
     recommendedTags.value.push(tag)
   }
-  if (selectedTag.value === tag) {
-    selectedTag.value = ''
-  }
+  selectedTags.value = selectedTags.value.filter(t => t !== tag)
 }
 
 // 添加推荐标签到常看频道
@@ -644,15 +649,18 @@ function addFrequentTag(tag) {
 
 // 拖拽排序逻辑
 function onTagDragStart(idx, event) {
+  if (!isTagEditing.value) return
   dragStartTagIdx.value = idx
   event.dataTransfer.effectAllowed = 'move'
 }
 
 function onTagDragOver(idx, event) {
+  if (!isTagEditing.value) return
   event.preventDefault()
 }
 
 function onTagDrop(idx, event) {
+  if (!isTagEditing.value) return
   event.preventDefault()
   const from = dragStartTagIdx.value
   if (from < 0 || from === idx) return
@@ -732,7 +740,7 @@ function isWithinTimeRange(createdAtStr, range) {
 
 // 清除所有过滤器
 function resetFilters() {
-  selectedTag.value = ''
+  selectedTags.value = []
   selectedTime.value = 'all'
   showToast('筛选已清空')
 }
@@ -773,8 +781,8 @@ const displayPosts = computed(() => {
   }
 
   // 2. 标签/分类筛选
-  if (selectedTag.value) {
-    list = list.filter(p => p.categoryTag === selectedTag.value)
+  if (selectedTags.value.length > 0) {
+    list = list.filter(p => selectedTags.value.includes(p.categoryTag))
   }
 
   // 3. 时间筛选
@@ -1788,9 +1796,9 @@ function handleMenuSelect(value) {
 .glass-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   z-index: 1999;
   display: flex;
   align-items: center;
@@ -1799,34 +1807,17 @@ function handleMenuSelect(value) {
   box-sizing: border-box;
 }
 
-@keyframes liquid-glow {
-  0% { 
-    border-color: rgba(76, 175, 125, 0.25); 
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.05), 0 0 0 1px rgba(255, 255, 255, 0.2) inset; 
-  }
-  50% { 
-    border-color: rgba(76, 175, 125, 0.5); 
-    box-shadow: 0 8px 32px rgba(76, 175, 125, 0.15), 0 0 10px rgba(76, 175, 125, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.4) inset; 
-  }
-  100% { 
-    border-color: rgba(76, 175, 125, 0.25); 
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.05), 0 0 0 1px rgba(255, 255, 255, 0.2) inset; 
-  }
-}
-
 .glass-modal {
   width: 320px;
   max-height: 80%;
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(20px) saturate(190%);
-  -webkit-backdrop-filter: blur(20px) saturate(190%);
-  border: 1.5px solid rgba(255, 255, 255, 0.35);
-  border-radius: 20px;
+  background: var(--echo-white);
+  border: 1px solid var(--echo-border);
+  border-radius: 16px;
   padding: 18px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  animation: liquid-glow 3s infinite alternate ease-in-out;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.06);
   transform: scale(1);
 }
 
@@ -1916,21 +1907,20 @@ function handleMenuSelect(value) {
   border-radius: 12px;
   font-size: 13px;
   color: var(--echo-text-secondary);
-  background: rgba(255, 255, 255, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--echo-bg);
+  border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .glass-time-item:active {
-  background: rgba(76, 175, 125, 0.08);
+  background: rgba(0, 0, 0, 0.05);
   transform: translateY(1px);
 }
 
 .glass-time-item--active {
   color: var(--echo-primary);
-  background: rgba(76, 175, 125, 0.1);
-  border-color: rgba(76, 175, 125, 0.25);
+  background: var(--echo-primary-light);
   font-weight: 700;
 }
 
