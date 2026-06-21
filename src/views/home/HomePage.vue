@@ -1107,8 +1107,10 @@ function handleMenuSelect(value) {
   transform: translateX(-50%);
   width: 375px;
   z-index: 1000;
-  background: var(--echo-white);
-  box-shadow: 0 1px 0 var(--echo-border);
+  background: rgba(244, 249, 246, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--echo-border);
 }
 
 /* Logo 头部 */
@@ -1159,7 +1161,7 @@ function handleMenuSelect(value) {
 .channel-header {
   height: 44px;
   display: flex;
-  background: var(--echo-white);
+  background: transparent;
   z-index: 100;
 }
 
@@ -1212,7 +1214,7 @@ function handleMenuSelect(value) {
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  background: var(--echo-white);
+  background: transparent;
   z-index: 99;
 }
 
@@ -1279,7 +1281,7 @@ function handleMenuSelect(value) {
   justify-content: space-between;
   align-items: center;
   padding: 6px 16px;
-  background: #f0f9f4;
+  background: rgba(76, 175, 125, 0.05);
   border-top: 1px solid rgba(76, 175, 125, 0.08);
 }
 

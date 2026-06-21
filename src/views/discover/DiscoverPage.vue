@@ -1,51 +1,56 @@
 <template>
   <div class="page-root">
     <!-- ═══════════════════════════════════════════ -->
-    <!-- 固定层：position:fixed，绝对定位在手机屏幕顶部      -->
+    <!-- 滚动层：独立 overflow-y:auto                  -->
     <!-- ═══════════════════════════════════════════ -->
-    <div class="fixed-header">
-      <!-- Tab大频道栏：永久固定在顶部 -->
-      <div class="channel-header">
-        <div
-          v-for="tab in tabs"
-          :key="tab.key"
-          class="discover-tab"
-          :class="{ 'discover-tab--active': activeTab === tab.key }"
-          @click="switchTab(tab.key)"
-        >
-          <span>{{ tab.label }}</span>
-          <span v-if="activeTab === tab.key" class="discover-tab-bar"></span>
+    <div ref="scrollRef" class="scroll-content">
+      
+      <!-- 统一的粘性顶部包装层：z-index: 120 -->
+      <div class="discover-header-wrapper">
+        <!-- 趋势搜索栏 -->
+        <div class="trend-search-bar-wrap" @click="goSearchPage">
+          <div class="trend-search-bar-inner">
+            <span class="search-bar-left">
+              <van-icon name="search" size="15" class="search-bar-icon" />
+              <div class="search-word-carousel">
+                <transition name="search-word-fade" mode="out-in">
+                  <span :key="currentWord" class="search-word-text">大家都在搜：{{ currentWord }}</span>
+                </transition>
+              </div>
+            </span>
+            <span class="search-bar-heat-icon">🔥</span>
+          </div>
         </div>
-      </div>
 
-      <!-- "更多" 子小频道标签流 -->
-      <transition name="drawer-fade">
-        <div v-if="activeTab === 'more'" class="sub-channel-menu">
-          <span
-            v-for="sub in subChannels"
-            :key="sub.key"
-            class="sub-channel-tag"
-            :class="{ 'sub-channel-tag--active': activeSmallChannel === sub.key }"
-            @click="switchSmallChannel(sub.key)"
+        <!-- Tab大频道栏 -->
+        <div class="channel-header">
+          <div
+            v-for="tab in tabs"
+            :key="tab.key"
+            class="discover-tab"
+            :class="{ 'discover-tab--active': activeTab === tab.key }"
+            @click="switchTab(tab.key)"
           >
-            {{ sub.label }}
-          </span>
+            <span>{{ tab.label }}</span>
+            <span v-if="activeTab === tab.key" class="discover-tab-bar"></span>
+          </div>
         </div>
-      </transition>
-    </div>
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- 滚动层：独立 overflow-y:auto，与固定层彻底隔离    -->
-    <!-- ═══════════════════════════════════════════ -->
-    <div ref="scrollRef" class="scroll-content" @scroll="handleScroll">
-      <!-- 动态占位：常驻频道时 48px，展开更多标签时自动拓展为 136px -->
-      <div
-        class="header-spacer"
-        :style="{
-          height: (activeTab === 'more' ? 136 : 48) + 'px',
-          transition: 'height 0.2s ease'
-        }"
-      ></div>
+        <!-- "更多" 子小频道标签流 -->
+        <transition name="drawer-fade">
+          <div v-if="activeTab === 'more'" class="sub-channel-menu">
+            <span
+              v-for="sub in subChannels"
+              :key="sub.key"
+              class="sub-channel-tag"
+              :class="{ 'sub-channel-tag--active': activeSmallChannel === sub.key }"
+              @click="switchSmallChannel(sub.key)"
+            >
+              {{ sub.label }}
+            </span>
+          </div>
+        </transition>
+      </div>
 
       <!-- 切屏微移与淡入淡出动效 -->
       <transition name="fade-slide" mode="out-in">
@@ -263,18 +268,41 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { mockTrends } from '@/mock/trends.js'
 
 const router = useRouter()
 
-// ===== 滚动与固定栏 =====
-const scrollTop = ref(0)
-const scrollRef = ref(null)
+// ===== 趋势搜索词轮播 =====
+const hotSearchWords = [
+  '期末周',
+  '考研复试',
+  '四六级',
+  'Labubu',
+  '毕业旅行',
+  '校园歌手大赛'
+]
 
-function handleScroll() {
-  scrollTop.value = scrollRef.value?.scrollTop ?? 0
+const currentIndex = ref(0)
+const currentWord = computed(() => hotSearchWords[currentIndex.value])
+
+let searchTimer = null
+
+onMounted(() => {
+  searchTimer = setInterval(() => {
+    currentIndex.value = (currentIndex.value + 1) % hotSearchWords.length
+  }, 4000) // 4秒切换一次
+})
+
+onBeforeUnmount(() => {
+  if (searchTimer) {
+    clearInterval(searchTimer)
+  }
+})
+
+function goSearchPage() {
+  router.push('/search')
 }
 
 // ===== Tab大频道 =====
@@ -375,25 +403,114 @@ function goTrendDetail(trendId) {
 }
 
 /* ═══════════════════════════════════════════ */
-/* 固定层：永久置顶大Tab及更多频道下拉子抽屉          */
+/* 粘性顶部包裹容器：集成搜索栏与大Tab             */
 /* ═══════════════════════════════════════════ */
-.fixed-header {
-  position: fixed;
-  top: 48px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 375px;
-  z-index: 1000;
-  background: var(--echo-white);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+.discover-header-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 120;
+  background: rgba(244, 249, 246, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--echo-border);
   box-sizing: border-box;
+}
+
+/* 趋势搜索栏 */
+.trend-search-bar-wrap {
+  padding: 10px 16px 6px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.trend-search-bar-inner {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(76, 175, 125, 0.15);
+  border-radius: 17px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.trend-search-bar-wrap:active .trend-search-bar-inner {
+  background: rgba(255, 255, 255, 0.85);
+  transform: scale(0.98);
+}
+
+.search-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.search-bar-icon {
+  color: var(--echo-primary);
+  flex-shrink: 0;
+}
+
+.search-word-carousel {
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+  line-height: 20px;
+  overflow: hidden;
+}
+
+.search-word-text {
+  font-size: 13px;
+  color: var(--echo-text-secondary);
+  font-weight: 500;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-bar-heat-icon {
+  font-size: 14px;
+  animation: heat-pulse 1.5s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+@keyframes heat-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 1;
+    text-shadow: 0 0 4px rgba(255, 94, 0, 0.3);
+  }
+}
+
+/* 轮播词淡入淡出动画 */
+.search-word-fade-enter-active,
+.search-word-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.search-word-fade-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.search-word-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 /* 大频道栏样式 */
 .channel-header {
   height: 48px;
   display: flex;
-  background: var(--echo-white);
+  background: transparent;
 }
 
 .discover-tab {
@@ -431,7 +548,7 @@ function goTrendDetail(trendId) {
   flex-wrap: wrap;
   gap: 8px;
   padding: 10px 16px;
-  background: var(--echo-white);
+  background: transparent;
   border-top: 1px solid rgba(0, 0, 0, 0.03);
   box-sizing: border-box;
 }
@@ -463,11 +580,6 @@ function goTrendDetail(trendId) {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
-}
-
-/* 动态过渡 spacer 样式 */
-.header-spacer {
-  background: var(--echo-white);
 }
 
 .discover-container {
