@@ -11,7 +11,7 @@
 
     <!-- 分类标签 -->
     <div class="select-section">
-      <div class="select-section-title">分类标签 <span class="select-hint">（必选 1 个，决定帖子归属频道）</span></div>
+      <div class="select-section-title">分类标签 <span class="select-hint">（可选1个，若不选择则系统自动分类）</span></div>
       <div class="select-tag-grid">
         <span
           v-for="tag in allCategoryTags"
@@ -41,8 +41,6 @@
     <div class="select-footer">
       <button
         class="select-confirm"
-        :class="{ 'select-confirm--disabled': !selectedCategory }"
-        :disabled="!selectedCategory"
         @click="onConfirm"
       >确认</button>
     </div>
@@ -113,14 +111,16 @@ function onBack() {
 
 /* 顶部 */
 .select-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
   background: var(--echo-white);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  height: 48px;
+  box-sizing: border-box;
 }
 
 .select-back {
@@ -128,12 +128,17 @@ function onBack() {
   cursor: pointer;
   display: flex;
   align-items: center;
+  z-index: 2;
 }
 
 .select-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 17px;
   font-weight: 600;
   color: var(--echo-text);
+  white-space: nowrap;
 }
 
 .select-count {

@@ -177,15 +177,10 @@ function onJoinSubmit() {
 
 // 进入聊天
 function onEnterChat() {
-  showToast({
-    message: '已进入圈子聊天室（原型演示）',
-    icon: 'chat'
-  })
 }
 
 // 分享
 function onShare() {
-  showToast('分享面板已呼出（模拟原型）')
 }
 </script>
 

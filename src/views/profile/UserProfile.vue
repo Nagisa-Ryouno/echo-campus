@@ -135,11 +135,14 @@
           v-for="tab in contentTabs"
           :key="tab.key"
           class="content-tab"
-          :class="{ active: activeTab === tab.key }"
-          @click="activeTab = tab.key"
+          :class="{ 
+            active: activeTab === tab.key,
+            locked: !tab.visible
+          }"
+          @click="handleTabClick(tab)"
         >
           <span>{{ tab.label }}</span>
-          <span class="tab-count">{{ tab.count }}</span>
+          <span v-if="tab.visible" class="tab-count">{{ tab.count }}</span>
         </div>
       </div>
       <div class="tab-search" @click="$router.push(`/profile-search?from=user&uid=${uid}`)">
@@ -147,8 +150,36 @@
       </div>
     </div>
 
+    <!-- 锁定的内容占位区域 -->
+    <div class="locked-content-area" v-if="isTabLocked(activeTab)">
+      <div class="lock-circle">
+        <van-icon name="lock" size="24" color="#999" />
+      </div>
+      <div class="lock-title">{{ getLockTitle(activeTab) }}</div>
+      <div class="lock-desc">{{ getLockDesc(activeTab) }}</div>
+      
+      <!-- 去关注动作 -->
+      <button 
+        v-if="showLockActionButton(activeTab)" 
+        class="lock-action-btn"
+        :class="{ followed: isFollowed, loading: followLoading }"
+        @click="handleLockAction"
+        :disabled="followLoading"
+      >
+        <span class="btn-spinner" v-if="followLoading"></span>
+        <span v-else-if="isFollowed">
+          <van-icon name="success" size="14" style="margin-right: 4px;" />
+          已关注
+        </span>
+        <span v-else>
+          <van-icon name="add-o" size="14" style="margin-right: 4px;" />
+          去关注
+        </span>
+      </button>
+    </div>
+
     <!-- 帖子 -->
-    <div class="profile-posts" v-if="activeTab === 'posts'">
+    <div class="profile-posts" v-if="activeTab === 'posts' && !isTabLocked('posts')">
       <div v-if="visiblePosts.length" class="post-grid">
         <div
           v-for="post in visiblePosts"
@@ -177,7 +208,7 @@
     </div>
 
     <!-- 评论过的 -->
-    <div class="profile-posts" v-if="activeTab === 'comments'">
+    <div class="profile-posts" v-if="activeTab === 'comments' && !isTabLocked('comments')">
       <div v-if="commentedPosts.length" class="post-grid">
         <div
           v-for="post in commentedPosts"
@@ -202,7 +233,7 @@
     </div>
 
     <!-- 收藏的 -->
-    <div class="profile-posts" v-if="activeTab === 'collects'">
+    <div class="profile-posts" v-if="activeTab === 'collects' && !isTabLocked('collects')">
       <div v-if="collectedPosts.length" class="post-grid">
         <div
           v-for="post in collectedPosts"
@@ -223,6 +254,35 @@
       </div>
       <div v-else class="empty-content">
         <p>该用户暂无公开收藏</p>
+      </div>
+    </div>
+
+    <!-- 圈子 -->
+    <div class="profile-posts" v-if="activeTab === 'circles' && !isTabLocked('circles')">
+      <div v-if="joinedCircles.length" class="circle-list-view">
+        <div
+          v-for="circle in joinedCircles"
+          :key="circle.id"
+          class="circle-list-item"
+          @click="$router.push(`/circle/${circle.id}`)"
+        >
+          <div class="circle-avatar-wrap" :style="{ background: circle.color }">
+            <span class="circle-avatar-icon">{{ circle.icon }}</span>
+          </div>
+          <div class="circle-info-wrap">
+            <div class="circle-name-row">
+              <span class="circle-name">{{ circle.name }}</span>
+              <span v-if="circle.official" class="official-tag">官方</span>
+            </div>
+            <div class="circle-member-count">{{ circle.memberCount }} 成员</div>
+          </div>
+          <div class="circle-arrow">
+            <van-icon name="arrow" size="14" color="#ccc" />
+          </div>
+        </div>
+      </div>
+      <div v-else class="empty-content">
+        <p>暂无对你可见的圈子</p>
       </div>
     </div>
   </div>
@@ -284,40 +344,10 @@ const isSelf = computed(() => {
 })
 
 // 判断某个栏目是否对当前访客可见
+// 判断某个栏目是否对当前访客可见
 function isTabVisibleToVisitor(tabType) {
   if (!profileUser.value) return false
-
-  // 自己访问自己的主页：所有栏目可见
-  if (isSelf.value) return true
-
-  // 获取被访问用户的隐私设置（undefined 默认视为 everyone）
-  const visibilityMap = {
-    post: profileUser.value.postVisibility,
-    comment: profileUser.value.commentVisibility,
-    collect: profileUser.value.collectionVisibility
-  }
-  let visibility = visibilityMap[tabType]
-  // 字段不存在时默认为「所有人可见」
-  if (!visibility) visibility = 'everyone'
-
-  // private：仅自己可见
-  if (visibility === 'private') return false
-
-  // everyone：所有人可见
-  if (visibility === 'everyone') return true
-
-  // followers：仅关注者可见（需要判断当前用户是否关注了对方）
-  if (visibility === 'followers') {
-    return store.isFollowing(profileUser.value.id)
-  }
-
-  // mutual：仅互关者可见
-  if (visibility === 'mutual') {
-    return store.isFollowing(profileUser.value.id) &&
-           store.followedUserIds.includes(profileUser.value.id)
-  }
-
-  return false
+  return store.isTabVisibleToVisitor(profileUser.value.id, tabType)
 }
 
 // 可见帖子（过滤私密和匿名 + 根据帖子权限过滤）
@@ -359,7 +389,6 @@ const visiblePosts = computed(() => {
 // 评论过的帖子（根据评论权限过滤）
 const commentedPosts = computed(() => {
   if (!profileUser.value) return []
-  if (!isTabVisibleToVisitor('comment')) return []
 
   const userCommentedPostIds = [...new Set(
     store.allComments.filter(c => c.authorId === profileUser.value.id && !c.isAnon).map(c => c.postId)
@@ -370,46 +399,100 @@ const commentedPosts = computed(() => {
 // 收藏的帖子（根据收藏权限过滤）
 const collectedPosts = computed(() => {
   if (!profileUser.value) return []
-  if (!isTabVisibleToVisitor('collect')) return []
 
-  // 注意：这里需要 profileUser 的收藏数据，目前 mock 中收藏是存在 store.collectedPosts 中的
-  // 为简化原型，这里返回空数组，实际应该根据 profileUser.id 去查找
-  return []
+  // 仅在自己主页返回实际收藏，他人主页返回空数组配合锁定页逻辑
+  if (!isSelf.value) return []
+  return store.getUserCollectedPosts()
+})
+
+const joinedCircles = computed(() => {
+  if (!profileUser.value) return []
+  return store.getUserJoinedCircles(profileUser.value.id)
 })
 
 const contentTabs = computed(() => {
   if (!profileUser.value) return []
 
-  const tabs = []
-
-  // 1. 帖子栏目：根据 postVisibility 判断是否可见
-  if (isTabVisibleToVisitor('post')) {
-    tabs.push({ key: 'posts', label: '帖子', count: visiblePosts.value.length })
-  }
-
-  // 2. 评论栏目：根据 commentVisibility 判断是否可见
-  if (isTabVisibleToVisitor('comment')) {
-    tabs.push({ key: 'comments', label: '评论', count: commentedPosts.value.length })
-  }
-
-  // 3. 收藏栏目：根据 collectionVisibility 判断是否可见
-  if (isTabVisibleToVisitor('collect')) {
-    tabs.push({ key: 'collects', label: '收藏', count: collectedPosts.value.length })
-  }
-
-  // 4. 赞过栏目：他人主页完全隐藏，仅自己可见
-  // （不添加到 tabs 数组）
-
-  return tabs
+  return [
+    { key: 'posts', label: '帖子', count: visiblePosts.value.length, visible: isTabVisibleToVisitor('post') },
+    { key: 'comments', label: '评论', count: commentedPosts.value.length, visible: isTabVisibleToVisitor('comment') },
+    { key: 'collects', label: '收藏', count: collectedPosts.value.length, visible: isTabVisibleToVisitor('collect') },
+    { key: 'circles', label: '圈子', count: joinedCircles.value.length, visible: isTabVisibleToVisitor('circle') }
+  ]
 })
 
-// 监听 contentTabs 变化，确保 activeTab 始终指向可见的 tab
-// 注意：此 watch 必须放在 contentTabs 定义之后，避免 immediate 模式下读取未初始化的 computed
+function isTabLocked(tabKey) {
+  const tab = contentTabs.value.find(t => t.key === tabKey)
+  return tab ? !tab.visible : false
+}
+
+function getTabVisibility(tabKey) {
+  if (!profileUser.value) return 'everyone'
+  const visibilityMap = {
+    posts: profileUser.value.postVisibility,
+    comments: profileUser.value.commentVisibility,
+    collects: profileUser.value.collectionVisibility,
+    circles: profileUser.value.circleVisibility
+  }
+  return visibilityMap[tabKey] || 'everyone'
+}
+
+const followLoading = ref(false)
+
+function getLockTitle(tabKey) {
+  const vis = getTabVisibility(tabKey)
+  if (vis === 'private') return '仅自己可见'
+  if (vis === 'mutual') return '仅互关可见'
+  if (vis === 'followers') return '仅关注者可见'
+  return '内容已锁定'
+}
+
+function getLockDesc(tabKey) {
+  const name = profileUser.value?.nickname || '该用户'
+  const labelMap = {
+    posts: '帖子',
+    comments: '评论',
+    collects: '收藏',
+    circles: '圈子'
+  }
+  const typeLabel = labelMap[tabKey] || '内容'
+  const vis = getTabVisibility(tabKey)
+  if (vis === 'private') return '该内容仅作者本人可见'
+  if (vis === 'mutual') return `该用户仅允许互相关注后查看其${typeLabel}内容`
+  if (vis === 'followers') return `该用户仅允许关注者查看其${typeLabel}内容`
+  return '由于隐私设置，你无权查看该内容'
+}
+
+function showLockActionButton(tabKey) {
+  const vis = getTabVisibility(tabKey)
+  if (vis === 'private') return false
+  if (vis === 'followers') return true
+  if (vis === 'mutual') return true
+  return false
+}
+
+function handleLockAction() {
+  if (!profileUser.value) return
+  if (isFollowed.value) return
+  
+  followLoading.value = true
+  setTimeout(() => {
+    store.toggleFollow(profileUser.value.id)
+    followLoading.value = false
+    showToast('关注成功')
+  }, 400)
+}
+
+function handleTabClick(tab) {
+  activeTab.value = tab.key
+}
+
+// 监听 contentTabs 变化，确保 activeTab 始终指向合法的 tab
 watch(contentTabs, (newTabs) => {
   if (!newTabs || !newTabs.length) return
   const tabKeys = newTabs.map(t => t.key)
   if (!tabKeys.includes(activeTab.value)) {
-    activeTab.value = tabKeys[0] || 'posts'
+    activeTab.value = 'posts'
   }
 }, { immediate: true })
 
@@ -421,7 +504,6 @@ function onFollow() {
 
 function onChat() {
   if (!profileUser.value) return
-  showToast(`与 ${profileUser.value.nickname} 的私聊（原型占位）`)
 }
 
 // ===== 三点菜单逻辑 =====
@@ -901,5 +983,169 @@ function onForwardSelect(action) {
 @keyframes morePopOut {
   to    { opacity: 0; transform: scale(0.85); }
   from  { opacity: 1; transform: scale(1); }
+}
+
+/* ===== 锁定与圈子新增样式 ===== */
+.content-tab.locked {
+  opacity: 0.6;
+}
+
+.locked-content-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 24px;
+  width: 100%;
+}
+
+.lock-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #f5f6f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.lock-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--echo-text);
+  margin-bottom: 6px;
+}
+
+.lock-desc {
+  font-size: 12px;
+  color: var(--echo-text-hint);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.lock-action-btn {
+  height: 32px;
+  padding: 0 20px;
+  border-radius: 16px;
+  border: none;
+  background: var(--echo-primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(76, 175, 125, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--echo-transition-fast);
+}
+
+.lock-action-btn:active {
+  transform: scale(0.97);
+}
+
+.lock-action-btn.followed {
+  background: #e2f2ea;
+  color: var(--echo-primary);
+  box-shadow: none;
+  cursor: default;
+}
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 圈子列表样式 */
+.circle-list-view {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.circle-list-item {
+  background: var(--echo-white);
+  border-radius: 0;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--echo-border);
+  transition: background var(--echo-transition-fast);
+}
+
+.circle-list-item:active {
+  background: #f8f9fa;
+}
+
+.circle-avatar-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.circle-avatar-icon {
+  user-select: none;
+}
+
+.circle-info-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.circle-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.circle-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--echo-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.circle-member-count {
+  font-size: 12px;
+  color: var(--echo-text-hint);
+}
+
+.official-tag {
+  font-size: 9px;
+  color: var(--echo-primary);
+  background: var(--echo-primary-light);
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.circle-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--echo-text-hint);
 }
 </style>

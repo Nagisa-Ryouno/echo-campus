@@ -28,7 +28,7 @@
     <!-- 帖子内容 -->
     <div v-else class="detail-body">
       <!-- 作者信息 -->
-      <div class="detail-author" @click="goUserProfile(post.authorId)">
+      <div class="detail-author" @click="clickAuthor(post)">
         <div class="detail-avatar" :style="{ background: post.author?.avatarColor || '#ccc' }">
           <template v-if="post.isAnon">匿</template>
           <template v-else>{{ post.author?.nickname?.slice(0, 1) || '?' }}</template>
@@ -108,14 +108,14 @@
             <div
               class="comment-avatar"
               :style="{ background: getCommentAuthor(comment)?.avatarColor || '#ccc' }"
-              @click="goUserProfile(comment.authorId)"
+              @click="clickCommentAuthor(comment)"
             >
               <template v-if="comment.isAnon">匿</template>
               <template v-else>{{ getCommentAuthor(comment)?.nickname?.slice(0, 1) || '?' }}</template>
             </div>
             <div class="comment-body">
               <div class="comment-header">
-                <span class="comment-name" @click="goUserProfile(comment.authorId)">
+                <span class="comment-name" @click="clickCommentAuthor(comment)">
                   <template v-if="comment.isAnon">匿名用户</template>
                   <template v-else>{{ getCommentAuthor(comment)?.nickname || '未知' }}</template>
                 </span>
@@ -160,7 +160,7 @@
               :key="reply.id"
               class="reply-item"
             >
-              <span class="reply-name" @click="goUserProfile(reply.authorId)">
+              <span class="reply-name" @click="clickCommentAuthor(reply)">
                 <template v-if="reply.isAnon">匿名用户</template>
                 <template v-else>{{ getCommentAuthor(reply)?.nickname || '未知' }}</template>
               </span>
@@ -258,7 +258,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
-import { showToast } from 'vant'
+import { showToast, showDialog } from 'vant'
 import ContextMenu from '@/components/common/ContextMenu.vue'
 
 const route = useRoute()
@@ -426,10 +426,35 @@ function onReportSelect(action) {
   showToast('举报已提交，感谢你的反馈')
 }
 
-// 跳转用户主页
 function goUserProfile(uid) {
   if (!uid) return
   router.push(`/profile/${uid}`)
+}
+
+function clickAuthor(post) {
+  if (post?.isAnon) {
+    showDialog({
+      title: '提示',
+      message: '该帖由匿名用户发布，无法查看其个人主页。',
+      confirmButtonText: '我知道了',
+      teleport: '#phone-screen'
+    })
+  } else {
+    goUserProfile(post?.authorId)
+  }
+}
+
+function clickCommentAuthor(commentOrReply) {
+  if (commentOrReply?.isAnon) {
+    showDialog({
+      title: '提示',
+      message: '该评论由匿名用户发布，无法查看其个人主页。',
+      confirmButtonText: '我知道了',
+      teleport: '#phone-screen'
+    })
+  } else {
+    goUserProfile(commentOrReply?.authorId)
+  }
 }
 
 // ===== 长按与 More 悬浮菜单 =====
@@ -540,7 +565,6 @@ function handleMenuSelect(value) {
   if (!post.value) return
   
   if (value === 'edit') {
-    showToast('编辑帖子（原型模拟）')
   } else if (value === 'delete') {
     store.deletePost(post.value.id)
     showToast('帖子已删除')

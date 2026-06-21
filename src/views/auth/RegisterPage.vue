@@ -27,7 +27,6 @@ import { showToast } from 'vant'
 const form = reactive({ school: '', email: '', studentId: '', nickname: '', password: '' })
 
 function handleRegister() {
-  showToast('注册功能后续实现')
 }
 </script>
 

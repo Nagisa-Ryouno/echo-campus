@@ -56,7 +56,7 @@
     <!-- 提示：未输入时 -->
     <div class="search-hint" v-else>
       <van-icon name="search" size="48" color="#dcdfe6" />
-      <p>{{ isOwnProfile ? '可搜索你的帖子、评论、收藏等全部内容' : '仅可搜索 ta 的帖子' }}</p>
+      <p>{{ isOwnProfile ? '可搜索你的帖子、评论、收藏、圈子等全部内容' : '可搜索 ta 的帖子、评论、收藏、圈子等全部内容' }}</p>
     </div>
   </div>
 </template>
@@ -78,8 +78,8 @@ const targetUid = computed(() => route.query.uid || '')
 const isOwnProfile = computed(() => from.value === 'self')
 
 const placeholderText = computed(() => {
-  if (isOwnProfile.value) return '搜索我的帖子、评论、收藏等'
-  return '搜索 ta 的帖子'
+  if (isOwnProfile.value) return '搜索我的帖子、评论、收藏、圈子等'
+  return '搜索 ta 的帖子、评论、收藏、圈子等'
 })
 
 // 获取可搜索的数据源
@@ -96,14 +96,24 @@ const searchableItems = computed(() => {
     const allIds = new Set([...ownPosts.map(p => p.id), ...commentedIds, ...collectedIds, ...likedIds])
     return store.posts.filter(p => allIds.has(p.id))
   } else {
-    // 他人：仅帖子（公开、非匿名）
+    // 他人：可访问的帖子、评论过的帖子（根据隐私设定决定是否可见，并去重）
     const uid = targetUid.value
     if (!uid) return []
-    return store.posts.filter(p =>
-      p.authorId === uid &&
-      p.visibility !== 'private' &&
-      !p.isAnon
-    )
+    const postsVisible = store.isTabVisibleToVisitor(uid, 'post')
+    const commentsVisible = store.isTabVisibleToVisitor(uid, 'comment')
+
+    const ownPosts = postsVisible
+      ? store.posts.filter(p => p.authorId === uid && p.visibility !== 'private' && !p.isAnon)
+      : []
+    const commentedIds = commentsVisible
+      ? new Set(store.getUserCommentedPosts(uid).map(p => p.id))
+      : new Set()
+
+    const allIds = new Set([
+      ...ownPosts.map(p => p.id),
+      ...commentedIds
+    ])
+    return store.posts.filter(p => allIds.has(p.id))
   }
 })
 

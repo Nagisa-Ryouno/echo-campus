@@ -210,7 +210,7 @@
               >
                 <!-- 帖子头部 -->
                 <div class="post-card-header">
-                  <div class="header-left" @click.stop="goUserProfile(post.authorId)">
+                  <div class="header-left" @click.stop="clickAuthor(post)">
                     <div
                       class="post-card-avatar"
                       :style="{ background: getAuthor(post.authorId)?.avatarColor || '#ccc' }"
@@ -259,7 +259,10 @@
 
                 <!-- 底部栏 -->
                 <div class="post-card-footer">
-                  <span class="tag-badge" v-if="post.categoryTag">{{ post.categoryTag }}</span>
+                  <div class="footer-left-tags">
+                    <span class="tag-badge" v-if="post.categoryTag">{{ post.categoryTag }}</span>
+                    <span v-if="post.isAnon" class="tag-badge tag-badge--anon">匿名发布</span>
+                  </div>
 
                   <div class="footer-actions-right">
                     <!-- 点赞 -->
@@ -364,7 +367,7 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
-import { showToast } from 'vant'
+import { showToast, showDialog } from 'vant'
 import { mockTrends } from '@/mock/trends.js'
 import ContextMenu from '@/components/common/ContextMenu.vue'
 
@@ -420,6 +423,19 @@ function getAuthor(uid) {
 
 function goUserProfile(uid) {
   router.push(`/user/profile/${uid}`)
+}
+
+function clickAuthor(post) {
+  if (post.isAnon) {
+    showDialog({
+      title: '提示',
+      message: '该帖由匿名用户发布，无法查看其个人主页。',
+      confirmButtonText: '我知道了',
+      teleport: '#phone-screen'
+    })
+  } else {
+    goUserProfile(post.authorId)
+  }
 }
 
 // ===== 讨论观点区专属逻辑与 Mock 数据 =====
@@ -836,7 +852,6 @@ function handleMenuSelect(value) {
   if (!post) return
   
   if (value === 'edit') {
-    showToast('编辑帖子（原型模拟）')
   } else if (value === 'delete') {
     hidingPostIds.value.add(postId)
     setTimeout(() => {
@@ -1494,6 +1509,17 @@ function onForwardSelect(action) {
   justify-content: space-between;
   align-items: center;
   padding-top: 8px;
+}
+
+.footer-left-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tag-badge--anon {
+  background: #fdf2f2;
+  color: #ec5b5b;
 }
 
 .footer-actions-right {

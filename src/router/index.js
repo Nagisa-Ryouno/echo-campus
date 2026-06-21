@@ -175,6 +175,7 @@ const routes = [
     component: () => import('@/views/profile/EditProfile.vue'),
     meta: { title: '编辑资料', tabBar: false }
   },
+
   {
     path: '/circle',
     name: 'Circle',

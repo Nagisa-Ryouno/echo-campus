@@ -64,7 +64,7 @@
         <li>匿名会话中，双方均无法看到对方真实身份</li>
         <li>匿名消息不会出现在你的公开聊天列表中</li>
         <li>你可以随时结束匿名会话，对方不会收到通知</li>
-        <li>匿名圈中的消息在群内也是匿名的</li>
+        <li>匿名圈中的消息在圈内也是匿名的</li>
       </ul>
     </div>
   </div>
@@ -79,11 +79,6 @@ const router = useRouter()
 const store = useAppStore()
 
 function onSessionClick(session) {
-  if (session.isAnonCircle) {
-    showToast('进入匿名圈（原型占位）')
-  } else {
-    showToast(`与 ${session.sessionName} 的匿名会话（原型占位）`)
-  }
   // 标记已读
   session.unread = 0
 }

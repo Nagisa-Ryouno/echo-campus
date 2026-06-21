@@ -202,7 +202,7 @@
           >
             <!-- 帖子头部 -->
             <div class="post-card-header">
-              <div class="header-left" @click.stop="goUserProfile(post.authorId)">
+              <div class="header-left" @click.stop="clickAuthor(post)">
                 <div
                   class="post-card-avatar"
                   :style="{ background: getAuthor(post.authorId)?.avatarColor || '#ccc' }"
@@ -252,7 +252,10 @@
 
             <!-- 底部操作与分类标签 -->
             <div class="post-card-footer">
-              <span class="tag-badge" v-if="post.categoryTag">{{ post.categoryTag }}</span>
+              <div class="footer-left-tags">
+                <span class="tag-badge" v-if="post.categoryTag">{{ post.categoryTag }}</span>
+                <span v-if="post.isAnon" class="tag-badge tag-badge--anon">匿名发布</span>
+              </div>
 
               <div class="footer-actions-right">
                 <!-- 点赞 -->
@@ -435,7 +438,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
-import { showToast } from 'vant'
+import { showToast, showDialog } from 'vant'
 import ContextMenu from '@/components/common/ContextMenu.vue'
 
 const router = useRouter()
@@ -499,7 +502,6 @@ const selectedTime = ref('all') // 'all' | 'today' | 'week' | 'month' | 'half_ye
 const followFilterUid = ref(null)
 
 function onFollowManage() {
-  showToast('关注管理功能建设中...')
 }
 
 // 一级大频道映射列表
@@ -873,6 +875,19 @@ function goUserProfile(uid) {
   router.push(`/profile/${uid}`)
 }
 
+function clickAuthor(post) {
+  if (post.isAnon) {
+    showDialog({
+      title: '提示',
+      message: '该帖由匿名用户发布，无法查看其个人主页。',
+      confirmButtonText: '我知道了',
+      teleport: '#phone-screen'
+    })
+  } else {
+    goUserProfile(post.authorId)
+  }
+}
+
 // ===== 长按与 More 悬浮菜单 =====
 const contextMenuVisible = ref(false)
 const menuX = ref(0)
@@ -1033,7 +1048,6 @@ function handleMenuSelect(value) {
   const post = store.posts.find(p => p.id === postId)
   if (!post) return
   if (value === 'edit') {
-    showToast('编辑帖子（原型模拟）')
   } else if (value === 'delete') {
     hidingPostIds.value.add(postId)
     setTimeout(() => {
@@ -1466,6 +1480,12 @@ function handleMenuSelect(value) {
   align-items: center;
 }
 
+.footer-left-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .tag-badge {
   font-size: 10.5px;
   padding: 3px 8px;
@@ -1473,6 +1493,11 @@ function handleMenuSelect(value) {
   background: var(--echo-bg);
   color: var(--echo-text-secondary);
   font-weight: 500;
+}
+
+.tag-badge--anon {
+  background: #fdf2f2;
+  color: #ec5b5b;
 }
 
 .footer-actions-right {

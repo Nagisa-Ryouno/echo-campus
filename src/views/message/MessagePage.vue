@@ -530,12 +530,6 @@ function onPlusAction(type) {
     router.push('/circle/plaza')
     return
   }
-  const actions = {
-    group: '创建圈子（原型占位）',
-    addFriend: '添加好友（原型占位）',
-    scan: '扫一扫（原型占位）'
-  }
-  showToast(actions[type] || '功能开发中')
 }
 
 // 角标数字格式化：超过 99 显示 "99+"

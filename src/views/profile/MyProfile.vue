@@ -288,7 +288,7 @@ const commentedPosts = computed(() => {
 const collectedPosts = computed(() => store.getUserCollectedPosts())
 const likedPosts = computed(() => store.getUserLikedPosts())
 
-function onEditProfile() { showToast('编辑主页（原型占位）') }
+function onEditProfile() { router.push('/edit-profile') }
 const showForwardSheet = ref(false)
 const forwardActions = [
   { name: '联系人', value: 'friend' },
@@ -303,8 +303,8 @@ function onForwardSelect(action) {
   showForwardSheet.value = false
   showToast(`已转发个人主页至${action.name}`)
 }
-function onBrowseHistory() { showToast('浏览记录（原型占位）') }
-function onDrafts() { showToast('草稿箱（原型占位）') }
+function onBrowseHistory() {}
+function onDrafts() {}
 </script>
 
 <style scoped>

@@ -24,7 +24,7 @@ import PhoneShell from '@/components/layout/PhoneShell.vue'
 import TabBar from '@/components/layout/TabBar.vue'
 
 const route = useRoute()
-const showTabBar = computed(() => route.meta.tabBar !== false)
+const showTabBar = computed(() => route.meta.tabBar === true)
 </script>
 
 <style scoped>

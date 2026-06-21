@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { mockPosts, channels, channelTagMap, allCategoryTags, getPostsByChannel, getPostsByCategoryTag, getPostById } from '@/mock/posts.js'
 import { mockUsers, currentUser as defaultUser } from '@/mock/users.js'
 import { mockComments, getCommentsByPostId, getRepliesByCommentId, getTopLevelComments } from '@/mock/comments.js'
@@ -28,7 +28,8 @@ export const useAppStore = defineStore('app', () => {
       showSchool: 'public',
       postVisibility: 'everyone',
       commentVisibility: 'everyone',
-      collectionVisibility: 'private'
+      collectionVisibility: 'private',
+      circleVisibility: 'everyone'
     }
   ])
 
@@ -41,6 +42,10 @@ export const useAppStore = defineStore('app', () => {
     if (user) {
       currentUser.value = user
       isLoggedIn.value = true
+      postVisibility.value = user.postVisibility || 'everyone'
+      commentVisibility.value = user.commentVisibility || 'everyone'
+      collectionVisibility.value = user.collectionVisibility || 'everyone'
+      circleVisibility.value = user.circleVisibility || 'everyone'
     }
   }
 
@@ -65,6 +70,13 @@ export const useAppStore = defineStore('app', () => {
     } else {
       followedUserIds.value = [...followedUserIds.value, uid]
     }
+  }
+
+  // Fans list (users who follow current user) to determine mutual follow
+  const fanUserIds = ref(['u2', 'u4', 'u6', 'u8'])
+
+  function isMutualFollow(uid) {
+    return followedUserIds.value.includes(uid) && fanUserIds.value.includes(uid)
   }
 
   // ===== 帖子状态 =====
@@ -646,6 +658,45 @@ export const useAppStore = defineStore('app', () => {
     return posts.value.filter(p => likedPosts.value.has(p.id))
   }
 
+  // 获取用户加入的圈子
+  function getUserJoinedCircles(uid) {
+    if (currentUser.value && uid === currentUser.value.id) {
+      return circles.value.filter(c => c.joined)
+    }
+    const user = getUserById(uid)
+    if (!user) return []
+    const userJoined = user.joinedCircles || ['c1', 'c2']
+    return circles.value.filter(c => userJoined.includes(c.id))
+  }
+
+  // 判断某个栏目是否对当前访客可见
+  function isTabVisibleToVisitor(targetUid, tabType) {
+    if (!currentUser.value) return false
+    if (targetUid === currentUser.value.id) return true
+
+    const targetUser = getUserById(targetUid)
+    if (!targetUser) return false
+
+    const visibilityMap = {
+      post: targetUser.postVisibility,
+      comment: targetUser.commentVisibility,
+      collect: targetUser.collectionVisibility,
+      circle: targetUser.circleVisibility
+    }
+    let visibility = visibilityMap[tabType]
+    if (!visibility) visibility = 'everyone'
+
+    if (visibility === 'private') return false
+    if (visibility === 'everyone') return true
+    if (visibility === 'followers') {
+      return isFollowing(targetUid)
+    }
+    if (visibility === 'mutual') {
+      return isMutualFollow(targetUid)
+    }
+    return false
+  }
+
   // 浏览记录（自己可见）
   const browseHistory = ref([
     { postId: 'p002', title: 'Zotero 文献管理全攻略，让论文写作不再痛苦', time: '1小时前' },
@@ -677,10 +728,24 @@ export const useAppStore = defineStore('app', () => {
 
   const defaultVisibilityLabels = { private: '完全私密', followers: '仅关注者可见', mutual: '仅互关者可见', everyone: '所有人可见' }
 
-  // 内容级可见性（帖子/评论/收藏各独立控制）
+  // 内容级可见性（帖子/评论/收藏/圈子各独立控制）
   const postVisibility = ref('everyone')
   const commentVisibility = ref('everyone')
   const collectionVisibility = ref('everyone')
+  const circleVisibility = ref('everyone')
+
+  watch(postVisibility, (val) => {
+    if (currentUser.value) currentUser.value.postVisibility = val
+  })
+  watch(commentVisibility, (val) => {
+    if (currentUser.value) currentUser.value.commentVisibility = val
+  })
+  watch(collectionVisibility, (val) => {
+    if (currentUser.value) currentUser.value.collectionVisibility = val
+  })
+  watch(circleVisibility, (val) => {
+    if (currentUser.value) currentUser.value.circleVisibility = val
+  })
 
   // 隐私标签映射
   const visibilityLabels = { public: '所有人可见', school_only: '仅本校可见', hidden: '完全隐藏' }
@@ -1095,7 +1160,7 @@ export const useAppStore = defineStore('app', () => {
     // 默认发帖偏好
     defaultAnonPost, defaultSchoolOnly,
     defaultVisibilityLabels,
-    postVisibility, commentVisibility, collectionVisibility,
+    postVisibility, commentVisibility, collectionVisibility, circleVisibility,
     visibilityLabels, scopeLabels,
     messageLabels, followLabels, contentVisibilityLabels,
 
@@ -1103,6 +1168,7 @@ export const useAppStore = defineStore('app', () => {
     profileActiveTab,
 
     // 圈子模块
-    circles, joinCircle, leaveCircle
+    circles, joinCircle, leaveCircle,
+    getUserJoinedCircles, isTabVisibleToVisitor, fanUserIds, isMutualFollow
   }
 })

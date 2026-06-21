@@ -35,12 +35,20 @@
       <div class="form-section">
         <div class="form-label">添加图片</div>
         <div class="image-upload-area">
+          <input
+            type="file"
+            ref="fileInput"
+            accept="image/*"
+            multiple
+            style="display: none;"
+            @change="onFileChange"
+          />
           <div
             v-for="(img, idx) in form.images"
             :key="idx"
             class="upload-img-preview"
           >
-            <div class="upload-img-dummy">{{ idx + 1 }}</div>
+            <img :src="img" class="upload-img-preview-pic" />
             <span class="upload-img-remove" @click="removeImage(idx)">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </span>
@@ -371,13 +379,38 @@ function applyAutoTagsIfNeeded() {
 }
 
 // ===== 图片操作 =====
+const fileInput = ref(null)
+
 function onAddImage() {
-  // 原型中模拟添加图片
-  form.images.push({ id: Date.now() })
-  showToast('图片已添加（模拟）')
+  fileInput.value?.click()
+}
+
+function onFileChange(event) {
+  const files = event.target.files
+  if (!files || files.length === 0) return
+
+  const remainCount = 9 - form.images.length
+  if (remainCount <= 0) {
+    showToast('最多只能添加9张图片')
+    return
+  }
+  
+  const uploadFiles = Array.from(files).slice(0, remainCount)
+  uploadFiles.forEach(file => {
+    const url = URL.createObjectURL(file)
+    form.images.push(url)
+  })
+
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
 }
 
 function removeImage(idx) {
+  const url = form.images[idx]
+  if (url && url.startsWith('blob:')) {
+    URL.revokeObjectURL(url)
+  }
   form.images.splice(idx, 1)
 }
 
@@ -402,17 +435,18 @@ function onPublish() {
   // 发布前自动识别标签（用户未手动选择时）
   applyAutoTagsIfNeeded()
 
-  const displayTag = form.categoryTag || '未分类'
   showDialog({
     title: '确认发布',
-    message: `将发布一条「${displayTag}」帖子${form.isAnon ? '（匿名）' : ''}`,
+    showCancelButton: true,
+    confirmButtonText: '确认',
+    cancelButtonText: '取消',
     teleport: '#phone-screen',
   }).then(() => {
-    const post = store.createPost({ ...form })
-    showToast('发布成功！')
+    store.createPost({ ...form })
+    showToast('发布成功')
     resetForm()
-    // 跳转到帖子详情
-    router.replace(`/post/${post.id}`)
+    // 成功发布帖子并回到首页
+    router.replace('/home')
   }).catch(() => {})
 }
 
@@ -669,6 +703,13 @@ function resetForm() {
   justify-content: center;
   font-size: 24px;
   color: var(--echo-text-hint);
+}
+
+.upload-img-preview-pic {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
 }
 
 .upload-img-dummy {

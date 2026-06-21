@@ -559,25 +559,14 @@ function clearSearch() {
 
 function onCircleClick(circle) {
   store.markChatRead(circle.id)
-  showToast('进入群聊（原型占位）')
 }
 
 function onChatRecordClick(chat) {
   store.markChatRead(chat.id)
-  if (chat.isGroup) {
-    showToast('进入群聊（原型占位）')
-  } else {
-    showToast(`与 ${store.getUserById(chat.userId)?.nickname || '用户'} 的私聊（原型占位）`)
-  }
 }
 
 function onRecentChatClick(chat) {
   store.markChatRead(chat.id)
-  if (chat.isGroup) {
-    showToast('进入群聊（原型占位）')
-  } else {
-    showToast(`与 ${store.getUserById(chat.userId)?.nickname || '用户'} 的私聊（原型占位）`)
-  }
 }
 </script>
 

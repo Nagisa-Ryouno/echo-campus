@@ -250,7 +250,6 @@ function onBlockedChange(val) {
 
 // 模拟操作
 function onSearchHistory() {
-  showToast('查找聊天记录功能（原型演示）')
 }
 
 function onReportUser() {

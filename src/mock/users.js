@@ -18,7 +18,8 @@ export const mockUsers = [
     // 内容隐私设置
     postVisibility: 'everyone',      // 帖子可见性：everyone所有人 / followers仅关注者 / mutual仅互关 / private仅自己
     commentVisibility: 'everyone',   // 评论可见性
-    collectionVisibility: 'private'    // 收藏可见性（默认仅自己可见）
+    collectionVisibility: 'private',    // 收藏可见性（默认仅自己可见）
+    circleVisibility: 'everyone'
   },
   {
     id: 'u2',
@@ -37,7 +38,8 @@ export const mockUsers = [
     showSchool: 'public',
     postVisibility: 'everyone',
     commentVisibility: 'followers',
-    collectionVisibility: 'private'
+    collectionVisibility: 'private',
+    circleVisibility: 'followers'
   },
   {
     id: 'u3',
@@ -56,7 +58,8 @@ export const mockUsers = [
     showSchool: 'public',
     postVisibility: 'everyone',
     commentVisibility: 'everyone',
-    collectionVisibility: 'private'
+    collectionVisibility: 'private',
+    circleVisibility: 'followers'
   },
   {
     id: 'u4',
@@ -75,7 +78,8 @@ export const mockUsers = [
     showSchool: 'school_only',
     postVisibility: 'followers',
     commentVisibility: 'mutual',
-    collectionVisibility: 'private'
+    collectionVisibility: 'private',
+    circleVisibility: 'mutual'
   },
   {
     id: 'u5',
@@ -92,9 +96,10 @@ export const mockUsers = [
     fanCount: 98,
     postCount: 21,
     showSchool: 'hidden',
-    postVisibility: 'everyone',
-    commentVisibility: 'everyone',
-    collectionVisibility: 'private'
+    postVisibility: 'private',
+    commentVisibility: 'private',
+    collectionVisibility: 'private',
+    circleVisibility: 'private'
   },
   {
     id: 'u6',
@@ -113,7 +118,8 @@ export const mockUsers = [
     showSchool: 'hidden',
     postVisibility: 'followers',
     commentVisibility: 'followers',
-    collectionVisibility: 'private'
+    collectionVisibility: 'private',
+    circleVisibility: 'mutual'
   },
   {
     id: 'u7',
@@ -132,7 +138,8 @@ export const mockUsers = [
     showSchool: 'school_only',
     postVisibility: 'mutual',
     commentVisibility: 'mutual',
-    collectionVisibility: 'private'
+    collectionVisibility: 'private',
+    circleVisibility: 'private'
   },
   {
     id: 'u8',
@@ -151,7 +158,8 @@ export const mockUsers = [
     showSchool: 'public',
     postVisibility: 'everyone',
     commentVisibility: 'everyone',
-    collectionVisibility: 'private'
+    collectionVisibility: 'private',
+    circleVisibility: 'everyone'
   }
 ]
 

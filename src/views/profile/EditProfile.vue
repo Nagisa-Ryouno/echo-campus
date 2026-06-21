@@ -319,7 +319,6 @@ function doLeave() {
 
 // ===== 预览 =====
 function onPreview() {
-  showToast('预览修改后的个人主页效果')
 }
 
 // ===== 头像 =====
@@ -330,7 +329,6 @@ function onChangeAvatar() {
 function onAvatarFileChange(e) {
   const file = e.target.files?.[0]
   if (file) {
-    showToast('头像已更新（原型演示）')
     // 重置 input 以便重复选择同一文件
     e.target.value = ''
   }
@@ -344,7 +342,6 @@ function onChangeBg() {
 function onBgFileChange(e) {
   const file = e.target.files?.[0]
   if (file) {
-    showToast('背景图已更新（原型演示）')
     e.target.value = ''
   }
 }

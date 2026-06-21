@@ -15,7 +15,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--echo-primary)" stroke-width="2">
           <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
         </svg>
-        <span>以下设置控制你的帖子、评论、收藏在个人主页中分别对哪些人可见。每类内容独立设置，互不影响。</span>
+        <span>以下设置控制你的帖子、评论、收藏、圈子在个人主页中分别对哪些人可见。每类内容独立设置，互不影响。</span>
       </div>
 
       <!-- ======= 我的帖子 ======= -->
@@ -84,9 +84,31 @@
         </div>
       </div>
 
+      <!-- ======= 我的圈子 ======= -->
+      <div class="section-label" style="margin-top: 20px;">我的圈子</div>
+      <div class="option-card">
+        <div
+          v-for="opt in visibilityOptions"
+          :key="opt.value"
+          class="option-item"
+          :class="{ selected: store.circleVisibility === opt.value }"
+          @click="store.circleVisibility = opt.value"
+        >
+          <div class="option-body">
+            <div class="option-radio" :class="{ active: store.circleVisibility === opt.value }">
+              <div v-if="store.circleVisibility === opt.value" class="radio-dot"></div>
+            </div>
+            <div>
+              <div class="option-label">{{ opt.label }}</div>
+              <div class="option-hint">{{ opt.hint }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 底部说明 -->
       <p class="page-footer">
-        帖子、评论、收藏的可见性分别设置，互不绑定。修改后仅影响个人主页中的展示，不影响帖子详情页和频道中的分发规则。
+        帖子、评论、收藏、圈子的可见性分别设置，互不绑定。修改后仅影响个人主页中的展示，不影响帖子详情页和频道中的分发规则。
       </p>
     </div>
   </div>

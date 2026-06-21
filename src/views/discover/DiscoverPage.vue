@@ -279,7 +279,7 @@ function handleScroll() {
 
 // ===== Tab大频道 =====
 const tabs = [
-  { key: 'mine', label: '我的' },
+  { key: 'mine', label: '推荐' },
   { key: 'hot', label: '热门' },
   { key: 'city', label: '同城' },
   { key: 'school', label: '本校' },
