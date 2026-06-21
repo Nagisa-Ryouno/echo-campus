@@ -1,156 +1,111 @@
 <template>
   <div class="page-root">
     <!-- ═══════════════════════════════════════════ -->
-    <!-- 固定层：position:fixed，脱离滚动流             -->
+    <!-- 固定层：包括 Logo、一级大频道、二级筛选与排序   -->
     <!-- ═══════════════════════════════════════════ -->
-    <div class="fixed-header">
-      <!-- LOGO 区：滚动后隐藏 -->
+    <div class="fixed-header-wrapper" ref="headerRef">
+      <!-- 1. Logo 区：滚动后隐藏 -->
       <div class="logo-header" :class="{ hidden: scrollTop > 10 }">
         <h1 class="home-title">校声</h1>
-        <div class="home-search" @click="$router.push(`/search?from=home&channel=${store.activeChannel}`)">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <div class="home-search" @click="$router.push(`/search?from=home`)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
         </div>
       </div>
 
-      <!-- 大频道 Tab：永久固定 -->
+      <!-- 2. 一级大频道：永久固定常驻 -->
       <div class="channel-header">
         <div
-          v-for="ch in store.channelLabels"
+          v-for="ch in channelList"
           :key="ch.key"
           class="channel-tab"
-          :class="{ 'channel-tab--active': store.activeChannel === ch.key }"
+          :class="{ 'channel-tab--active': activeChannel === ch.key }"
           @click="onChannelSwitch(ch.key)"
         >
           <span class="channel-tab-text">
-            <!-- ⭐ 星星图标 - 关注 (Follow) -->
-            <svg v-if="ch.key === 'follow' && store.activeChannel === 'follow'" class="channel-tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="var(--echo-primary)" stroke="var(--echo-primary)">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>
-
-            <!-- ✨ 闪烁推荐 - 推荐 (Recommend) -->
-            <svg v-if="ch.key === 'recommend' && store.activeChannel === 'recommend'" class="channel-tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="var(--echo-primary)" stroke="var(--echo-primary)">
-              <path d="M12 2s.5 4 4.5 4.5c0 0-4 .5-4.5 4.5 0 0-.5-4-4.5-4.5 0 0 4-.5 4.5-4.5zm7 11s.3 2 2.5 2.3c0 0-2 .2-2.3 2.2 0 0-.2-2-2.2-2.2 0 0 2-.3 2.3-2.3z"/>
-            </svg>
-
-            <!-- 🍃 绿叶图标 - 同城 (City) -->
-            <svg v-if="ch.key === 'city' && store.activeChannel === 'city'" class="city-leaf-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 1.5 5.5-3 9.8a7 7 0 0 1-5 8.2z" fill="var(--echo-primary)" stroke="var(--echo-primary)"/>
-              <path d="M19 2c-2.06 3-4.5 5.5-8 7" stroke="#fff" stroke-width="1.5"/>
-            </svg>
-
             {{ ch.label }}
-
-            <!-- Caret arrow for city channel (when active) -->
-            <span v-if="ch.key === 'city' && store.activeChannel === 'city'" class="city-expand-arrow">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :class="{ 'rotated': isCityPanelExpanded }">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
+            <span v-if="ch.key === 'city' && activeChannel === 'city'" class="city-name-badge">
+              ({{ activeCity }})
             </span>
           </span>
-          <span v-if="store.activeChannel === ch.key" class="channel-tab-bar"></span>
+          <span v-if="activeChannel === ch.key" class="channel-tab-bar"></span>
+        </div>
+      </div>
+
+      <!-- 3. 二级排序栏+筛选工具栏：常驻，遇见和关注频道下不展示 -->
+      <div class="filter-sort-bar" v-if="activeChannel !== 'meet' && activeChannel !== 'follow'">
+        <!-- 左侧：最新/最热 二选一 -->
+        <div class="sort-options">
+          <span
+            class="sort-btn"
+            :class="{ 'sort-btn--active': sortMode === 'hot' }"
+            @click="sortMode = 'hot'"
+          >热门</span>
+          <span
+            class="sort-btn"
+            :class="{ 'sort-btn--active': sortMode === 'latest' }"
+            @click="sortMode = 'latest'"
+          >最新</span>
+        </div>
+
+        <!-- 右侧：筛选按钮，带有小向下箭头 -->
+        <div class="filter-actions">
+          <div
+            class="filter-dropdown-btn"
+            :class="{ 'filter-dropdown-btn--active': selectedTag }"
+            @click="openTagDrawer"
+          >
+            <span>{{ selectedTag || '标签选择' }}</span>
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+
+          <div
+            class="filter-dropdown-btn"
+            :class="{ 'filter-dropdown-btn--active': selectedTime !== 'all' }"
+            @click="openTimeSheet"
+          >
+            <span>{{ timeLabelMap[selectedTime] || '时间筛选' }}</span>
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. 筛选状态汇总条：非默认状态下显示，支持一键清除 -->
+      <div class="filter-status-banner" v-if="activeChannel !== 'meet' && activeChannel !== 'follow' && (selectedTag || selectedTime !== 'all')">
+        <div class="status-tags">
+          <span class="status-tag-item">{{ channelLabelMap[activeChannel] }}</span>
+          <span class="status-tag-item">{{ sortMode === 'hot' ? '热门' : '最新' }}</span>
+          <span class="status-tag-item" v-if="selectedTag">{{ selectedTag }}</span>
+          <span class="status-tag-item" v-if="selectedTime !== 'all'">{{ timeLabelMap[selectedTime] }}</span>
+        </div>
+        <div class="status-reset-btn" @click="resetFilters">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          <span>清除</span>
         </div>
       </div>
     </div>
 
     <!-- ═══════════════════════════════════════════ -->
-    <!-- 滚动层：独立 overflow-y:auto，与固定层彻底隔离    -->
+    <!-- 滚动层：高度由 padding-top 动态计算自适应     -->
     <!-- ═══════════════════════════════════════════ -->
-    <div ref="scrollRef" class="scroll-content" @scroll="handleScroll">
-      <!-- 动态占位：logo 显示时 92px，隐藏后 48px -->
-      <div
-        class="header-spacer"
-        :style="{
-          height: (scrollTop > 10 ? 48 : 92) + 'px',
-          transition: 'height 0.2s ease'
-        }"
-      ></div>
-
-      <!-- 小频道：跟随滚动消失 -->
-      <div v-if="store.activeChannel !== 'meet'" class="sub-tags">
-        <!-- 关注频道 → 已关注用户头像横滑 -->
-        <div v-if="store.activeChannel === 'follow'" class="follow-avatars-bar">
-          <div class="follow-avatars-scroll">
-            <div
-              class="follow-avatar-item"
-              :class="{ 'follow-avatar-item--active': followFilterUid === null }"
-              @click="followFilterUid = null"
-            >
-              <div class="follow-avatar-ring">
-                <span class="follow-avatar-all-text">全部</span>
-              </div>
-            </div>
-            <div
-              v-for="user in store.followedUsers"
-              :key="user.id"
-              class="follow-avatar-item"
-              :class="{ 'follow-avatar-item--active': followFilterUid === user.id }"
-              @click="followFilterUid = followFilterUid === user.id ? null : user.id"
-            >
-              <div class="follow-avatar-ring">
-                <div class="follow-avatar-img" :style="{ background: user.avatarColor }">
-                  {{ user.nickname.slice(0, 1) }}
-                </div>
-              </div>
-              <span class="follow-avatar-name">{{ user.nickname.length > 3 ? user.nickname.slice(0, 3) + '…' : user.nickname }}</span>
-            </div>
-            <div class="follow-avatar-item follow-avatar-manage" @click="onFollowManage">
-              <div class="follow-avatar-ring follow-avatar-ring--manage">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 推荐 / 同城 / 我的学校 → 小标签横向滑动 -->
-        <div v-else-if="store.currentChannelTags.length > 0" class="sub-tags-area" style="position: relative;">
-          <!-- 城市选择栏：遮挡住小频道 -->
-          <transition name="city-panel-fade">
-            <div v-if="store.activeChannel === 'city' && isCityPanelExpanded" class="city-selector-overlay">
-              <div class="city-selector-scroll">
-                <div
-                  v-for="(city, idx) in userCities"
-                  :key="city"
-                  class="city-pill"
-                  :class="{ 'city-pill--active': activeCity === city }"
-                  @click="selectCity(city)"
-                >
-                  <span class="city-pill-text">{{ city }}</span>
-                  <span v-if="idx === 0" class="city-pill-priority-badge">优先</span>
-                  <!-- 允许用户删除添加的城市 -->
-                  <div v-if="idx > 0" class="city-pill-delete" @click.stop="removeCity(idx)">
-                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </div>
-                </div>
-                <!-- 添加按钮 -->
-                <div class="city-pill city-pill-add" @click="openAddCityDialog">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                </div>
-              </div>
-            </div>
-          </transition>
-
-          <!-- 常规小频道滚动列表 -->
-          <div class="sub-tags-scroll">
-            <div
-              v-for="tag in store.visibleTags"
-              :key="tag"
-              class="sub-tag"
-              :class="{ 'sub-tag--active': store.activeCategoryTag === tag }"
-              @click="store.setCategoryTag(tag)"
-            >
-              {{ tag }}
-            </div>
-          </div>
-          <div class="sub-tags-expand" @click="openTagPanel">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-        </div>
-      </div>
-
-      <!-- 帖子流 -->
+    <div
+      ref="scrollRef"
+      class="scroll-content"
+      :style="{ paddingTop: headerHeight + 'px' }"
+      @scroll="handleScroll"
+    >
       <div class="post-list">
-        <!-- 遇见频道：用户推荐卡片 -->
-        <div v-if="store.activeChannel === 'meet'" class="meet-users">
+        <!-- A. 遇见频道：用户推荐卡片 -->
+        <div v-if="activeChannel === 'meet'" class="meet-users">
           <div class="section-title">
             <span>可能感兴趣的人</span>
             <span class="section-title-hint">基于你的兴趣推荐</span>
@@ -179,14 +134,51 @@
           </div>
         </div>
 
-        <!-- 其他频道：帖子卡片流 -->
+        <!-- B. 其他频道：多维筛选后的帖子流 -->
         <div v-else class="post-feed">
+          <!-- 关注频道 ➔ 已关注用户头像横滑 -->
+          <div v-if="activeChannel === 'follow'" class="follow-avatars-bar">
+            <div class="follow-avatars-scroll">
+              <div
+                class="follow-avatar-item"
+                :class="{ 'follow-avatar-item--active': followFilterUid === null }"
+                @click="followFilterUid = null"
+              >
+                <div class="follow-avatar-ring">
+                  <span class="follow-avatar-all-text">全部</span>
+                </div>
+              </div>
+              <div
+                v-for="user in store.followedUsers"
+                :key="user.id"
+                class="follow-avatar-item"
+                :class="{ 'follow-avatar-item--active': followFilterUid === user.id }"
+                @click="followFilterUid = followFilterUid === user.id ? null : user.id"
+              >
+                <div class="follow-avatar-ring">
+                  <div class="follow-avatar-img" :style="{ background: user.avatarColor }">
+                    {{ user.nickname.slice(0, 1) }}
+                  </div>
+                </div>
+                <span class="follow-avatar-name">{{ user.nickname.length > 3 ? user.nickname.slice(0, 3) + '...' : user.nickname }}</span>
+              </div>
+              <div class="follow-avatar-item follow-avatar-manage" @click="onFollowManage">
+                <div class="follow-avatar-ring follow-avatar-ring--manage">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div v-if="displayPosts.length === 0" class="empty-feed">
             <div class="empty-icon">📭</div>
-            <p v-if="followFilterUid">该用户还没有发布过帖子</p>
+            <template v-if="activeChannel === 'follow'">
+              <p v-if="followFilterUid">该用户还没有发布过帖子</p>
+              <p v-else>这里还没有内容，去关注些有趣的人吧</p>
+            </template>
             <template v-else>
-              <p>这里还没有内容</p>
-              <p class="empty-hint">去发布第一条帖子吧</p>
+              <p>这里还没有符合筛选条件的内容</p>
+              <p class="empty-hint">去换个标签或时间试试，或者发一条新帖子吧</p>
             </template>
           </div>
 
@@ -208,9 +200,8 @@
             @mousemove="handleMouseMove"
             @mouseleave="handleMouseLeave"
           >
-            <!-- 顶部区域重构 -->
+            <!-- 帖子头部 -->
             <div class="post-card-header">
-              <!-- 左侧：用户头像、昵称、发布时间 -->
               <div class="header-left" @click.stop="goUserProfile(post.authorId)">
                 <div
                   class="post-card-avatar"
@@ -240,12 +231,12 @@
               </div>
             </div>
 
-            <!-- 内容区 -->
+            <!-- 正文内容 -->
             <div class="post-card-body">
               <p class="post-card-content">{{ post.content }}</p>
             </div>
 
-            <!-- 图片区 -->
+            <!-- 图片展示 -->
             <div v-if="post.images && post.images.length" class="post-card-images">
               <div
                 v-for="(img, idx) in post.images"
@@ -259,14 +250,13 @@
               </div>
             </div>
 
-            <!-- 底部交互区重构：左侧放分类标签，点赞、评论、收藏靠右排布 -->
+            <!-- 底部操作与分类标签 -->
             <div class="post-card-footer">
-              <!-- 左侧标签 -->
               <span class="tag-badge" v-if="post.categoryTag">{{ post.categoryTag }}</span>
 
               <div class="footer-actions-right">
                 <!-- 点赞 -->
-                <div class="post-card-action" @click.stop="store.toggleLike(post.id)">
+                <div class="post-card-action" @click.stop="onPostLike(post)">
                   <svg width="16" height="16" viewBox="0 0 24 24" :fill="store.isPostLiked(post.id) ? 'var(--echo-danger)' : 'none'" :stroke="store.isPostLiked(post.id) ? 'var(--echo-danger)' : 'currentColor'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                   <span>{{ post.likeCount }}</span>
                 </div>
@@ -276,7 +266,7 @@
                   <span>{{ post.commentCount }}</span>
                 </div>
                 <!-- 收藏 -->
-                <div class="post-card-action" @click.stop="store.toggleCollect(post.id)">
+                <div class="post-card-action" @click.stop="onPostCollect(post)">
                   <svg width="16" height="16" viewBox="0 0 24 24" :fill="store.isPostCollected(post.id) ? 'var(--echo-warning)' : 'none'" :stroke="store.isPostCollected(post.id) ? 'var(--echo-warning)' : 'currentColor'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                   <span>{{ post.collectCount }}</span>
                 </div>
@@ -287,13 +277,135 @@
       </div>
     </div>
 
-    <!-- ===== 频道管理全屏界面 ===== -->
-    <ChannelManage
-      :visible="showTagPanel"
-      @close="closeTagPanel"
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- 弹层部分：【标签选择】Drawer、时间/城市等面板   -->
+    <!-- ═══════════════════════════════════════════ -->
+
+    <!-- A. 标签选择滑动 Drawer 改为液态玻璃中心弹窗 -->
+    <transition name="glass-modal-fade">
+      <div v-if="showTagDrawer" class="glass-overlay" @click.self="closeTagDrawer">
+        <div class="glass-modal tag-glass-modal">
+          <div class="glass-modal-header">
+            <span class="glass-modal-title">⭐ 分类标签</span>
+            <button class="glass-modal-edit-btn" @click="isTagEditing = !isTagEditing">
+              {{ isTagEditing ? '完成' : '编辑' }}
+            </button>
+          </div>
+
+          <div class="glass-modal-body">
+            <!-- 1. 常看频道 -->
+            <div class="glass-section">
+              <div class="glass-section-hdr">
+                <span class="glass-section-title">常看频道</span>
+                <span class="glass-section-subtitle">{{ isTagEditing ? '拖动排序或点击移除' : '长按编辑/点击筛选' }}</span>
+              </div>
+              <div class="tag-grid" @dragover.prevent>
+                <div
+                  v-for="(tag, idx) in frequentTags"
+                  :key="tag"
+                  class="drawer-tag-item"
+                  :class="{
+                    'drawer-tag-item--editing': isTagEditing,
+                    'drawer-tag-item--selected': selectedTag === tag
+                  }"
+                  draggable="true"
+                  @dragstart="onTagDragStart(idx, $event)"
+                  @dragover.prevent="onTagDragOver(idx, $event)"
+                  @drop="onTagDrop(idx, $event)"
+                  @click="onTagClick(tag)"
+                >
+                  <span class="tag-text-span">{{ tag }}</span>
+                  <div v-if="isTagEditing" class="tag-remove-btn" @click.stop="removeFrequentTag(tag, idx)">
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. 推荐频道 -->
+            <div class="glass-section" style="margin-top: 16px;">
+              <div class="glass-section-hdr">
+                <span class="glass-section-title">💡 推荐添加</span>
+              </div>
+              <div class="tag-grid">
+                <div
+                  v-for="tag in recommendedTags"
+                  :key="tag"
+                  class="drawer-tag-item drawer-tag-item--recommend"
+                  @click="addFrequentTag(tag)"
+                >
+                  <svg class="tag-plus-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  <span class="tag-text-span">{{ tag }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-modal-footer">
+            <button class="glass-close-btn" @click="closeTagDrawer">确定</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- B. 时间筛选面板 改为液态玻璃中心弹窗 -->
+    <transition name="glass-modal-fade">
+      <div v-if="showTimeSheet" class="glass-overlay" @click.self="closeTimeSheet">
+        <div class="glass-modal time-glass-modal">
+          <div class="glass-modal-header">
+            <span class="glass-modal-title">📅 选择发布时间</span>
+          </div>
+
+          <div class="glass-modal-body time-actions-list">
+            <div
+              v-for="action in timeActions"
+              :key="action.value"
+              class="glass-time-item"
+              :class="{ 'glass-time-item--active': selectedTime === action.value }"
+              @click="onTimeSelect(action)"
+            >
+              <span>{{ action.name }}</span>
+              <svg v-if="selectedTime === action.value" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="glass-modal-footer" style="margin-top: 12px;">
+            <button class="glass-close-btn" @click="closeTimeSheet">取消</button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- C. 城市选择面板 (同城 L1 激活且再次点击时触发) -->
+    <van-action-sheet
+      v-model:show="showCitySheet"
+      title="选择同城定位"
+      :actions="cityActions"
+      teleport="#phone-screen"
+      cancel-text="取消"
+      @select="onCitySelect"
     />
 
-    <!-- ===== 转发面板 ===== -->
+    <!-- D. 城市添加对话框 -->
+    <van-dialog
+      v-model:show="showAddCityDialog"
+      title="新增关注城市"
+      show-cancel-button
+      teleport="#phone-screen"
+      @confirm="handleAddCity"
+    >
+      <div style="padding: 16px 20px;">
+        <van-field v-model="newCityName" placeholder="请输入城市名字，如：广州" autofocus />
+      </div>
+    </van-dialog>
+
+    <!-- E. 转发面板 -->
     <van-action-sheet
       v-model:show="showForwardSheet"
       title="转发"
@@ -303,20 +415,7 @@
       cancel-text="取消"
     />
 
-    <!-- ===== 添加城市弹窗 ===== -->
-    <van-dialog
-      v-model:show="showAddCityDialog"
-      title="添加城市"
-      show-cancel-button
-      teleport="#phone-screen"
-      @confirm="handleAddCity"
-    >
-      <div style="padding: 16px 20px;">
-        <van-field v-model="newCityName" placeholder="请输入城市名称" autofocus />
-      </div>
-    </van-dialog>
-
-    <!-- ===== 帖子操作悬浮菜单 ===== -->
+    <!-- F. ContextMenu 帖子操作菜单 -->
     <ContextMenu
       :show="contextMenuVisible"
       :x="menuX"
@@ -329,37 +428,40 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
 import { showToast } from 'vant'
-import ChannelManage from '@/components/ChannelManage.vue'
 import ContextMenu from '@/components/common/ContextMenu.vue'
 
 const router = useRouter()
 const store = useAppStore()
 
-// ===== 滚动监听：直接监听 .scroll-content 的 scroll 事件 =====
+// ===== 滚动与动态高度自适应 =====
 const scrollTop = ref(0)
 const scrollRef = ref(null)
+const headerRef = ref(null)
+const headerHeight = ref(100) // 动态自适应初始高度
+
+let resizeObserver = null
 
 function handleScroll() {
   scrollTop.value = scrollRef.value?.scrollTop ?? 0
 }
 
-// ===== 同城频道城市选择 =====
-const isCityPanelExpanded = ref(false)
-const userCities = ref(['北京'])
-const activeCity = ref('北京')
-const showAddCityDialog = ref(false)
-const newCityName = ref('')
+const updateHeaderHeight = () => {
+  if (headerRef.value) {
+    headerHeight.value = headerRef.value.offsetHeight
+  }
+}
 
 onMounted(() => {
+  // 本地存储恢复用户城市
   const saved = localStorage.getItem('echo_user_cities')
   if (saved) {
     userCities.value = JSON.parse(saved)
   } else {
-    userCities.value = ['北京']
+    userCities.value = ['北京', '上海', '南京']
   }
   const savedActive = localStorage.getItem('echo_active_city')
   if (savedActive && userCities.value.includes(savedActive)) {
@@ -367,25 +469,93 @@ onMounted(() => {
   } else {
     activeCity.value = userCities.value[0] || '北京'
   }
+
+  // 绑定 ResizeObserver，监听高度变化
+  if (headerRef.value) {
+    updateHeaderHeight()
+    resizeObserver = new ResizeObserver(() => {
+      updateHeaderHeight()
+    })
+    resizeObserver.observe(headerRef.value)
+  }
 })
 
-function saveCities() {
-  localStorage.setItem('echo_user_cities', JSON.stringify(userCities.value))
+onBeforeUnmount(() => {
+  if (resizeObserver && headerRef.value) {
+    resizeObserver.unobserve(headerRef.value)
+  }
+})
+
+// ===== 筛选控制状态 =====
+const activeChannel = ref('recommend') // 'meet' | 'recommend' | 'city' | 'school' | 'follow'
+const sortMode = ref('hot') // 'hot' | 'latest'
+const selectedTag = ref('')
+const selectedTime = ref('all') // 'all' | 'today' | 'week' | 'month' | 'half_year' | 'year'
+
+const followFilterUid = ref(null)
+
+function onFollowManage() {
+  showToast('关注管理功能建设中...')
 }
 
-function toggleCityPanel() {
-  isCityPanelExpanded.value = !isCityPanelExpanded.value
+// 一级大频道映射列表
+const channelList = [
+  { key: 'meet', label: '遇见' },
+  { key: 'follow', label: '关注' },
+  { key: 'recommend', label: '推荐' },
+  { key: 'city', label: '同城' },
+  { key: 'school', label: '本校' }
+]
+
+const channelLabelMap = {
+  meet: '遇见',
+  follow: '关注',
+  recommend: '推荐',
+  city: '同城',
+  school: '本校'
 }
 
-function selectCity(city) {
-  activeCity.value = city
-  localStorage.setItem('echo_active_city', city)
-  showToast(`已切换城市为: ${city}`)
+function onChannelSwitch(key) {
+  if (key === 'city' && activeChannel.value === 'city') {
+    showCitySheet.value = true // 二次点击同城打开城市面板
+    return
+  }
+  activeChannel.value = key
+  if (key !== 'follow') {
+    followFilterUid.value = null
+  }
+  if (scrollRef.value) {
+    scrollRef.value.scrollTop = 0 // 切换频道后帖子流重归顶部
+  }
 }
 
-function openAddCityDialog() {
-  newCityName.value = ''
-  showAddCityDialog.value = true
+// ===== 城市过滤逻辑 =====
+const showCitySheet = ref(false)
+const userCities = ref(['北京', '上海', '南京'])
+const activeCity = ref('北京')
+const showAddCityDialog = ref(false)
+const newCityName = ref('')
+
+const cityActions = computed(() => {
+  const actions = userCities.value.map(city => ({
+    name: city,
+    value: city,
+    className: city === activeCity.value ? 'city-action--selected' : ''
+  }))
+  actions.push({ name: '+ 新增城市...', value: 'add_city', color: 'var(--echo-primary)' })
+  return actions
+})
+
+function onCitySelect(action) {
+  showCitySheet.value = false
+  if (action.value === 'add_city') {
+    newCityName.value = ''
+    showAddCityDialog.value = true
+    return
+  }
+  activeCity.value = action.value
+  localStorage.setItem('echo_active_city', action.value)
+  showToast(`城市已切换为：${action.name}`)
 }
 
 function handleAddCity() {
@@ -396,52 +566,271 @@ function handleAddCity() {
     return
   }
   userCities.value.push(city)
-  saveCities()
-  selectCity(city)
+  localStorage.setItem('echo_user_cities', JSON.stringify(userCities.value))
+  activeCity.value = city
+  localStorage.setItem('echo_active_city', city)
+  showToast(`新增成功，已切换至：${city}`)
 }
 
-function removeCity(index) {
-  const removed = userCities.value[index]
-  userCities.value.splice(index, 1)
-  saveCities()
-  showToast(`已删除城市: ${removed}`)
-  if (activeCity.value === removed) {
-    selectCity(userCities.value[0] || '北京')
-  }
-}
+// ===== 标签 Drawer 管理（拖拽+积分系统自动学习） =====
+const showTagDrawer = ref(false)
+const isTagEditing = ref(false)
+const dragStartTagIdx = ref(-1)
 
-// ===== 频道切换（同步标签池）=====
-const channelDisplayName = computed(() => {
-  const ch = store.channelLabels.find(c => c.key === store.activeChannel)
-  return ch ? ch.label : ''
+// 初始频道分类
+const frequentTags = ref(['摄影', '动漫', '考研', '音乐', '游戏'])
+const recommendedTags = ref(['失物招领', '二手交易', '学习干货', '校园穿搭', '校园搭子', '游戏开黑'])
+
+// 标签积分（根据用户行为增加，用于非编辑模式下系统自适应排序）
+const tagScores = ref({
+  '摄影': 15,
+  '动漫': 12,
+  '考研': 10,
+  '音乐': 8,
+  '游戏': 6,
+  '失物招领': 0,
+  '二手交易': 0,
+  '学习干货': 0,
+  '校园穿搭': 0,
+  '校园搭子': 0,
+  '游戏开黑': 0
 })
 
-function onChannelSwitch(key) {
-  if (key === 'city' && store.activeChannel === 'city') {
-    toggleCityPanel()
-    return
+function recordTagAction(tag, points) {
+  if (tagScores.value[tag] !== undefined) {
+    tagScores.value[tag] += points
+    // 如果非编辑状态，系统自适应地按积分降序调整“常看频道”的顺序
+    if (!isTagEditing.value) {
+      frequentTags.value.sort((a, b) => tagScores.value[b] - tagScores.value[a])
+    }
   }
-  store.setChannel(key)
-  store.syncTagsToChannel(key)
-  isCityPanelExpanded.value = false
 }
 
-// 首次加载同步推荐频道标签
-if (store.userTags.length === 0 || store.activeChannel === 'recommend') {
-  store.syncTagsToChannel(store.activeChannel)
-}
-
-// ===== 标签面板 =====
-const showTagPanel = ref(false)
-
-function openTagPanel() {
-  showTagPanel.value = true
+function openTagDrawer() {
+  isTagEditing.value = false
+  showTagDrawer.value = true
   store.lockPhoneScroll()
 }
 
-function closeTagPanel() {
-  showTagPanel.value = false
+function onTagClick(tag) {
+  if (isTagEditing.value) return
+  selectedTag.value = selectedTag.value === tag ? '' : tag
+  showTagDrawer.value = false
   store.unlockPhoneScroll()
+  
+  // 模拟系统自动学习
+  recordTagAction(tag, 1)
+}
+
+// 移除标签到推荐频道
+function removeFrequentTag(tag, idx) {
+  frequentTags.value.splice(idx, 1)
+  if (!recommendedTags.value.includes(tag)) {
+    recommendedTags.value.push(tag)
+  }
+  if (selectedTag.value === tag) {
+    selectedTag.value = ''
+  }
+}
+
+// 添加推荐标签到常看频道
+function addFrequentTag(tag) {
+  recommendedTags.value = recommendedTags.value.filter(t => t !== tag)
+  if (!frequentTags.value.includes(tag)) {
+    frequentTags.value.push(tag)
+  }
+  recordTagAction(tag, 2) // 点击添加也是一种正面行为
+}
+
+// 拖拽排序逻辑
+function onTagDragStart(idx, event) {
+  dragStartTagIdx.value = idx
+  event.dataTransfer.effectAllowed = 'move'
+}
+
+function onTagDragOver(idx, event) {
+  event.preventDefault()
+}
+
+function onTagDrop(idx, event) {
+  event.preventDefault()
+  const from = dragStartTagIdx.value
+  if (from < 0 || from === idx) return
+  const list = [...frequentTags.value]
+  const [moved] = list.splice(from, 1)
+  list.splice(idx, 0, moved)
+  frequentTags.value = list
+  dragStartTagIdx.value = -1
+}
+
+// ===== 时间筛选逻辑 =====
+const showTimeSheet = ref(false)
+const timeLabelMap = {
+  all: '全部时间',
+  today: '今天',
+  week: '本周',
+  month: '最近30天',
+  half_year: '最近半年',
+  year: '最近一年'
+}
+
+const timeActions = [
+  { name: '全部时间', value: 'all' },
+  { name: '今天', value: 'today' },
+  { name: '本周', value: 'week' },
+  { name: '最近30天', value: 'month' },
+  { name: '最近半年', value: 'half_year' },
+  { name: '最近一年', value: 'year' }
+]
+
+function openTimeSheet() {
+  showTimeSheet.value = true
+  store.lockPhoneScroll()
+}
+
+function closeTimeSheet() {
+  showTimeSheet.value = false
+  store.unlockPhoneScroll()
+}
+
+function onTimeSelect(action) {
+  showTimeSheet.value = false
+  selectedTime.value = action.value
+  showToast(`时间范围筛选: ${action.name}`)
+  store.unlockPhoneScroll()
+}
+
+function closeTagDrawer() {
+  showTagDrawer.value = false
+  store.unlockPhoneScroll()
+}
+
+function isWithinTimeRange(createdAtStr, range) {
+  if (range === 'all') return true
+  try {
+    const cleanStr = createdAtStr.replace(/-/g, '/')
+    const postDate = new Date(cleanStr)
+    const now = new Date()
+    const diffMs = now.getTime() - postDate.getTime()
+    const oneDayMs = 24 * 60 * 60 * 1000
+    if (range === 'today') {
+      return diffMs < oneDayMs
+    } else if (range === 'week') {
+      return diffMs < oneDayMs * 7
+    } else if (range === 'month') {
+      return diffMs < oneDayMs * 30
+    } else if (range === 'half_year') {
+      return diffMs < oneDayMs * 180
+    } else if (range === 'year') {
+      return diffMs < oneDayMs * 365
+    }
+  } catch (e) {
+    console.error(e)
+  }
+  return true
+}
+
+// 清除所有过滤器
+function resetFilters() {
+  selectedTag.value = ''
+  selectedTime.value = 'all'
+  showToast('筛选已清空')
+}
+
+// ===== 帖子流核心筛选排序逻辑 =====
+const displayPosts = computed(() => {
+  if (activeChannel.value === 'follow') {
+    let list = store.posts.filter(p => p.channel === 'follow')
+    if (followFilterUid.value) {
+      list = list.filter(p => p.authorId === followFilterUid.value)
+    }
+    // 清理拉黑和隐藏的帖子
+    list = list.filter(p => !store.hiddenPostIds.has(p.id) && !store.isUserBlocked(p.authorId))
+    // 关注频道默认按发布时间逆序（最新优先）
+    list.sort((a, b) => new Date(b.createdAt.replace(/-/g, '/')) - new Date(a.createdAt.replace(/-/g, '/')))
+    return list
+  }
+
+  let list = [...store.posts]
+
+  // 1. 一级来源筛选
+  if (activeChannel.value === 'recommend') {
+    // 全局推荐，必须是公开可见的帖子
+    list = list.filter(p => p.visibility === 'public')
+  } else if (activeChannel.value === 'city') {
+    // 同城，匹配对应选中的城市
+    list = list.filter(p => {
+      const postCity = p.city || '北京'
+      return postCity === activeCity.value
+    })
+  } else if (activeChannel.value === 'school') {
+    // 本校，匹配当前用户学校，或者标记为仅本校可见
+    list = list.filter(p => {
+      const author = store.getUserById(p.authorId)
+      const userSchool = store.currentUser?.school || '中央民族大学'
+      return p.schoolOnly || (author && author.school === userSchool)
+    })
+  }
+
+  // 2. 标签/分类筛选
+  if (selectedTag.value) {
+    list = list.filter(p => p.categoryTag === selectedTag.value)
+  }
+
+  // 3. 时间筛选
+  if (selectedTime.value !== 'all') {
+    list = list.filter(p => isWithinTimeRange(p.createdAt, selectedTime.value))
+  }
+
+  // 4. 清理拉黑和隐藏的帖子
+  list = list.filter(p => !store.hiddenPostIds.has(p.id) && !store.isUserBlocked(p.authorId))
+
+  // 5. 排序规则应用
+  if (sortMode.value === 'hot') {
+    list.sort((a, b) => {
+      // 综合热度算法 = 赞数 + 评论数 * 2 + 收藏数 * 3
+      const scoreA = (a.likeCount || 0) + (a.commentCount || 0) * 2 + (a.collectCount || 0) * 3
+      const scoreB = (b.likeCount || 0) + (b.commentCount || 0) * 2 + (b.collectCount || 0) * 3
+      return scoreB - scoreA
+    })
+  } else {
+    // 最新排序：发布日期逆序
+    list.sort((a, b) => new Date(b.createdAt.replace(/-/g, '/')) - new Date(a.createdAt.replace(/-/g, '/')))
+  }
+
+  return list
+})
+
+// 用户卡片推荐
+const meetUsers = computed(() => {
+  return store.users.filter(u => u.id !== 'u1').slice(0, 6)
+})
+
+// ===== 帖子互动与自动学习更新积分 =====
+function onPostLike(post) {
+  store.toggleLike(post.id)
+  if (store.isPostLiked(post.id)) {
+    recordTagAction(post.categoryTag, 5) // 点赞累积标签分数
+  }
+}
+
+function onPostCollect(post) {
+  store.toggleCollect(post.id)
+  if (store.isPostCollected(post.id)) {
+    recordTagAction(post.categoryTag, 5) // 收藏累积标签分数
+  }
+}
+
+function goPostDetail(postId) {
+  if (wasLongPressed.value) {
+    wasLongPressed.value = false
+    return
+  }
+  const post = store.posts.find(p => p.id === postId)
+  if (post) {
+    recordTagAction(post.categoryTag, 3) // 点击进入详情累积标签分数
+  }
+  router.push(`/post/${postId}`)
 }
 
 // ===== 转发面板 =====
@@ -467,40 +856,15 @@ function onForwardSelect(action) {
   store.unlockPhoneScroll()
 }
 
-function closeForwardSheet() {
-  showForwardSheet.value = false
-  store.unlockPhoneScroll()
-}
-
-// ===== 关注频道 - 用户筛选 =====
-const followFilterUid = ref(null)
-
-const displayPosts = computed(() => {
-  let list = store.filteredPosts
-  if (store.activeChannel === 'follow' && followFilterUid.value) {
-    list = list.filter(p => p.authorId === followFilterUid.value)
-  } else if (store.activeChannel === 'city' && activeCity.value) {
-    list = list.filter(p => {
-      const postCity = p.city || '北京'
-      return postCity === activeCity.value
-    })
-  }
-  return list
-})
-
-function onFollowManage() {}
-
-// ===== 遇见频道推荐用户 =====
-const meetUsers = computed(() => {
-  return store.users.filter(u => u.id !== 'u1').slice(0, 6)
-})
-
 // ===== 工具函数 =====
 function getAuthor(uid) {
   return store.getUserById(uid)
 }
 
-// ===== 长按操作菜单 =====
+function goUserProfile(uid) {
+  router.push(`/profile/${uid}`)
+}
+
 // ===== 长按与 More 悬浮菜单 =====
 const contextMenuVisible = ref(false)
 const menuX = ref(0)
@@ -530,9 +894,7 @@ const activeContextMenuOptions = computed(() => {
   if (!postId) return []
   const post = store.posts.find(p => p.id === postId)
   if (!post) return []
-  
   const isMine = post.authorId === store.currentUser?.id
-  
   if (isMine) {
     return [
       { label: '编辑帖子', value: 'edit', icon: editIcon },
@@ -554,15 +916,12 @@ const activeContextMenuOptions = computed(() => {
 function handleLongPressStart(postId, event) {
   if (longPressTimer) clearTimeout(longPressTimer)
   wasLongPressed.value = false
-  
   const touch = event.type.startsWith('touch') ? event.touches[0] : event
   lastClientX = touch.clientX
   lastClientY = touch.clientY
-  
   longPressTimer = setTimeout(() => {
     activeLongPressPostId.value = postId
     selectedPostId.value = postId
-    
     const phoneBody = document.querySelector('.phone-body')
     if (phoneBody) {
       const rect = phoneBody.getBoundingClientRect()
@@ -572,14 +931,11 @@ function handleLongPressStart(postId, event) {
       menuX.value = lastClientX
       menuY.value = lastClientY
     }
-    
     contextMenuVisible.value = true
     wasLongPressed.value = true
-    
     if (navigator.vibrate) {
       navigator.vibrate(15)
     }
-    
     store.lockPhoneScroll()
     longPressTimer = null
   }, 400)
@@ -625,8 +981,8 @@ function handleTouchCancel() {
 
 function handleMouseDown(postId, event) {
   if (isTouchActive) return
-  if (event.target.closest('.post-more-btn')) return // Skip for three-dot button click
-  if (event.button !== 0) return // Only trigger for left-click
+  if (event.target.closest('.post-more-btn')) return
+  if (event.button !== 0) return
   handleLongPressStart(postId, event)
 }
 
@@ -644,7 +1000,6 @@ function handleMouseLeave() {
 
 function onMoreClick(postId, event) {
   selectedPostId.value = postId
-  
   const phoneBody = document.querySelector('.phone-body')
   if (phoneBody) {
     const rect = phoneBody.getBoundingClientRect()
@@ -654,7 +1009,6 @@ function onMoreClick(postId, event) {
     menuX.value = event.clientX
     menuY.value = event.clientY
   }
-  
   contextMenuVisible.value = true
   store.lockPhoneScroll()
 }
@@ -670,7 +1024,6 @@ function handleMenuSelect(value) {
   if (!postId) return
   const post = store.posts.find(p => p.id === postId)
   if (!post) return
-  
   if (value === 'edit') {
     showToast('编辑帖子（原型模拟）')
   } else if (value === 'delete') {
@@ -692,8 +1045,6 @@ function handleMenuSelect(value) {
     }, 250)
     showToast('将减少此类内容的推荐')
   } else if (value === 'reduce') {
-    console.log(`降低标签权重: ${post.categoryTag}`)
-    console.log(`降低作者权重: ${post.authorId}`)
     hidingPostIds.value.add(postId)
     setTimeout(() => {
       store.hidePost(postId)
@@ -702,12 +1053,10 @@ function handleMenuSelect(value) {
     showToast('将减少类似推荐')
   } else if (value === 'block') {
     store.blockUser(post.authorId)
-    // 隐藏该作者的所有帖子
     const authorPostIds = store.posts.filter(p => p.authorId === post.authorId).map(p => p.id)
     authorPostIds.forEach(id => hidingPostIds.value.add(id))
     setTimeout(() => {
       authorPostIds.forEach(id => store.hidePost(id))
-      // clear hiding state
       authorPostIds.forEach(id => hidingPostIds.value.delete(id))
     }, 250)
     showToast('已拉黑此用户，将不再展示其内容')
@@ -717,24 +1066,9 @@ function handleMenuSelect(value) {
     onForward(postId)
   }
 }
-
-function goPostDetail(postId) {
-  if (wasLongPressed.value) {
-    wasLongPressed.value = false
-    return
-  }
-  router.push(`/post/${postId}`)
-}
-
-function goUserProfile(uid) {
-  router.push(`/profile/${uid}`)
-}
 </script>
 
 <style scoped>
-/* ═══════════════════════════════════════════ */
-/* 页面根：填充 phone-screen，自身不滚动          */
-/* ═══════════════════════════════════════════ */
 .page-root {
   position: absolute;
   inset: 0;
@@ -742,23 +1076,20 @@ function goUserProfile(uid) {
 }
 
 /* ═══════════════════════════════════════════ */
-/* 固定层：position:fixed，相对 phone-body       */
-/* phone-body 的 transform:translateZ(0) 是    */
-/* 包含块，故 fixed 不相对 viewport                */
+/* 固定定位容器：包括 Logo、L1、L2 筛选            */
 /* ═══════════════════════════════════════════ */
-.fixed-header {
+.fixed-header-wrapper {
   position: fixed;
   top: 48px;
   left: 50%;
   transform: translateX(-50%);
   width: 375px;
   z-index: 1000;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--echo-white);
+  box-shadow: 0 1px 0 var(--echo-border);
 }
 
-/* ── Logo 区：滚动后 translateY 隐藏 ── */
+/* Logo 头部 */
 .logo-header {
   height: 44px;
   display: flex;
@@ -789,7 +1120,6 @@ function goUserProfile(uid) {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -803,12 +1133,12 @@ function goUserProfile(uid) {
   transform: scale(0.92);
 }
 
-/* ── 大频道栏：永久固定，禁止 sticky ── */
+/* ── 一级大频道：常驻，z-index:100 ── */
 .channel-header {
-  height: 48px;
+  height: 44px;
   display: flex;
-  background: transparent;
-  border-bottom: 1px solid var(--echo-divider);
+  background: var(--echo-white);
+  z-index: 100;
 }
 
 .channel-tab {
@@ -825,7 +1155,7 @@ function goUserProfile(uid) {
 }
 
 .channel-tab-text {
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--echo-text-secondary);
   font-weight: 500;
   transition: all 0.2s;
@@ -835,32 +1165,545 @@ function goUserProfile(uid) {
 
 .channel-tab--active .channel-tab-text {
   color: var(--echo-text);
+  font-weight: 700;
+}
+
+.city-name-badge {
+  font-size: 10.5px;
+  color: var(--echo-primary);
   font-weight: 600;
 }
 
 .channel-tab-bar {
   position: absolute;
-  bottom: 6px;
+  bottom: 2px;
   width: 20px;
   height: 2.5px;
   border-radius: 2px;
   background: var(--echo-primary);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── 二级排序+筛选工具栏：常驻，z-index:99 ── */
+.filter-sort-bar {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: var(--echo-white);
+  z-index: 99;
+}
+
+/* 左侧最新/最热 */
+.sort-options {
+  display: flex;
+  gap: 12px;
+}
+
+.sort-btn {
+  font-size: 12px;
+  color: var(--echo-text-secondary);
+  cursor: pointer;
+  font-weight: 500;
+  padding: 2px 4px;
+  user-select: none;
+}
+
+.sort-btn--active {
+  color: var(--echo-primary);
+  font-weight: 700;
+}
+
+/* 右侧筛选下拉按钮 */
+.filter-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-dropdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  color: var(--echo-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.filter-dropdown-btn span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+
+.filter-dropdown-btn:active {
+  opacity: 0.7;
+  transform: scale(0.96);
+}
+
+.filter-dropdown-btn--active {
+  color: var(--echo-primary) !important;
+  font-weight: 700;
+}
+
+/* ── 筛选状态汇总条 ── */
+.filter-status-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 16px;
+  background: #f0f9f4;
+  border-top: 1px solid rgba(76, 175, 125, 0.08);
+}
+
+.status-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.status-tag-item {
+  font-size: 10px;
+  color: var(--echo-primary);
+  font-weight: 600;
+  background: rgba(76, 175, 125, 0.08);
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.status-reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 10.5px;
+  color: var(--echo-primary);
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 2px 6px;
+}
+
+.status-reset-btn:active {
+  opacity: 0.7;
 }
 
 /* ═══════════════════════════════════════════ */
-/* 滚动层：独立 overflow-y:auto                   */
+/* 滚动帖子流区域                                */
 /* ═══════════════════════════════════════════ */
 .scroll-content {
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  background: #f6f7f9;
+  box-sizing: border-box;
 }
 
-/* 动态占位高度由 :style 控制，无需静态定义 */
+.post-list {
+  min-height: calc(100% - 50px);
+}
 
-/* ── 关注频道：用户头像横滑栏 ── */
+.post-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.empty-feed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80px 20px;
+  color: var(--echo-text-hint);
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.empty-hint {
+  font-size: 11.5px;
+  margin-top: 4px;
+  opacity: 0.8;
+}
+
+/* ── 帖子卡片样式 (无大圆角，贴边高密度) ── */
+.post-card {
+  background: var(--echo-white);
+  border-bottom: 1px solid var(--echo-border);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-sizing: border-box;
+}
+
+.post-card--active-menu {
+  transform: scale(0.99) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03) !important;
+}
+
+.post-card--hiding {
+  opacity: 0 !important;
+  transform: translateY(-12px) !important;
+  max-height: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  overflow: hidden;
+  border: none !important;
+}
+
+.post-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.post-card-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.post-card-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.post-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--echo-text);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.post-card-time {
+  font-size: 11px;
+  color: var(--echo-text-hint);
+  line-height: 1;
+}
+
+.post-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: var(--echo-text-hint);
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.post-card-content {
+  font-size: 14px;
+  color: var(--echo-text);
+  line-height: 1.6;
+  margin: 0 0 10px 0;
+  word-break: break-word;
+}
+
+.post-card-images {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.post-card-img {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.post-card-img--single {
+  grid-column: span 2;
+  grid-row: span 2;
+  aspect-ratio: 4/3;
+}
+
+.post-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tag-badge {
+  font-size: 10.5px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: var(--echo-bg);
+  color: var(--echo-text-secondary);
+  font-weight: 500;
+}
+
+.footer-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.post-card-action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--echo-text-hint);
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+/* ── 遇见用户卡片 ── */
+.meet-users {
+  padding: 16px 12px;
+  box-sizing: border-box;
+}
+
+.section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--echo-text);
+}
+
+.section-title-hint {
+  font-size: 11.5px;
+  color: var(--echo-text-hint);
+  font-weight: 400;
+}
+
+.meet-user-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.meet-user-card {
+  background: var(--echo-white);
+  border-radius: 14px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.meet-user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.meet-user-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--echo-text);
+}
+
+.meet-user-school {
+  font-size: 11px;
+  color: var(--echo-text-hint);
+}
+
+.meet-user-tags {
+  display: flex;
+  gap: 4px;
+}
+
+.meet-user-tag {
+  font-size: 9.5px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--echo-primary-light);
+  color: var(--echo-primary);
+  font-weight: 500;
+}
+
+.meet-user-stats {
+  font-size: 10.5px;
+  color: var(--echo-text-hint);
+}
+
+.meet-user-divider {
+  margin: 0 3px;
+}
+
+/* ── 标签选择滑动 Drawer ── */
+.tag-drawer-popup {
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--echo-white);
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--echo-border);
+  flex-shrink: 0;
+}
+
+.drawer-close {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--echo-text-secondary);
+  cursor: pointer;
+}
+
+.drawer-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--echo-text);
+}
+
+.drawer-edit-btn {
+  font-size: 13.5px;
+  color: var(--echo-primary);
+  background: transparent;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.drawer-section {
+  margin-bottom: 20px;
+}
+
+.section-hdr {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.section-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--echo-text);
+}
+
+.section-subtitle {
+  font-size: 10.5px;
+  color: var(--echo-text-hint);
+}
+
+.tag-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.drawer-tag-item {
+  position: relative;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 12.5px;
+  background: var(--echo-bg);
+  color: var(--echo-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.drawer-tag-item--selected {
+  background: var(--echo-primary-light);
+  color: var(--echo-primary);
+  font-weight: 700;
+}
+
+.drawer-tag-item--editing {
+  background: rgba(0,0,0,0.03);
+  border: 1px dashed var(--echo-border);
+  cursor: move;
+}
+
+.drawer-tag-item--recommend {
+  background: #f1f2f6;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--echo-text-secondary);
+}
+
+.tag-remove-btn {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #ff3b30;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.tag-plus-icon {
+  color: var(--echo-primary);
+}
+
+/* 城市列表项高亮 */
+:deep(.city-action--selected) {
+  color: var(--echo-primary) !important;
+  font-weight: 700 !important;
+}
+
+/* 关注频道已关注用户头像横滑栏 styles */
 .follow-avatars-bar {
   padding: 8px 0;
   border-bottom: 1px solid var(--echo-border);
@@ -941,608 +1784,207 @@ function goUserProfile(uid) {
   text-overflow: ellipsis;
 }
 
-/* ── 小频道标签（推荐/同城/我的学校）── */
-.sub-tags-area {
-  display: flex;
-  align-items: center;
-  padding: 8px 0 8px 12px;
-  border-bottom: 1px solid var(--echo-border);
-  background: var(--echo-white);
-}
-
-.sub-tags-scroll {
-  flex: 1;
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  min-width: 0;
-}
-
-.sub-tags-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.sub-tag {
-  flex-shrink: 0;
-  padding: 5px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  background: var(--echo-bg);
-  color: var(--echo-text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.sub-tag--active {
-  background: var(--echo-primary-light);
-  color: var(--echo-primary);
-  font-weight: 600;
-}
-
-.sub-tags-expand {
-  flex-shrink: 0;
-  width: 44px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--echo-text-hint);
-  cursor: pointer;
-  background: linear-gradient(90deg, transparent 0%, var(--echo-white) 50%);
-}
-
-/* ── 遇见频道 - 用户卡片 ── */
-.meet-users {
-  padding: 16px 12px;
-  max-width: 375px;
-  box-sizing: border-box;
-}
-
-.section-title {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--echo-text);
-}
-
-.section-title-hint {
-  font-size: 12px;
-  color: var(--echo-text-hint);
-  font-weight: 400;
-}
-
-.meet-user-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
-.meet-user-card {
-  background: var(--echo-white);
-  border-radius: var(--echo-radius);
-  padding: 16px 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  min-width: 0;
-}
-
-.meet-user-card:active {
-  transform: scale(0.98);
-}
-
-.meet-user-avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 22px;
-  font-weight: 700;
-}
-
-.meet-user-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--echo-text);
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.meet-user-school {
-  font-size: 11px;
-  color: var(--echo-text-hint);
-}
-
-.meet-user-tags {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.meet-user-tag {
-  font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: var(--echo-primary-light);
-  color: var(--echo-primary);
-}
-
-.meet-user-stats {
-  font-size: 11px;
-  color: var(--echo-text-hint);
-}
-
-.meet-user-divider {
-  margin: 0 4px;
-  opacity: 0.5;
-}
-
-/* ── 帖子流 ── */
-.post-list {
-  min-height: calc(100% - 48px + 45px);
-}
-
-.post-feed {
-  padding: 0;
-}
-
-.empty-feed {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 80px 20px;
-  color: var(--echo-text-hint);
-}
-
-.empty-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
-}
-
-.empty-hint {
-  font-size: 13px;
-  margin-top: 4px;
-}
-
-/* ── 帖子卡片 ── */
-.post-card {
-  background: var(--echo-white);
-  border-bottom: 1px solid var(--echo-border);
-  padding: 16px;
-  cursor: pointer;
-  transition: all 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  box-sizing: border-box;
-}
-
-.post-card--active-menu {
-  transform: scale(0.985) !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
-}
-
-.post-card--hiding {
-  opacity: 0 !important;
-  transform: translateY(-12px) !important;
-  max-height: 0 !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  overflow: hidden;
-  border: none !important;
-}
-
-.post-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  min-width: 0;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  flex: 1;
-}
-
-.post-card-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.post-card-meta {
-  flex: 1;
-  min-width: 0;
-}
-
-.post-card-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--echo-text);
-  margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.post-card-time {
-  font-size: 11px;
-  color: var(--echo-text-hint);
-  line-height: 1;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.tag-badge {
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 10px;
-  background: #f1f2f6;
-  color: var(--echo-text-secondary);
-  font-weight: 500;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.post-more-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  color: var(--echo-text-hint);
-  opacity: 0.45;
-  transition: all 0.15s;
-  cursor: pointer;
-}
-
-.post-more-btn:hover {
-  opacity: 0.8;
-}
-
-.post-more-btn:active {
-  background-color: rgba(0, 0, 0, 0.05);
-  color: var(--echo-text);
-  opacity: 1;
-}
-
-.post-card-body {
-  margin-bottom: 10px;
-}
-
-.post-card-content {
-  font-size: 14px;
-  color: var(--echo-text);
-  line-height: 1.6;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  word-break: break-word;
-}
-
-.post-card-images {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  margin-bottom: 12px;
-}
-
-.post-card-img {
-  aspect-ratio: 1;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.post-card-img--single {
-  grid-column: span 2;
-  grid-row: span 2;
-  aspect-ratio: 4/3;
-}
-
-.img-placeholder {
-  width: 100%;
-  height: 100%;
-  background: var(--echo-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--echo-text-hint);
-}
-
-/* ── 互动栏 ── */
-.post-card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 8px;
-}
-
-.footer-actions-right {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  margin-left: auto;
-}
-
-.post-card-action {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--echo-text-hint);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.12s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.post-card-action:active {
-  opacity: 0.7;
-  transform: scale(0.96);
-}
-
-/* ═══════════════════════════════════════════ */
-/* 弹层面板（标签管理 / 分享）                   */
-/* ═══════════════════════════════════════════ */
-.tag-panel-overlay {
+/* ── Glassmorphism Custom Modals ── */
+.glass-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 500;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 1999;
   display: flex;
-  align-items: flex-end;
-  max-width: 375px;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
   box-sizing: border-box;
 }
 
-.tag-panel-sheet {
-  width: 100%;
-  max-width: 375px;
-  background: var(--echo-white);
-  border-radius: 16px 16px 0 0;
-  padding: 20px 16px 36px;
-  box-sizing: border-box;
-  max-height: 60vh;
-  overflow-y: auto;
-  overflow-x: hidden;
+@keyframes liquid-glow {
+  0% { 
+    border-color: rgba(76, 175, 125, 0.25); 
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.05), 0 0 0 1px rgba(255, 255, 255, 0.2) inset; 
+  }
+  50% { 
+    border-color: rgba(76, 175, 125, 0.5); 
+    box-shadow: 0 8px 32px rgba(76, 175, 125, 0.15), 0 0 10px rgba(76, 175, 125, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.4) inset; 
+  }
+  100% { 
+    border-color: rgba(76, 175, 125, 0.25); 
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.05), 0 0 0 1px rgba(255, 255, 255, 0.2) inset; 
+  }
 }
 
-.tag-panel-header {
+.glass-modal {
+  width: 320px;
+  max-height: 80%;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px) saturate(190%);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border-radius: 20px;
+  padding: 18px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  animation: liquid-glow 3s infinite alternate ease-in-out;
+  transform: scale(1);
+}
+
+.glass-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.glass-modal-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--echo-text);
+  background: linear-gradient(135deg, var(--echo-text) 0%, #2f3542 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.glass-modal-edit-btn {
+  font-size: 12px;
+  color: var(--echo-primary);
+  background: rgba(76, 175, 125, 0.1);
+  border: none;
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.glass-modal-edit-btn:active {
+  transform: scale(0.95);
+  background: rgba(76, 175, 125, 0.2);
+}
+
+.glass-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.glass-modal-body::-webkit-scrollbar {
+  width: 4px;
+}
+.glass-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+}
+
+.glass-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.glass-section-hdr {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   margin-bottom: 8px;
 }
 
-.tag-panel-header h3 {
-  font-size: 18px;
-  font-weight: 600;
+.glass-section-title {
+  font-size: 12.5px;
+  font-weight: 700;
   color: var(--echo-text);
-  margin: 0;
 }
 
-.tag-panel-close {
-  font-size: 15px;
-  color: var(--echo-primary);
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.tag-panel-hint {
-  font-size: 12px;
+.glass-section-subtitle {
+  font-size: 10px;
   color: var(--echo-text-hint);
-  margin: 0 0 16px 0;
 }
 
-.tag-panel-grid {
+/* 时间项选择样式 */
+.time-actions-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.tag-panel-item {
-  padding: 8px 18px;
-  border-radius: 20px;
-  font-size: 14px;
-  background: var(--echo-bg);
-  color: var(--echo-text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.tag-panel-item--hidden {
-  opacity: 0.35;
-  background: var(--echo-border);
-}
-
-.tag-panel-item:active {
-  transform: scale(0.95);
-}
-
-.tag-panel-empty {
-  text-align: center;
-  padding: 32px 0;
-  color: var(--echo-text-hint);
-  font-size: 14px;
-}
-
-/* ── 面板动画 ── */
-.panel-slide-enter-active,
-.panel-slide-leave-active {
-  transition: all 0.3s ease;
-}
-
-.panel-slide-enter-from,
-.panel-slide-leave-to {
-  opacity: 0;
-}
-
-.panel-slide-enter-from .tag-panel-sheet,
-.panel-slide-leave-to .tag-panel-sheet {
-  transform: translateY(100%);
-}
-
-/* ── 同城城市选择面板 ── */
-.city-leaf-icon,
-.channel-tab-icon {
-  position: absolute;
-  right: 100%;
-  top: 50%;
-  transform: translateY(-50%);
-  margin-right: 4px;
-  flex-shrink: 0;
-}
-
-.city-expand-arrow {
-  position: absolute;
-  left: 100%;
-  top: 50%;
-  transform: translateY(-50%);
-  margin-left: 4px;
-  color: var(--echo-text-secondary);
-  transition: transform 0.25s ease;
-  flex-shrink: 0;
-}
-
-.city-expand-arrow svg {
-  transition: transform 0.25s ease;
-  display: block;
-}
-
-.city-expand-arrow svg.rotated {
-  transform: rotate(180deg);
-}
-
-.city-selector-overlay {
-  position: absolute;
-  inset: 0;
-  background: var(--echo-white);
-  z-index: 15;
+.glass-time-item {
   display: flex;
   align-items: center;
-  padding: 0 12px;
-}
-
-.city-selector-scroll {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  width: 100%;
-  align-items: center;
-  padding: 4px 0;
-}
-
-.city-selector-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.city-pill {
-  position: relative;
-  flex-shrink: 0;
-  padding: 5px 14px;
-  border-radius: 20px;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 12px;
   font-size: 13px;
-  background: var(--echo-white);
-  border: 1px solid rgba(0, 0, 0, 0.08);
   color: var(--echo-text-secondary);
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
   transition: all 0.2s;
-  white-space: nowrap;
 }
 
-.city-pill--active {
-  border-color: var(--echo-primary);
+.glass-time-item:active {
+  background: rgba(76, 175, 125, 0.08);
+  transform: translateY(1px);
+}
+
+.glass-time-item--active {
   color: var(--echo-primary);
-  background: rgba(76, 175, 125, 0.05);
-  font-weight: 600;
+  background: rgba(76, 175, 125, 0.1);
+  border-color: rgba(76, 175, 125, 0.25);
+  font-weight: 700;
 }
 
-.city-pill-priority-badge {
-  position: absolute;
-  top: -8px;
-  right: 0;
-  background: var(--echo-primary);
-  color: #fff;
-  font-size: 8px;
-  padding: 1px 4px;
-  border-radius: 6px 6px 6px 0;
-  font-weight: 500;
-  transform: scale(0.85) translate(15%, 0);
-  white-space: nowrap;
-  box-shadow: 0 1px 4px rgba(76, 175, 125, 0.3);
+.glass-modal-footer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
 }
 
-.city-pill-delete {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.06);
-  color: var(--echo-text-secondary);
+.glass-close-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: linear-gradient(135deg, var(--echo-primary) 0%, #3ca073 100%);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(76, 175, 125, 0.2);
   transition: all 0.2s;
-  margin-left: 2px;
 }
 
-.city-pill-delete:active {
-  background: rgba(255, 80, 80, 0.2);
-  color: #ff5050;
+.glass-close-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 6px rgba(76, 175, 125, 0.1);
 }
 
-.city-pill-add {
-  justify-content: center;
-  border-style: dashed;
-  color: var(--echo-text-hint);
-  background: transparent;
-  padding: 5px 12px;
+/* ── Custom Transition Animations ── */
+.glass-modal-fade-enter-active,
+.glass-modal-fade-leave-active {
+  transition: opacity 0.3s ease;
 }
 
-/* ── 城市面板淡入淡出动画 ── */
-.city-panel-fade-enter-active,
-.city-panel-fade-leave-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
-}
-.city-panel-fade-enter-from,
-.city-panel-fade-leave-to {
+.glass-modal-fade-enter-from,
+.glass-modal-fade-leave-to {
   opacity: 0;
-  transform: translateY(-5px);
+}
+
+.glass-modal-fade-enter-active .glass-modal {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s;
+  /* Origin at the top-right of the screen where the arrows are */
+  transform-origin: 85% 15%;
+}
+
+.glass-modal-fade-leave-active .glass-modal {
+  transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.25s;
+  transform-origin: 85% 15%;
+}
+
+.glass-modal-fade-enter-from .glass-modal,
+.glass-modal-fade-leave-to .glass-modal {
+  opacity: 0;
+  transform: scale(0.02) translate(180px, -220px);
 }
 </style>
