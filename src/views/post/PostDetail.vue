@@ -609,7 +609,7 @@ function handleMenuSelect(value) {
 }
 
 .detail-action-btn {
-  color: var(--echo-text-secondary);
+  color: var(--echo-text);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -622,7 +622,7 @@ function handleMenuSelect(value) {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  color: var(--echo-text-secondary);
+  color: var(--echo-text);
   opacity: 1;
   transition: all 0.15s;
   cursor: pointer;

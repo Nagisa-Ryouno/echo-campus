@@ -56,8 +56,8 @@ const emit = defineEmits(['close', 'select'])
 
 // 动态计算菜单位置以避免超出屏幕边界
 const panelStyle = computed(() => {
-  const menuWidth = 150
-  const menuHeight = props.options.length * 40 + 8 // 40px 每项 + 4px 上下 padding
+  const menuWidth = 136
+  const menuHeight = props.options.length * 36 + 8 // 36px 每项 + 4px 上下 padding
 
   // 1. 横向定位逻辑：如果在右半边，向左展开（使菜单右侧贴近点击点）；否则向左对齐
   let left = props.x > 187.5 ? (props.x - menuWidth) : props.x
@@ -104,7 +104,7 @@ function onSelect(value) {
 /* 优雅的浅色毛玻璃悬浮菜单面板 */
 .context-menu-panel {
   position: absolute;
-  width: 150px;
+  width: 136px;
   background: rgba(255, 255, 255, 0.93);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -120,7 +120,7 @@ function onSelect(value) {
 .context-menu-item {
   display: flex;
   align-items: center;
-  height: 40px;
+  height: 36px;
   padding: 0 14px;
   cursor: pointer;
   user-select: none;
@@ -145,8 +145,8 @@ function onSelect(value) {
 
 /* 图标样式 */
 .context-menu-icon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   color: var(--echo-text-secondary);
   display: flex;
   align-items: center;
@@ -157,14 +157,14 @@ function onSelect(value) {
 
 :deep(.context-menu-icon svg) {
   display: block;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 /* 文字样式 */
 .context-menu-text {
   color: var(--echo-text);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 550;
   white-space: nowrap;
 }

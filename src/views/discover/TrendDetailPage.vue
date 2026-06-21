@@ -10,19 +10,17 @@
       </span>
       <span class="detail-title">热点话题</span>
       <span class="detail-forward" @click="showForwardSheet = true">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-          <polyline points="16 6 12 2 8 6"/>
-          <line x1="12" y1="2" x2="12" y2="15"/>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 18c0-4 4-8 10-8h7" /><polyline points="15 5 20 10 15 15" />
         </svg>
       </span>
     </div>
 
     <!-- 滚动区域 -->
-    <div class="scroll-content">
+    <div class="scroll-content" :class="{ 'has-discuss-bar': activeTab === 'discussion' }">
       <div class="trend-detail-container" v-if="trend">
         
-        <!-- 头部热点专题卡片 -->
+        <!-- 头部热点专题卡片（压缩高度） -->
         <div class="trend-hero-card">
           <div class="hero-tag-row">
             <span class="hero-fire">🔥</span>
@@ -43,14 +41,23 @@
           </div>
         </div>
 
-        <!-- 分类切换 Tabs -->
+        <!-- 分类切换 Tabs (三 Tab 切换) -->
         <div class="detail-tabs">
+          <div
+            class="detail-tab"
+            :class="{ 'detail-tab--active': activeTab === 'discussion' }"
+            @click="activeTab = 'discussion'"
+          >
+            <span>讨论</span>
+            <span class="tab-count">({{ sortedDiscussions.length }})</span>
+            <span v-if="activeTab === 'discussion'" class="tab-active-bar"></span>
+          </div>
           <div
             class="detail-tab"
             :class="{ 'detail-tab--active': activeTab === 'posts' }"
             @click="activeTab = 'posts'"
           >
-            <span>全部帖子</span>
+            <span>帖子</span>
             <span class="tab-count">({{ relatedPosts.length }})</span>
             <span v-if="activeTab === 'posts'" class="tab-active-bar"></span>
           </div>
@@ -59,7 +66,7 @@
             :class="{ 'detail-tab--active': activeTab === 'circles' }"
             @click="activeTab = 'circles'"
           >
-            <span>相关圈子</span>
+            <span>圈子</span>
             <span class="tab-count">({{ relatedCircles.length }})</span>
             <span v-if="activeTab === 'circles'" class="tab-active-bar"></span>
           </div>
@@ -67,16 +74,124 @@
 
         <!-- 内容渲染区 -->
         <div class="tab-content-area">
-          <!-- 1. 帖子流列表 -->
+          <!-- 1. 讨论区 (默认 Tab) -->
+          <div v-if="activeTab === 'discussion'" class="discussion-view">
+            <!-- 讨论区轻量排序 -->
+            <div class="discussion-header">
+              <div class="sort-options">
+                <span
+                  class="sort-option-btn"
+                  :class="{ 'sort-option-btn--active': discussSortType === 'hot' }"
+                  @click="discussSortType = 'hot'"
+                >最热</span>
+                <span
+                  class="sort-option-btn"
+                  :class="{ 'sort-option-btn--active': discussSortType === 'latest' }"
+                  @click="discussSortType = 'latest'"
+                >最新</span>
+              </div>
+            </div>
+
+            <div v-if="sortedDiscussions.length === 0" class="empty-state">
+              <p class="empty-text">💬 暂无即时观点讨论</p>
+              <p class="empty-hint">在下方输入，快来留下你的第一句话吧！</p>
+            </div>
+
+            <!-- 讨论列表 (轻量评论流) -->
+            <div v-else class="discussion-list">
+              <div
+                v-for="item in sortedDiscussions"
+                :key="item.id"
+                class="discuss-item"
+                @touchstart="handleTouchStartDiscuss(item, $event)"
+                @mousedown="handleMouseDownDiscuss(item, $event)"
+                @touchmove="handleTouchEndDiscuss"
+                @touchend="handleTouchEndDiscuss"
+                @mouseup="handleTouchEndDiscuss"
+                @mouseleave="handleTouchEndDiscuss"
+              >
+                <!-- 头像 -->
+                <div class="discuss-avatar" :style="{ background: item.author?.avatarColor || '#ccc' }">
+                  {{ item.author?.nickname?.slice(0, 1) || '?' }}
+                </div>
+                
+                <!-- 主体内容 -->
+                <div class="discuss-main-body">
+                  <div class="discuss-top-row">
+                    <span class="discuss-name">{{ item.author?.nickname || '未知' }}</span>
+                    <span class="discuss-time">{{ formatTime(item.createdAt) }}</span>
+                  </div>
+                  
+                  <div class="discuss-text">{{ item.content }}</div>
+                  
+                  <div class="discuss-bottom-row">
+                    <!-- 点赞 -->
+                    <div
+                      class="discuss-action"
+                      :class="{ 'discuss-action--active': isDiscussLiked(item.id) }"
+                      @click.stop="toggleDiscussLike(item.id)"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" :fill="isDiscussLiked(item.id) ? 'var(--echo-danger)' : 'none'" :stroke="isDiscussLiked(item.id) ? 'var(--echo-danger)' : 'currentColor'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                      <span>{{ item.likeCount || 0 }}</span>
+                    </div>
+                    
+                    <!-- 回复 -->
+                    <div class="discuss-action" @click.stop="onReplyDiscuss(item)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      <span>回复</span>
+                    </div>
+                  </div>
+
+                  <!-- 楼中楼回复 -->
+                  <div class="discuss-reply-box" v-if="getDiscussReplies(item.id).length > 0">
+                    <div
+                      v-for="rep in getVisibleReplies(item.id)"
+                      :key="rep.id"
+                      class="discuss-reply-item"
+                    >
+                      <span class="reply-author-name">{{ rep.author?.nickname }}:</span>
+                      <span class="reply-content-text">{{ rep.content }}</span>
+                    </div>
+                    
+                    <div
+                      v-if="getDiscussReplies(item.id).length > 2"
+                      class="reply-more-link"
+                      @click.stop="showAllReplies(item)"
+                    >
+                      展开更多回复 (共{{ getDiscussReplies(item.id).length }}条) >
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. 帖子流列表 -->
           <div v-if="activeTab === 'posts'">
-            <div v-if="relatedPosts.length === 0" class="empty-state">
+            <!-- 帖子区轻量排序 -->
+            <div class="discussion-header">
+              <div class="sort-options">
+                <span
+                  class="sort-option-btn"
+                  :class="{ 'sort-option-btn--active': postSortType === 'hot' }"
+                  @click="postSortType = 'hot'"
+                >最热</span>
+                <span
+                  class="sort-option-btn"
+                  :class="{ 'sort-option-btn--active': postSortType === 'latest' }"
+                  @click="postSortType = 'latest'"
+                >最新</span>
+              </div>
+            </div>
+
+            <div v-if="sortedPosts.length === 0" class="empty-state">
               <p class="empty-text">📚 暂无讨论帖子</p>
               <p class="empty-hint">点击下方按钮，发布第一条讨论帖吧！</p>
             </div>
             
             <div v-else class="post-list">
               <div
-                v-for="post in relatedPosts"
+                v-for="post in sortedPosts"
                 :key="post.id"
                 class="post-card"
                 :class="{
@@ -93,9 +208,8 @@
                 @mousemove="handleMouseMove"
                 @mouseleave="handleMouseLeave"
               >
-                <!-- 顶部区域重构 -->
+                <!-- 帖子头部 -->
                 <div class="post-card-header">
-                  <!-- 左侧：用户头像、昵称、发布时间 -->
                   <div class="header-left" @click.stop="goUserProfile(post.authorId)">
                     <div
                       class="post-card-avatar"
@@ -113,7 +227,6 @@
                     </div>
                   </div>
 
-                  <!-- 右侧：三个点 More 按钮 -->
                   <div class="header-right">
                     <div class="post-more-btn" @click.stop="onMoreClick(post.id, $event)">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
@@ -144,9 +257,8 @@
                   </div>
                 </div>
 
-                <!-- 底部交互区重构：左侧放分类标签，点赞、评论、收藏靠右排布 -->
+                <!-- 底部栏 -->
                 <div class="post-card-footer">
-                  <!-- 左侧标签 -->
                   <span class="tag-badge" v-if="post.categoryTag">{{ post.categoryTag }}</span>
 
                   <div class="footer-actions-right">
@@ -171,7 +283,7 @@
             </div>
           </div>
 
-          <!-- 2. 相关圈子 -->
+          <!-- 3. 相关圈子 -->
           <div v-if="activeTab === 'circles'">
             <div v-if="relatedCircles.length === 0" class="empty-state">
               <p class="empty-text">👥 暂无相关圈子</p>
@@ -202,14 +314,27 @@
       </div>
     </div>
 
-    <!-- 底部悬浮参与讨论按钮 -->
-    <div class="publish-float-wrap" v-if="trend">
+    <!-- 底部常驻讨论输入框 (只有讨论 Tab 激活时显示) -->
+    <div v-if="activeTab === 'discussion'" class="discussion-bottom-bar">
+      <div class="discuss-input-wrap">
+        <input
+          v-model="discussInputText"
+          class="discuss-input"
+          :placeholder="discussReplyTarget ? `回复 ${discussReplyTarget.author?.nickname}...` : '参与话题讨论...'"
+          @keyup.enter="sendDiscussion"
+        />
+      </div>
+      <button class="discuss-send-btn" @click="sendDiscussion">发送</button>
+    </div>
+
+    <!-- 底部悬浮参与讨论大按钮 (仅在 帖子 Tab 下显示) -->
+    <div class="publish-float-wrap" v-else-if="activeTab === 'posts' && trend">
       <button class="publish-float-btn" @click="goPublish">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
           <line x1="12" y1="5" x2="12" y2="19"/>
           <line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
-        参与讨论
+        发布帖子
       </button>
     </div>
 
@@ -223,7 +348,7 @@
       @select="onForwardSelect"
     />
 
-    <!-- ===== 帖子操作悬浮菜单 ===== -->
+    <!-- ===== 悬浮 ContextMenu 菜单 ===== -->
     <ContextMenu
       :show="contextMenuVisible"
       :x="menuX"
@@ -256,7 +381,7 @@ if (!trend.value) {
   router.back()
 }
 
-const activeTab = ref('posts')
+const activeTab = ref('discussion')
 
 // 获取关联的公开帖子流
 const relatedPosts = computed(() => {
@@ -267,6 +392,20 @@ const relatedPosts = computed(() => {
     !store.hiddenPostIds.has(p.id) &&
     !store.isUserBlocked(p.authorId)
   )
+})
+
+const postSortType = ref('hot') // 'hot' | 'latest'
+const sortedPosts = computed(() => {
+  const posts = [...relatedPosts.value]
+  if (postSortType.value === 'hot') {
+    return posts.sort((a, b) => {
+      const scoreA = (a.likeCount || 0) + (a.commentCount || 0) * 2 + (a.collectCount || 0) * 3
+      const scoreB = (b.likeCount || 0) + (b.commentCount || 0) * 2 + (b.collectCount || 0) * 3
+      return scoreB - scoreA
+    })
+  } else {
+    return posts.sort((a, b) => new Date(b.createdAt.replace(/-/g, '/')) - new Date(a.createdAt.replace(/-/g, '/')))
+  }
 })
 
 // 获取关联的圈子
@@ -281,6 +420,158 @@ function getAuthor(uid) {
 
 function goUserProfile(uid) {
   router.push(`/user/profile/${uid}`)
+}
+
+// ===== 讨论观点区专属逻辑与 Mock 数据 =====
+const discussSortType = ref('hot') // 'hot' | 'latest'
+const discussInputText = ref('')
+const discussReplyTarget = ref(null)
+const likedDiscussIds = ref(new Set())
+const menuType = ref('post') // 'post' | 'comment' | 'discuss'
+const selectedDiscuss = ref(null)
+
+const discussList = ref([
+  {
+    id: 'd_1',
+    trendId: trendId,
+    content: '我们学校今天真炸了😂 吃瓜群众把操场都围严实了！',
+    likeCount: 42,
+    createdAt: new Date(Date.now() - 1000 * 60 * 15).toLocaleString('zh-CN', { hour12: false }), // 15分钟前
+    author: { nickname: '城南花开', avatarColor: '#ff7675' }
+  },
+  {
+    id: 'd_2',
+    trendId: trendId,
+    content: '这次宿管阿姨和学校后勤反应挺及时的，点个赞👍',
+    likeCount: 23,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toLocaleString('zh-CN', { hour12: false }), // 2小时前
+    author: { nickname: '北巷木棉', avatarColor: '#74b9ff' }
+  },
+  {
+    id: 'd_3',
+    trendId: trendId,
+    content: '蹲一个懂哥讲讲详细经过，前排出售小板凳。',
+    likeCount: 15,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toLocaleString('zh-CN', { hour12: false }), // 5小时前
+    author: { nickname: '西风瘦马', avatarColor: '#55efc4' }
+  }
+])
+
+const discussReplies = ref([
+  {
+    id: 'dr_1',
+    discussId: 'd_1',
+    content: '确实，挤爆了，隔壁宿舍楼都在趴阳台看。',
+    author: { nickname: '隔壁吃瓜王', avatarColor: '#ffeaa7' }
+  },
+  {
+    id: 'dr_2',
+    discussId: 'd_1',
+    content: '哈哈，这次真是全校名场面。',
+    author: { nickname: '名侦探柯北', avatarColor: '#a29bfe' }
+  }
+])
+
+// 获取指定讨论的二级回复
+function getDiscussReplies(discussId) {
+  return discussReplies.value.filter(r => r.discussId === discussId)
+}
+
+// 默认获取前2条
+function getVisibleReplies(discussId) {
+  return getDiscussReplies(discussId).slice(0, 2)
+}
+
+// 展开更多回复（弹出轻Toast提示或全部展开）
+function showAllReplies(discussItem) {
+  showToast(`已展开全部 ${getDiscussReplies(discussItem.id).length} 条回复`)
+}
+
+// 点赞讨论观点
+function isDiscussLiked(discussId) {
+  return likedDiscussIds.value.has(discussId)
+}
+
+function toggleDiscussLike(discussId) {
+  const item = discussList.value.find(d => d.id === discussId)
+  if (!item) return
+  if (likedDiscussIds.value.has(discussId)) {
+    likedDiscussIds.value.delete(discussId)
+    item.likeCount = Math.max(0, item.likeCount - 1)
+  } else {
+    likedDiscussIds.value.add(discussId)
+    item.likeCount++
+  }
+}
+
+// 准备回复讨论观点
+function onReplyDiscuss(discussItem) {
+  discussReplyTarget.value = discussItem
+}
+
+// 发送讨论或回复
+function sendDiscussion() {
+  if (!discussInputText.value.trim()) return
+  
+  if (discussReplyTarget.value) {
+    // 发表回复
+    discussReplies.value.push({
+      id: `dr_${Date.now()}`,
+      discussId: discussReplyTarget.value.id,
+      content: discussInputText.value.trim(),
+      author: { nickname: '我', avatarColor: '#9b59b6' }
+    })
+    showToast('回复发表成功')
+    discussReplyTarget.value = null
+  } else {
+    // 发表新讨论
+    discussList.value.unshift({
+      id: `d_${Date.now()}`,
+      trendId: trendId,
+      content: discussInputText.value.trim(),
+      likeCount: 0,
+      createdAt: new Date().toLocaleString('zh-CN', { hour12: false }),
+      author: { nickname: '我', avatarColor: '#9b59b6' }
+    })
+    showToast('讨论发表成功')
+  }
+  discussInputText.value = ''
+}
+
+// 讨论排序过滤逻辑
+const sortedDiscussions = computed(() => {
+  const list = discussList.value.filter(d => d.trendId === trendId)
+  if (discussSortType.value === 'hot') {
+    return [...list].sort((a, b) => {
+      const scoreA = (a.likeCount || 0) + getDiscussReplies(a.id).length * 2
+      const scoreB = (b.likeCount || 0) + getDiscussReplies(b.id).length * 2
+      return scoreB - scoreA
+    })
+  } else {
+    return [...list].sort((a, b) => new Date(b.createdAt.replace(/-/g, '/')) - new Date(a.createdAt.replace(/-/g, '/')))
+  }
+})
+
+// 格式化讨论区时间
+function formatTime(dateStr) {
+  if (!dateStr) return ''
+  try {
+    const cleanStr = dateStr.replace(/-/g, '/')
+    const d = new Date(cleanStr)
+    const now = new Date()
+    const diffMs = now.getTime() - d.getTime()
+    if (diffMs < 1000 * 60) return '刚刚'
+    const diffMins = Math.floor(diffMs / (1000 * 60))
+    if (diffMins < 60) return `${diffMins}分钟前`
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    if (diffHours < 24) return `${diffHours}小时前`
+    
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${month}-${day}`
+  } catch (e) {
+    return dateStr
+  }
 }
 
 // ===== 长按与 More 悬浮菜单 =====
@@ -308,6 +599,20 @@ const reportIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" 
 const forwardIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18c0-4 4-8 10-8h7" /><polyline points="15 5 20 10 15 15" /></svg>`
 
 const activeContextMenuOptions = computed(() => {
+  if (menuType.value === 'discuss') {
+    if (selectedDiscuss.value?.author?.nickname === '我') {
+      return [
+        { label: '删除观点', value: 'delete_discuss', icon: deleteIcon, danger: true }
+      ]
+    } else {
+      return [
+        { label: '复制观点', value: 'copy_discuss', icon: editIcon },
+        { label: '不感兴趣', value: 'dislike_discuss', icon: dislikeIcon },
+        { label: '举报观点', value: 'report_discuss', icon: reportIcon, danger: true }
+      ]
+    }
+  }
+
   const postId = selectedPostId.value
   if (!postId) return []
   const post = store.posts.find(p => p.id === postId)
@@ -333,6 +638,58 @@ const activeContextMenuOptions = computed(() => {
   }
 })
 
+// ===== 讨论长按事件监听 =====
+let discussLongPressTimer = null
+
+function handleLongPressStartDiscuss(item, event) {
+  if (discussLongPressTimer) clearTimeout(discussLongPressTimer)
+  
+  const touch = event.type.startsWith('touch') ? event.touches[0] : event
+  lastClientX = touch.clientX
+  lastClientY = touch.clientY
+  
+  discussLongPressTimer = setTimeout(() => {
+    menuType.value = 'discuss'
+    selectedDiscuss.value = item
+    
+    const phoneBody = document.querySelector('.phone-body')
+    if (phoneBody) {
+      const rect = phoneBody.getBoundingClientRect()
+      menuX.value = lastClientX - rect.left
+      menuY.value = lastClientY - rect.top
+    } else {
+      menuX.value = lastClientX
+      menuY.value = lastClientY
+    }
+    
+    contextMenuVisible.value = true
+    store.lockPhoneScroll()
+    discussLongPressTimer = null
+  }, 400)
+}
+
+function handleTouchStartDiscuss(item, event) {
+  isTouchActive = true
+  handleLongPressStartDiscuss(item, event)
+}
+
+function handleTouchEndDiscuss() {
+  if (discussLongPressTimer) {
+    clearTimeout(discussLongPressTimer)
+    discussLongPressTimer = null
+  }
+  setTimeout(() => {
+    isTouchActive = false
+  }, 100)
+}
+
+function handleMouseDownDiscuss(item, event) {
+  if (isTouchActive) return
+  if (event.button !== 0) return
+  handleLongPressStartDiscuss(item, event)
+}
+
+// ===== 帖子长按事件监听 =====
 function handleLongPressStart(postId, event) {
   if (longPressTimer) clearTimeout(longPressTimer)
   wasLongPressed.value = false
@@ -342,6 +699,7 @@ function handleLongPressStart(postId, event) {
   lastClientY = touch.clientY
   
   longPressTimer = setTimeout(() => {
+    menuType.value = 'post'
     activeLongPressPostId.value = postId
     selectedPostId.value = postId
     
@@ -407,8 +765,8 @@ function handleTouchCancel() {
 
 function handleMouseDown(postId, event) {
   if (isTouchActive) return
-  if (event.target.closest('.post-more-btn')) return // Skip for three-dot button click
-  if (event.button !== 0) return // Only trigger for left-click
+  if (event.target.closest('.post-more-btn')) return
+  if (event.button !== 0) return
   handleLongPressStart(postId, event)
 }
 
@@ -425,6 +783,7 @@ function handleMouseLeave() {
 }
 
 function onMoreClick(postId, event) {
+  menuType.value = 'post'
   selectedPostId.value = postId
   
   const phoneBody = document.querySelector('.phone-body')
@@ -448,6 +807,29 @@ function closeContextMenu() {
 }
 
 function handleMenuSelect(value) {
+  // 讨论菜单交互
+  if (menuType.value === 'discuss') {
+    const item = selectedDiscuss.value
+    if (!item) return
+    if (value === 'delete_discuss') {
+      discussList.value = discussList.value.filter(d => d.id !== item.id)
+      showToast('讨论已删除')
+    } else if (value === 'copy_discuss') {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(item.content)
+      }
+      showToast('已复制到剪贴板')
+    } else if (value === 'dislike_discuss') {
+      discussList.value = discussList.value.filter(d => d.id !== item.id)
+      showToast('将减少此类讨论的展示')
+    } else if (value === 'report_discuss') {
+      showToast('举报已提交')
+    }
+    closeContextMenu()
+    return
+  }
+
+  // 帖子菜单交互
   const postId = selectedPostId.value
   if (!postId) return
   const post = store.posts.find(p => p.id === postId)
@@ -484,12 +866,10 @@ function handleMenuSelect(value) {
     showToast('将减少类似推荐')
   } else if (value === 'block') {
     store.blockUser(post.authorId)
-    // 隐藏该作者的所有帖子
     const authorPostIds = store.posts.filter(p => p.authorId === post.authorId).map(p => p.id)
     authorPostIds.forEach(id => hidingPostIds.value.add(id))
     setTimeout(() => {
       authorPostIds.forEach(id => store.hidePost(id))
-      // clear hiding state
       authorPostIds.forEach(id => hidingPostIds.value.delete(id))
     }, 250)
     showToast('已拉黑此用户，将不再展示其内容')
@@ -512,7 +892,7 @@ function goCircle(circleId) {
   router.push(`/circle/${circleId}`)
 }
 
-// 闭环发帖：携带参数自动填充输入框和话题标签
+// 闭环发帖
 function goPublish() {
   if (!trend.value) return
   router.push({
@@ -607,62 +987,65 @@ function onForwardSelect(action) {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   box-sizing: border-box;
-  padding-top: 48px; /* 避让顶部 header */
+  padding-top: 48px;
+}
+
+.scroll-content.has-discuss-bar {
+  padding-bottom: 56px; /* 为底部的讨论输入框留出空间 */
 }
 
 .trend-detail-container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px 12px 100px; /* 留出底部悬浮按钮的距离 */
+  gap: 0;
+  padding: 0 0 100px;
 }
 
-/* 头部热议卡片 */
+/* 头部热议卡片 - 压缩高度 */
 .trend-hero-card {
   background: linear-gradient(135deg, #f3e5f5 0%, #fce4ec 100%);
-  border-radius: 18px;
-  padding: 20px;
-  box-shadow: 0 4px 16px rgba(155, 89, 182, 0.06);
-  border: 1px solid rgba(155, 89, 182, 0.08);
+  border-radius: 0;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(155, 89, 182, 0.1);
 }
 
 .hero-tag-row {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: #9b59b6;
   background: rgba(255, 255, 255, 0.55);
-  padding: 3px 8px;
+  padding: 2px 6px;
   border-radius: 20px;
   width: fit-content;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   line-height: 1.2;
 }
 
 .hero-title {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   color: #1a1a2e;
   line-height: 1.3;
-  margin: 0 0 6px 0;
+  margin: 0 0 4px 0;
 }
 
 .hero-desc {
-  font-size: 13px;
+  font-size: 12px;
   color: #555;
-  line-height: 1.5;
-  margin: 0 0 12px 0;
+  line-height: 1.45;
+  margin: 0 0 8px 0;
 }
 
 .hero-stats {
-  font-size: 12px;
+  font-size: 11px;
   color: #7f8c8d;
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 .hero-stats strong {
   color: #1a1a2e;
@@ -674,11 +1057,11 @@ function onForwardSelect(action) {
   gap: 6px;
 }
 .hero-tag-pill {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   color: #9b59b6;
   background: #ffffff;
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }
@@ -686,11 +1069,11 @@ function onForwardSelect(action) {
 /* Tabs */
 .detail-tabs {
   background: var(--echo-white);
-  border-radius: 14px;
-  height: 44px;
+  border-radius: 0;
+  height: 42px;
   display: flex;
   padding: 0 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.015);
+  border-bottom: 1px solid var(--echo-border);
 }
 
 .detail-tab {
@@ -701,10 +1084,11 @@ function onForwardSelect(action) {
   gap: 4px;
   cursor: pointer;
   position: relative;
-  font-size: 13.5px;
+  font-size: 13px;
   color: var(--echo-text-secondary);
   font-weight: 500;
   transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
 }
 .detail-tab--active {
   color: var(--echo-primary);
@@ -712,7 +1096,7 @@ function onForwardSelect(action) {
 }
 
 .tab-count {
-  font-size: 11px;
+  font-size: 10px;
   opacity: 0.8;
 }
 
@@ -725,6 +1109,209 @@ function onForwardSelect(action) {
   border-radius: 2px;
 }
 
+/* 讨论区专属样式 */
+.discussion-view {
+  background: var(--echo-white);
+  border-radius: 0;
+  padding: 8px 0;
+}
+
+.discussion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 16px;
+  background: var(--echo-white);
+}
+
+.sort-options {
+  display: flex;
+  gap: 12px;
+}
+
+.sort-option-btn {
+  font-size: 12px;
+  color: var(--echo-text-secondary);
+  cursor: pointer;
+  font-weight: 500;
+  padding: 2px 4px;
+}
+
+.sort-option-btn--active {
+  color: var(--echo-primary);
+  font-weight: 700;
+}
+
+.discussion-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.discuss-item {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--echo-border);
+  box-sizing: border-box;
+}
+
+.discuss-item:last-child {
+  border-bottom: none;
+}
+
+.discuss-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.discuss-main-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.discuss-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.discuss-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--echo-text);
+}
+
+.discuss-time {
+  font-size: 11px;
+  color: var(--echo-text-hint);
+}
+
+.discuss-text {
+  font-size: 13.5px;
+  color: var(--echo-text);
+  line-height: 1.5;
+  word-break: break-all;
+  margin-bottom: 6px;
+}
+
+.discuss-bottom-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.discuss-action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--echo-text-hint);
+  cursor: pointer;
+  user-select: none;
+}
+
+.discuss-action--active {
+  color: var(--echo-danger);
+}
+
+/* 讨论二级回复缩进 */
+.discuss-reply-box {
+  margin-top: 8px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.discuss-reply-item {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--echo-text-secondary);
+}
+
+.reply-author-name {
+  font-weight: 600;
+  color: var(--echo-text-secondary);
+  margin-right: 4px;
+}
+
+.reply-content-text {
+  color: var(--echo-text);
+}
+
+.reply-more-link {
+  font-size: 11px;
+  color: var(--echo-primary);
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 2px;
+}
+
+/* 讨论底部常驻输入栏 */
+.discussion-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 375px;
+  height: 52px;
+  background: var(--echo-white);
+  border-top: 1px solid var(--echo-border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  z-index: 1000;
+}
+
+.discuss-input-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.discuss-input {
+  width: 100%;
+  height: 34px;
+  border-radius: 17px;
+  border: 1px solid var(--echo-border);
+  padding: 0 14px;
+  font-size: 13px;
+  color: var(--echo-text);
+  outline: none;
+  background: var(--echo-bg);
+  box-sizing: border-box;
+}
+
+.discuss-input:focus {
+  border-color: var(--echo-primary);
+}
+
+.discuss-send-btn {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--echo-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 4px 8px;
+}
+.discuss-send-btn:active {
+  opacity: 0.7;
+}
+
 /* 列表渲染 */
 .tab-content-area {
   display: flex;
@@ -735,14 +1322,14 @@ function onForwardSelect(action) {
 .post-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
 }
 
 .post-card {
   background: var(--echo-white);
-  border-radius: 14px;
+  border-radius: 0;
   padding: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.015);
+  border-bottom: 1px solid var(--echo-border);
   cursor: pointer;
   transition: all 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
   box-sizing: border-box;
@@ -936,17 +1523,18 @@ function onForwardSelect(action) {
 .circle-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
 }
 
 .circle-card {
   background: var(--echo-white);
-  border-radius: 14px;
+  border-radius: 0;
   padding: 14px 16px;
   display: flex;
   align-items: center;
   gap: 12px;
   cursor: pointer;
+  border-bottom: 1px solid var(--echo-border);
 }
 .circle-card:active {
   background: #f8f9fa;
