@@ -77,11 +77,11 @@ export const useAppStore = defineStore('app', () => {
 
   // 当前频道下的帖子列表
   const filteredPosts = computed(() => {
-    let list = getPostsByChannel(activeChannel.value)
+    let list = posts.value.filter(p => p.channel === activeChannel.value)
     if (activeCategoryTag.value) {
       list = list.filter(p => p.categoryTag === activeCategoryTag.value)
     }
-    list = list.filter(p => !hiddenPostIds.value.has(p.id))
+    list = list.filter(p => !hiddenPostIds.value.has(p.id) && !isUserBlocked(p.authorId))
     return list
   })
 
@@ -613,6 +613,16 @@ export const useAppStore = defineStore('app', () => {
     anonSessionData.value = []
   }
 
+  // 删除帖子
+  function deletePost(postId) {
+    const index = posts.value.findIndex(p => p.id === postId)
+    if (index !== -1) {
+      posts.value.splice(index, 1)
+      return true
+    }
+    return false
+  }
+
   // 获取用户发的帖子
   function getUserPosts(uid) {
     return posts.value.filter(p => p.authorId === uid && p.visibility !== 'private')
@@ -1052,7 +1062,7 @@ export const useAppStore = defineStore('app', () => {
     allComments, getPostComments, getCommentReplies, addComment,
 
     // 草稿 & 发帖
-    drafts, saveDraft, removeDraft, createPost,
+    drafts, saveDraft, removeDraft, createPost, deletePost,
 
     // 滚动锁
     lockPhoneScroll, unlockPhoneScroll,

@@ -93,34 +93,79 @@
                 @mousemove="handleMouseMove"
                 @mouseleave="handleMouseLeave"
               >
-                <!-- 作者栏 -->
+                <!-- 顶部区域重构 -->
                 <div class="post-card-header">
-                  <div class="post-avatar" :style="{ background: getAuthor(post.authorId)?.avatarColor || '#ccc' }">
-                    {{ post.isAnon ? '匿' : getAuthor(post.authorId)?.nickname?.slice(0, 1) || '?' }}
-                  </div>
-                  <div class="post-author-info">
-                    <div class="post-author-name">
-                      {{ post.isAnon ? '匿名用户' : getAuthor(post.authorId)?.nickname || '未知用户' }}
+                  <!-- 左侧：用户头像、昵称、发布时间 -->
+                  <div class="header-left" @click.stop="goUserProfile(post.authorId)">
+                    <div
+                      class="post-card-avatar"
+                      :style="{ background: getAuthor(post.authorId)?.avatarColor || '#ccc' }"
+                    >
+                      <template v-if="post.isAnon">匿</template>
+                      <template v-else>{{ getAuthor(post.authorId)?.nickname?.slice(0, 1) || '?' }}</template>
                     </div>
-                    <div class="post-time">{{ post.createdAt }}</div>
+                    <div class="post-card-meta">
+                      <div class="post-card-name">
+                        <template v-if="post.isAnon">匿名用户</template>
+                        <template v-else>{{ getAuthor(post.authorId)?.nickname || '未知' }}</template>
+                      </div>
+                      <div class="post-card-time">{{ post.createdAt }}</div>
+                    </div>
                   </div>
-                  <!-- 分类标志 -->
-                  <span class="post-category" v-if="post.categoryTag">{{ post.categoryTag }}</span>
+
+                  <!-- 右侧：三个点 More 按钮 -->
+                  <div class="header-right">
+                    <div class="post-more-btn" @click.stop="onMoreClick(post.id, $event)">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                        <circle cx="12" cy="12" r="1.5"></circle>
+                        <circle cx="19" cy="12" r="1.5"></circle>
+                        <circle cx="5" cy="12" r="1.5"></circle>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- 正文 -->
-                <p class="post-content-text">{{ post.content }}</p>
+                <div class="post-card-body">
+                  <p class="post-card-content">{{ post.content }}</p>
+                </div>
 
-                <!-- 互动数据 -->
+                <!-- 图片区 -->
+                <div v-if="post.images && post.images.length" class="post-card-images">
+                  <div
+                    v-for="(img, idx) in post.images"
+                    :key="idx"
+                    class="post-card-img"
+                    :class="{ 'post-card-img--single': post.images.length === 1 }"
+                  >
+                    <div class="img-placeholder">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 底部交互区重构：左侧放分类标签，点赞、评论、收藏靠右排布 -->
                 <div class="post-card-footer">
-                  <span class="footer-action">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                    {{ post.likeCount }}
-                  </span>
-                  <span class="footer-action">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    {{ post.commentCount }}
-                  </span>
+                  <!-- 左侧标签 -->
+                  <span class="tag-badge" v-if="post.categoryTag">{{ post.categoryTag }}</span>
+
+                  <div class="footer-actions-right">
+                    <!-- 点赞 -->
+                    <div class="post-card-action" @click.stop="store.toggleLike(post.id)">
+                      <svg width="16" height="16" viewBox="0 0 24 24" :fill="store.isPostLiked(post.id) ? 'var(--echo-danger)' : 'none'" :stroke="store.isPostLiked(post.id) ? 'var(--echo-danger)' : 'currentColor'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                      <span>{{ post.likeCount }}</span>
+                    </div>
+                    <!-- 评论 -->
+                    <div class="post-card-action" @click.stop="goPostDetail(post.id)">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      <span>{{ post.commentCount }}</span>
+                    </div>
+                    <!-- 收藏 -->
+                    <div class="post-card-action" @click.stop="store.toggleCollect(post.id)">
+                      <svg width="16" height="16" viewBox="0 0 24 24" :fill="store.isPostCollected(post.id) ? 'var(--echo-warning)' : 'none'" :stroke="store.isPostCollected(post.id) ? 'var(--echo-warning)' : 'currentColor'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                      <span>{{ post.collectCount }}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -178,11 +223,14 @@
       @select="onForwardSelect"
     />
 
-    <!-- ===== 帖子长按操作菜单 ===== -->
-    <PostActionSheet
-      v-model:show="showPostActionSheet"
-      @select="onPostActionSelect"
-      @update:show="val => { if (!val) onPostActionCancel() }"
+    <!-- ===== 帖子操作悬浮菜单 ===== -->
+    <ContextMenu
+      :show="contextMenuVisible"
+      :x="menuX"
+      :y="menuY"
+      :options="activeContextMenuOptions"
+      @close="closeContextMenu"
+      @select="handleMenuSelect"
     />
   </div>
 </template>
@@ -193,7 +241,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
 import { showToast } from 'vant'
 import { mockTrends } from '@/mock/trends.js'
-import PostActionSheet from '@/components/common/PostActionSheet.vue'
+import ContextMenu from '@/components/common/ContextMenu.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -216,7 +264,8 @@ const relatedPosts = computed(() => {
   return store.posts.filter(p => 
     p.visibility === 'public' && 
     trend.value.relatedPosts.includes(p.id) &&
-    !store.hiddenPostIds.has(p.id)
+    !store.hiddenPostIds.has(p.id) &&
+    !store.isUserBlocked(p.authorId)
   )
 })
 
@@ -230,23 +279,83 @@ function getAuthor(uid) {
   return store.getUserById(uid)
 }
 
-// ===== 长按操作菜单 =====
-const showPostActionSheet = ref(false)
+function goUserProfile(uid) {
+  router.push(`/user/profile/${uid}`)
+}
+
+// ===== 长按与 More 悬浮菜单 =====
+const contextMenuVisible = ref(false)
+const menuX = ref(0)
+const menuY = ref(0)
 const selectedPostId = ref(null)
 const activeLongPressPostId = ref(null)
 const hidingPostIds = ref(new Set())
 const wasLongPressed = ref(false)
 let longPressTimer = null
 let isTouchActive = false
+let lastClientX = 0
+let lastClientY = 0
+
+// SVG outline Icons
+const editIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`
+const deleteIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`
+const permissionIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`
+const pinIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22" /><path d="M5 17h14v-1.76a2 2 0 0 0-.44-1.24l-2.78-3.5A2 2 0 0 1 15 9.26V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4.26a2 2 0 0 1-.78 1.56l-2.78 3.5A2 2 0 0 0 5 15.24z" /></svg>`
+const dislikeIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+const reduceIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>`
+const blockIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>`
+const reportIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>`
+const forwardIcon = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18c0-4 4-8 10-8h7" /><polyline points="15 5 20 10 15 15" /></svg>`
+
+const activeContextMenuOptions = computed(() => {
+  const postId = selectedPostId.value
+  if (!postId) return []
+  const post = store.posts.find(p => p.id === postId)
+  if (!post) return []
+  
+  const isMine = post.authorId === store.currentUser?.id
+  
+  if (isMine) {
+    return [
+      { label: '编辑帖子', value: 'edit', icon: editIcon },
+      { label: '删除帖子', value: 'delete', icon: deleteIcon, danger: true },
+      { label: '修改权限', value: 'permission', icon: permissionIcon },
+      { label: '置顶主页', value: 'pin', icon: pinIcon }
+    ]
+  } else {
+    return [
+      { label: '不感兴趣', value: 'dislike', icon: dislikeIcon },
+      { label: '减少此类内容', value: 'reduce', icon: reduceIcon },
+      { label: '拉黑此用户', value: 'block', icon: blockIcon, danger: true },
+      { label: '举报', value: 'report', icon: reportIcon, danger: true },
+      { label: '转发', value: 'forward', icon: forwardIcon }
+    ]
+  }
+})
 
 function handleLongPressStart(postId, event) {
   if (longPressTimer) clearTimeout(longPressTimer)
   wasLongPressed.value = false
   
+  const touch = event.type.startsWith('touch') ? event.touches[0] : event
+  lastClientX = touch.clientX
+  lastClientY = touch.clientY
+  
   longPressTimer = setTimeout(() => {
     activeLongPressPostId.value = postId
     selectedPostId.value = postId
-    showPostActionSheet.value = true
+    
+    const phoneBody = document.querySelector('.phone-body')
+    if (phoneBody) {
+      const rect = phoneBody.getBoundingClientRect()
+      menuX.value = lastClientX - rect.left
+      menuY.value = lastClientY - rect.top
+    } else {
+      menuX.value = lastClientX
+      menuY.value = lastClientY
+    }
+    
+    contextMenuVisible.value = true
     wasLongPressed.value = true
     
     if (navigator.vibrate) {
@@ -273,6 +382,7 @@ function handleLongPressMove() {
 }
 
 function handleTouchStart(postId, event) {
+  if (event.target.closest('.post-more-btn')) return
   isTouchActive = true
   handleLongPressStart(postId, event)
 }
@@ -297,6 +407,7 @@ function handleTouchCancel() {
 
 function handleMouseDown(postId, event) {
   if (isTouchActive) return
+  if (event.target.closest('.post-more-btn')) return // Skip for three-dot button click
   if (event.button !== 0) return // Only trigger for left-click
   handleLongPressStart(postId, event)
 }
@@ -313,42 +424,80 @@ function handleMouseLeave() {
   handleLongPressEnd()
 }
 
-function onPostActionSelect(actionType) {
-  const postId = selectedPostId.value
-  if (!postId) return
+function onMoreClick(postId, event) {
+  selectedPostId.value = postId
   
-  hidingPostIds.value.add(postId)
-  
-  if (actionType === 'reduce') {
-    const post = store.posts.find(p => p.id === postId)
-    if (post) {
-      console.log(`降低标签权重: ${post.categoryTag}`)
-      console.log(`降低作者权重: ${post.authorId}`)
-      console.log(`降低圈子权重: ${post.channel}`)
-    } else {
-      console.log('降低标签权重')
-      console.log('降低作者权重')
-      console.log('降低圈子权重')
-    }
-    showToast('将减少此类内容的推荐')
+  const phoneBody = document.querySelector('.phone-body')
+  if (phoneBody) {
+    const rect = phoneBody.getBoundingClientRect()
+    menuX.value = event.clientX - rect.left
+    menuY.value = event.clientY - rect.top
   } else {
-    showToast('将隐藏此条帖子')
+    menuX.value = event.clientX
+    menuY.value = event.clientY
   }
   
-  activeLongPressPostId.value = null
-  store.unlockPhoneScroll()
-  
-  setTimeout(() => {
-    store.hidePost(postId)
-    hidingPostIds.value.delete(postId)
-    selectedPostId.value = null
-  }, 250)
+  contextMenuVisible.value = true
+  store.lockPhoneScroll()
 }
 
-function onPostActionCancel() {
+function closeContextMenu() {
+  contextMenuVisible.value = false
   activeLongPressPostId.value = null
-  selectedPostId.value = null
   store.unlockPhoneScroll()
+}
+
+function handleMenuSelect(value) {
+  const postId = selectedPostId.value
+  if (!postId) return
+  const post = store.posts.find(p => p.id === postId)
+  if (!post) return
+  
+  if (value === 'edit') {
+    showToast('编辑帖子（原型模拟）')
+  } else if (value === 'delete') {
+    hidingPostIds.value.add(postId)
+    setTimeout(() => {
+      store.deletePost(postId)
+      hidingPostIds.value.delete(postId)
+    }, 250)
+    showToast('帖子已删除')
+  } else if (value === 'permission') {
+    showToast('修改权限成功（已设为仅自己可见）')
+  } else if (value === 'pin') {
+    showToast('已置顶该帖子至个人主页')
+  } else if (value === 'dislike') {
+    hidingPostIds.value.add(postId)
+    setTimeout(() => {
+      store.hidePost(postId)
+      hidingPostIds.value.delete(postId)
+    }, 250)
+    showToast('将减少此类内容的推荐')
+  } else if (value === 'reduce') {
+    console.log(`降低标签权重: ${post.categoryTag}`)
+    console.log(`降低作者权重: ${post.authorId}`)
+    hidingPostIds.value.add(postId)
+    setTimeout(() => {
+      store.hidePost(postId)
+      hidingPostIds.value.delete(postId)
+    }, 250)
+    showToast('将减少类似推荐')
+  } else if (value === 'block') {
+    store.blockUser(post.authorId)
+    // 隐藏该作者的所有帖子
+    const authorPostIds = store.posts.filter(p => p.authorId === post.authorId).map(p => p.id)
+    authorPostIds.forEach(id => hidingPostIds.value.add(id))
+    setTimeout(() => {
+      authorPostIds.forEach(id => store.hidePost(id))
+      // clear hiding state
+      authorPostIds.forEach(id => hidingPostIds.value.delete(id))
+    }, 250)
+    showToast('已拉黑此用户，将不再展示其内容')
+  } else if (value === 'report') {
+    showToast('已提交举报，感谢监督')
+  } else if (value === 'forward') {
+    onForward(postId)
+  }
 }
 
 function goPostDetail(postId) {
@@ -377,15 +526,29 @@ function goPublish() {
 
 // 转发
 const showForwardSheet = ref(false)
+const forwardPostId = ref(null)
 const forwardActions = [
   { name: '联系人', value: 'friend' },
   { name: '圈子', value: 'circle' }
 ]
 
+function onForward(postId) {
+  forwardPostId.value = postId
+  showForwardSheet.value = true
+  store.lockPhoneScroll()
+}
+
 function onForwardSelect(action) {
   showForwardSheet.value = false
-  if (!trend.value) return
-  showToast(`已将热点话题转发至${action.name}`)
+  if (forwardPostId.value) {
+    store.toggleForward(forwardPostId.value)
+    const targetMap = { friend: '联系人', circle: '圈子' }
+    showToast(`已转发至${targetMap[action.value] || action.name}`)
+    forwardPostId.value = null
+  } else {
+    showToast(`已将热点话题转发至${action.name}`)
+  }
+  store.unlockPhoneScroll()
 }
 </script>
 
@@ -581,26 +744,13 @@ function onForwardSelect(action) {
   padding: 16px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.015);
   cursor: pointer;
-  transition: all 250ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.post-card:active {
-  background: #f8f9fa;
+  transition: all 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-sizing: border-box;
 }
 
 .post-card--active-menu {
-  transform: scale(0.98) !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06) !important;
-  position: relative;
-  z-index: 2005 !important;
-}
-
-.post-card--active-menu::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.15);
-  pointer-events: none;
-  border-radius: inherit;
+  transform: scale(0.985) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
 }
 
 .post-card--hiding {
@@ -618,72 +768,168 @@ function onForwardSelect(action) {
 .post-card-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  min-width: 0;
 }
 
-.post-avatar {
-  width: 32px;
-  height: 32px;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.post-card-avatar {
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  color: #fff;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  color: #fff;
+  font-size: 14px;
   font-weight: 600;
-  flex-shrink: 0;
 }
 
-.post-author-info {
+.post-card-meta {
   flex: 1;
   min-width: 0;
 }
 
-.post-author-name {
-  font-size: 13px;
+.post-card-name {
+  font-size: 14px;
   font-weight: 600;
   color: var(--echo-text);
-  margin-bottom: 1px;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.post-time {
-  font-size: 10.5px;
+.post-card-time {
+  font-size: 11px;
   color: var(--echo-text-hint);
+  line-height: 1;
 }
 
-.post-category {
-  font-size: 10px;
-  color: var(--echo-primary);
-  background: var(--echo-primary-light);
-  padding: 2px 6px;
-  border-radius: 8px;
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.tag-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: #f1f2f6;
+  color: var(--echo-text-secondary);
   font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.post-content-text {
-  font-size: 13.5px;
+.post-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: var(--echo-text-hint);
+  opacity: 0.45;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.post-more-btn:hover {
+  opacity: 0.8;
+}
+
+.post-more-btn:active {
+  background-color: rgba(0, 0, 0, 0.05);
   color: var(--echo-text);
-  line-height: 1.5;
-  margin: 0 0 10px 0;
-  word-break: break-all;
+  opacity: 1;
+}
+
+.post-card-body {
+  margin-bottom: 10px;
+}
+
+.post-card-content {
+  font-size: 14px;
+  color: var(--echo-text);
+  line-height: 1.6;
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  word-break: break-word;
+  margin: 0;
 }
 
-.post-card-footer {
+.post-card-images {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.post-card-img {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.post-card-img--single {
+  grid-column: span 2;
+  grid-row: span 2;
+  aspect-ratio: 4/3;
+}
+
+.img-placeholder {
+  width: 100%;
+  height: 100%;
+  background: var(--echo-bg);
   display: flex;
-  gap: 16px;
-  font-size: 11.5px;
+  align-items: center;
+  justify-content: center;
   color: var(--echo-text-hint);
 }
 
-.footer-action {
-  display: inline-flex;
+/* ── 互动栏 ── */
+.post-card-footer {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 3px;
+  padding-top: 8px;
+}
+
+.footer-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-left: auto;
+}
+
+.post-card-action {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--echo-text-hint);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.post-card-action:active {
+  opacity: 0.7;
+  transform: scale(0.96);
 }
 
 /* 圈子列表 */

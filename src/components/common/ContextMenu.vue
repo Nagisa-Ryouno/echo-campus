@@ -56,8 +56,8 @@ const emit = defineEmits(['close', 'select'])
 
 // 动态计算菜单位置以避免超出屏幕边界
 const panelStyle = computed(() => {
-  const menuWidth = 170
-  const menuHeight = props.options.length * 46 + 12 // 46px 每项 + 6px 上下 padding
+  const menuWidth = 150
+  const menuHeight = props.options.length * 40 + 8 // 40px 每项 + 4px 上下 padding
 
   // 1. 横向定位逻辑：如果在右半边，向左展开（使菜单右侧贴近点击点）；否则向左对齐
   let left = props.x > 187.5 ? (props.x - menuWidth) : props.x
@@ -104,14 +104,14 @@ function onSelect(value) {
 /* 优雅的浅色毛玻璃悬浮菜单面板 */
 .context-menu-panel {
   position: absolute;
-  width: 170px;
+  width: 150px;
   background: rgba(255, 255, 255, 0.93);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 18px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-  padding: 6px 0;
+  padding: 4px 0;
   box-sizing: border-box;
   transform-origin: center center;
 }
@@ -120,8 +120,8 @@ function onSelect(value) {
 .context-menu-item {
   display: flex;
   align-items: center;
-  height: 46px;
-  padding: 0 16px;
+  height: 40px;
+  padding: 0 14px;
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -145,26 +145,26 @@ function onSelect(value) {
 
 /* 图标样式 */
 .context-menu-icon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   color: var(--echo-text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 10px;
+  margin-right: 8px;
   flex-shrink: 0;
 }
 
 :deep(.context-menu-icon svg) {
   display: block;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 /* 文字样式 */
 .context-menu-text {
   color: var(--echo-text);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 550;
   white-space: nowrap;
 }
