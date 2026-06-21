@@ -289,7 +289,8 @@ function goToUserProfile() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--echo-bg);
+  /* 使用与手机外壳一致的完全不透明渐变背景，以完全覆盖住底层的消息列表与TabBar */
+  background: linear-gradient(135deg, #d8ecd0 0%, #e2f3ec 40%, #f4fbf7 70%, #eefbf5 100%) !important;
   z-index: 10100;
   display: flex;
   flex-direction: column;
@@ -466,7 +467,8 @@ function goToUserProfile() {
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--echo-bg);
+  /* 使用与手机外壳一致的完全不透明渐变背景，以完全覆盖住底层的聊天记录 */
+  background: linear-gradient(135deg, #d8ecd0 0%, #e2f3ec 40%, #f4fbf7 70%, #eefbf5 100%) !important;
   z-index: 10200;
   display: flex;
   flex-direction: column;
