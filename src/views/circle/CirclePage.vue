@@ -173,9 +173,8 @@ function onJoin(circleId) {
 .circle-tabs-fixed {
   display: flex;
   flex-shrink: 0;
-  background: #fff;
+  background: transparent;
   border-bottom: 1px solid var(--echo-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   position: relative;
   z-index: 2;
 }

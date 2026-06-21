@@ -471,7 +471,7 @@ function onDrafts() {}
 
 /* ===== 功能入口：三个独立浅灰圆角方框 ===== */
 .func-icon {
-  color: #ff6b35;
+  color: var(--echo-primary);
   flex-shrink: 0;
   display: block;
 }
@@ -487,15 +487,20 @@ function onDrafts() {}
   justify-content: center;
   gap: 4px;
   padding: 10px 4px;
-  background: #f5f6f8;
+  background: rgba(76, 175, 125, 0.06);
+  border: 1px solid rgba(76, 175, 125, 0.12);
   border-radius: 10px;
   font-size: 12px;
-  color: #555;
+  color: var(--echo-text);
   cursor: pointer;
   position: relative;
   user-select: none;
+  transition: all var(--echo-transition-fast);
 }
-.func-block:active { background: #eef0f3; transform: scale(0.97); }
+.func-block:active {
+  background: rgba(76, 175, 125, 0.14);
+  transform: scale(0.97);
+}
 .func-badge {
   position: absolute;
   top: -4px;

@@ -157,7 +157,7 @@ defineExpose({ showTabBar })
 
 .tabbar-item--publish .tabbar-icon {
   background: var(--echo-primary);
-  color: var(--echo-white);
+  color: #ffffff;
   width: 44px;
   height: 44px;
   border-radius: 22px;

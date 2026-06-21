@@ -60,7 +60,7 @@ defineProps({
   position: relative;
   width: 375px;
   height: 812px;
-  background: var(--echo-white);
+  background: linear-gradient(135deg, #d8ecd0 0%, #e2f3ec 40%, #f4fbf7 70%, #eefbf5 100%);
   border-radius: 44px;
   overflow: hidden;
   /* 关键：transform 创建新的 fixed 定位包含块 */

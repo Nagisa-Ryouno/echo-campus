@@ -105,12 +105,12 @@ function onSelect(value) {
 .context-menu-panel {
   position: absolute;
   width: 136px;
-  background: rgba(255, 255, 255, 0.93);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--echo-white);
+  backdrop-filter: blur(20px) saturate(120%);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  border: 1px solid var(--echo-border);
   border-radius: 18px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
   padding: 4px 0;
   box-sizing: border-box;
   transform-origin: center center;

@@ -12,7 +12,7 @@
 
 /* ===== 设计令牌 ===== */
 :root {
-  --echo-white: #ffffff;
+  --echo-white: rgba(244, 249, 246, 0.82);
   /* 品牌色 */
   --echo-primary: #4caf7d;
   --echo-primary-light: #e8f5ee;
@@ -29,10 +29,10 @@
   --echo-info: #3498db;
 
   /* 背景 */
-  --echo-bg: #f5f7fa;
-  --echo-bg-card: #ffffff;
-  --echo-bg-input: #f8f9fb;
-  --echo-bg-hover: #f0f4f8;
+  --echo-bg: rgba(235, 245, 240, 0.5);
+  --echo-bg-card: var(--echo-white);
+  --echo-bg-input: rgba(255, 255, 255, 0.4);
+  --echo-bg-hover: rgba(76, 175, 125, 0.1);
 
   /* 文字 */
   --echo-text: #2c3e50;
@@ -40,9 +40,9 @@
   --echo-text-hint: #bdc3c7;
 
   /* 边框 */
-  --echo-border: #eceff1;
+  --echo-border: rgba(76, 175, 125, 0.12);
   --echo-border-focus: #4caf7d;
-  --echo-divider: #f0f2f5;
+  --echo-divider: rgba(76, 175, 125, 0.08);
 
   /* 阴影 */
   --echo-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -59,7 +59,7 @@
   --echo-radius-xl: 20px;
   --echo-radius-full: 9999px;
 
-  /* ===== Vant 主题色自定义覆写 ===== */
+  /* ===== Vant 主题色与背景自定义覆写 ===== */
   --van-primary-color: var(--echo-primary) !important;
   --van-success-color: var(--echo-success) !important;
   --van-danger-color: var(--echo-danger) !important;
@@ -70,6 +70,15 @@
   --van-button-primary-border-color: var(--echo-primary) !important;
   --van-dialog-confirm-button-text-color: var(--echo-primary) !important;
   --van-switch-on-background: var(--echo-primary) !important;
+  --van-background: transparent !important;
+  --van-background-color: var(--echo-bg) !important;
+  --van-background-color-light: var(--echo-bg) !important;
+  --van-dialog-background: var(--echo-white) !important;
+  --van-popover-light-background: var(--echo-white) !important;
+  --van-action-sheet-background: var(--echo-white) !important;
+  --van-picker-background: var(--echo-white) !important;
+  --van-search-background: transparent !important;
+  --van-search-content-background: var(--echo-bg-input) !important;
 
   /* 间距 (基于 4px) */
   --echo-space-1: 4px;
@@ -491,4 +500,83 @@ a {
 /* 移除底部安全区域内边距影响，确保居中对称 */
 .van-action-sheet--safe-area-inset-bottom {
   padding-bottom: 0 !important;
+}
+
+/* ========================================
+   全局界面浅绿磨砂毛玻璃底色重构
+   ======================================== */
+.page-root {
+  background: var(--echo-white) !important;
+}
+
+.van-popup,
+.van-dialog,
+.van-action-sheet,
+.context-menu-wrapper,
+.tabbar-wrapper,
+.phone-notch-area {
+  background: var(--echo-white) !important;
+  backdrop-filter: blur(20px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(120%) !important;
+}
+
+/* 确保评论、对话气泡等小部件对比度清晰，不叠加过深背景 */
+.chat-bubble,
+.reply-input-wrap {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 让 Vant 常用单元格、头部导航、标签页、搜索条等均透明以露出磨砂背景 */
+.van-cell,
+.van-field,
+.van-nav-bar,
+.van-tab,
+.van-tabs__nav,
+.van-search,
+.van-search__content,
+.van-picker,
+.van-picker__toolbar,
+.van-picker-group__toolbar,
+.van-picker__columns {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* 二级界面、卡片、表单及小菜单统一为浅绿磨砂毛玻璃底色 */
+.van-nav-bar,
+.van-picker,
+.van-action-sheet,
+.van-dialog,
+.van-button--default,
+.van-search {
+  background: var(--echo-white) !important;
+  backdrop-filter: blur(20px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(120%) !important;
+}
+
+/* 让 Vant 弹窗、动作面板子元素及按钮透明以露出背景磨砂层 */
+.van-action-sheet__item,
+.van-dialog__header,
+.van-dialog__content,
+.van-dialog__footer,
+.van-dialog .van-button {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.van-action-sheet__item:active,
+.van-dialog .van-button:active {
+  background-color: var(--echo-bg-hover) !important;
+}
+
+/* 强制让 Vant 对话框的分割线显示出来，且颜色更深更清晰 */
+.van-dialog .van-hairline--top::after {
+  border-top-width: 1px !important;
+  border-color: rgba(76, 175, 125, 0.38) !important; /* 更深更清晰的浅绿色水平分割线 */
+}
+
+.van-dialog .van-hairline--left::after {
+  border-left-width: 1px !important;
+  border-color: rgba(76, 175, 125, 0.38) !important; /* 更深更清晰的浅绿色垂直分割线 */
 }

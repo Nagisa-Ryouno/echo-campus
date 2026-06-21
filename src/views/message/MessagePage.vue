@@ -613,11 +613,14 @@ function badgeText(count) {
   right: 8px;
   min-width: 136px;
   z-index: 10000;
-  background: #ffffff;
+  background: var(--echo-white);
+  backdrop-filter: blur(20px) saturate(120%);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  border: 1px solid var(--echo-border);
   border-radius: 12px;
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.18),
-    0 2px 8px rgba(0, 0, 0, 0.08);
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.04);
   padding: 6px 0;
   overflow: visible;
   transform-origin: top right;
@@ -632,7 +635,7 @@ function badgeText(count) {
   height: 0;
   border-left: 7px solid transparent;
   border-right: 7px solid transparent;
-  border-bottom: 8px solid #ffffff;
+  border-bottom: 8px solid rgba(244, 249, 246, 0.95);
 }
 
 /* 竖向菜单项 */

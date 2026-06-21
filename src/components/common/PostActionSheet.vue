@@ -110,9 +110,12 @@ function onSelect(actionType) {
 
 .post-sheet-menu {
   background: var(--echo-white);
+  backdrop-filter: blur(20px) saturate(120%);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  border: 1px solid var(--echo-border);
   border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
 }
 
 .post-sheet-item {
@@ -181,6 +184,9 @@ function onSelect(actionType) {
 
 .post-sheet-cancel {
   background: var(--echo-white);
+  backdrop-filter: blur(20px) saturate(120%);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  border: 1px solid var(--echo-border);
   border-radius: 24px;
   padding: 16px;
   text-align: center;
@@ -190,7 +196,7 @@ function onSelect(actionType) {
   cursor: pointer;
   margin-top: 8px;
   user-select: none;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
   transition: background-color var(--echo-transition-fast);
 }
 
