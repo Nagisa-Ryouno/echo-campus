@@ -19,7 +19,11 @@
             @click="onSelect(item.value)"
           >
             <!-- 渲染 SVG 图标 -->
-            <div class="context-menu-icon" v-html="item.icon"></div>
+            <div 
+              class="context-menu-icon" 
+              :style="getIconStyle(item)"
+              v-html="item.icon"
+            ></div>
             <span class="context-menu-text">{{ item.label }}</span>
           </div>
         </div>
@@ -56,8 +60,8 @@ const emit = defineEmits(['close', 'select'])
 
 // 动态计算菜单位置以避免超出屏幕边界
 const panelStyle = computed(() => {
-  const menuWidth = 136
-  const menuHeight = props.options.length * 36 + 8 // 36px 每项 + 4px 上下 padding
+  const menuWidth = 150
+  const menuHeight = props.options.length * 46 + 12 // 46px 每项 + 6px 上下 padding
 
   // 1. 横向定位逻辑：如果在右半边，向左展开（使菜单右侧贴近点击点）；否则向左对齐
   let left = props.x > 187.5 ? (props.x - menuWidth) : props.x
@@ -75,6 +79,44 @@ const panelStyle = computed(() => {
     top: `${top}px`
   }
 })
+
+const colorPalettes = [
+  { bg: '#e8f5ee', text: '#4caf7d' }, // green
+  { bg: '#fff3e0', text: '#ff6b35' }, // orange
+  { bg: '#e3f2fd', text: '#3498db' }, // blue
+  { bg: '#f3e5f5', text: '#9b59b6' }, // purple
+  { bg: '#e0f7fa', text: '#00acc1' }, // cyan
+]
+
+function getIconStyle(item) {
+  if (item.danger || /delete|report|block/i.test(item.value || '')) {
+    return { background: '#ffebee', color: '#ff3b30' }
+  }
+  if (/dislike|reduce|hide/i.test(item.value || '')) {
+    return { background: '#eceff1', color: '#607d8b' }
+  }
+  if (/unread|read|pin/i.test(item.value || '')) {
+    return { background: '#e8f5ee', color: '#4caf7d' }
+  }
+  if (/edit|permission|setting|user/i.test(item.value || '')) {
+    return { background: '#e3f2fd', color: '#3498db' }
+  }
+  if (/share|forward/i.test(item.value || '')) {
+    return { background: '#f3e5f5', color: '#9b59b6' }
+  }
+  
+  // Hash fallback
+  let hash = 0
+  const str = item.value || ''
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const index = Math.abs(hash) % colorPalettes.length
+  return {
+    background: colorPalettes[index].bg,
+    color: colorPalettes[index].text
+  }
+}
 
 function onClose() {
   emit('close')
@@ -104,14 +146,14 @@ function onSelect(value) {
 /* 优雅的浅色毛玻璃悬浮菜单面板 */
 .context-menu-panel {
   position: absolute;
-  width: 136px;
+  width: 150px;
   background: var(--echo-white);
   backdrop-filter: blur(20px) saturate(120%);
   -webkit-backdrop-filter: blur(20px) saturate(120%);
   border: 1px solid var(--echo-border);
   border-radius: 18px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
-  padding: 4px 0;
+  padding: 6px 0;
   box-sizing: border-box;
   transform-origin: center center;
 }
@@ -120,59 +162,57 @@ function onSelect(value) {
 .context-menu-item {
   display: flex;
   align-items: center;
-  height: 36px;
+  gap: 12px;
+  height: 46px;
   padding: 0 14px;
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.12s ease;
 }
-
-/* 轻微灰色高亮反馈 */
+/* 轻微浅绿高亮反馈 */
 .context-menu-item:active {
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: var(--echo-bg-hover);
 }
 
 /* 圆角适配 */
 .context-menu-item:first-child {
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
 }
 .context-menu-item:last-child {
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
 }
 
 /* 图标样式 */
 .context-menu-icon {
-  width: 14px;
-  height: 14px;
-  color: var(--echo-text-secondary);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 8px;
   flex-shrink: 0;
+  transition: all 0.15s ease;
 }
 
 :deep(.context-menu-icon svg) {
   display: block;
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
+  stroke: currentColor !important;
 }
 
 /* 文字样式 */
 .context-menu-text {
   color: var(--echo-text);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 550;
   white-space: nowrap;
 }
 
 /* 危险操作项（删除）红色高亮 */
-.context-menu-item.is-danger .context-menu-icon {
-  color: #ff3b30;
-}
 .context-menu-item.is-danger .context-menu-text {
   color: #ff3b30;
 }

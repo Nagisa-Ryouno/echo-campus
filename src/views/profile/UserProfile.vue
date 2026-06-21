@@ -311,8 +311,8 @@ const showMoreMenu = ref(false)
 // 转发
 const showForwardSheet = ref(false)
 const forwardActions = [
-  { name: '联系人', value: 'friend' },
-  { name: '圈子', value: 'circle' }
+  { name: '联系人', value: 'friend', className: 'action-forward-friend' },
+  { name: '圈子', value: 'circle', className: 'action-forward-circle' }
 ]
 
 const profileUser = computed(() => {

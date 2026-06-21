@@ -416,18 +416,20 @@ a {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* ===== ActionSheet (举报/返回确认) 改为居中毛玻璃小卡片 ===== */
-.van-popup--bottom.van-action-sheet {
+/* ===== ShareSheet & ActionSheet 改为居中毛玻璃小卡片 ===== */
+.van-popup--bottom.van-action-sheet,
+.van-popup--bottom.van-share-sheet {
   bottom: auto !important;
   top: 50% !important;
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
-  width: 290px !important;
+  width: 315px !important;
   border-radius: 16px !important;
-  background: rgba(255, 255, 255, 0.82) !important;
+  background: var(--echo-white) !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid var(--echo-border) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
   overflow: hidden !important;
 }
 
@@ -437,16 +439,16 @@ a {
   align-items: center !important;
   justify-content: center !important;
   background: transparent !important;
-  font-size: 15px !important;
+  font-size: 14px !important;
   color: var(--echo-text) !important;
   height: 48px !important;
   line-height: normal !important;
   padding: 0 !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  border-bottom: 1px solid var(--echo-border) !important;
   text-align: center !important;
 }
 .van-action-sheet__item:active {
-  background: rgba(0, 0, 0, 0.05) !important;
+  background: var(--echo-bg-hover) !important;
 }
 
 /* 强制清除内部包裹文字名称的样式偏移 */
@@ -454,6 +456,9 @@ a {
   line-height: normal !important;
   margin: 0 !important;
   padding: 0 !important;
+  font-size: 14px !important;
+  font-weight: 550 !important;
+  color: var(--echo-text) !important;
 }
 
 /* 最后一个 item */
@@ -462,29 +467,46 @@ a {
 }
 
 /* 标题区 */
-.van-action-sheet__header {
+.van-action-sheet__header,
+.van-share-sheet__title {
   background: transparent !important;
   font-weight: 600 !important;
   font-size: 15px !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  border-bottom: 1px solid var(--echo-border) !important;
   color: var(--echo-text) !important;
   line-height: 48px !important;
   height: 48px !important;
+  padding: 0 !important;
+  text-align: center !important;
 }
 
 /* 取消按钮 */
-.van-action-sheet__cancel {
+.van-action-sheet__cancel,
+.van-share-sheet__cancel {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   background: transparent !important;
-  color: var(--echo-text-secondary) !important;
+  color: var(--echo-text) !important;
   font-size: 15px !important;
-  font-weight: 500 !important;
-  border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+  font-weight: 700 !important;
+  border-top: 1px solid var(--echo-border) !important;
   height: 48px !important;
   line-height: normal !important;
   padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* 对话框确定与取消按钮改为粗体且醒目 */
+.van-dialog .van-button {
+  font-weight: 700 !important;
+  font-size: 15px !important;
+}
+.van-dialog__cancel {
+  color: var(--echo-text) !important;
+}
+.van-dialog__confirm {
+  color: var(--echo-primary) !important;
 }
 
 /* 去除选项与取消按钮之间多余的灰色 gap */
@@ -493,13 +515,151 @@ a {
   height: 0 !important;
   padding: 0 !important;
 }
-.van-action-sheet__cancel:active {
-  background: rgba(0, 0, 0, 0.05) !important;
+.van-action-sheet__cancel:active,
+.van-share-sheet__cancel:active {
+  background: var(--echo-bg-hover) !important;
 }
 
 /* 移除底部安全区域内边距影响，确保居中对称 */
 .van-action-sheet--safe-area-inset-bottom {
   padding-bottom: 0 !important;
+}
+
+/* ActionSheet 选项左侧对齐并注入彩色圆形图标背景 */
+.van-action-sheet__item.action-forward-friend,
+.van-action-sheet__item.action-forward-circle,
+.van-action-sheet__item.action-back-draft,
+.van-action-sheet__item.action-back-discard,
+.van-action-sheet__item.action-city-item,
+.van-action-sheet__item.action-city-add {
+  justify-content: flex-start !important;
+  padding: 0 20px !important;
+}
+
+.van-action-sheet__item.action-forward-friend::before,
+.van-action-sheet__item.action-forward-circle::before,
+.van-action-sheet__item.action-back-draft::before,
+.van-action-sheet__item.action-back-discard::before,
+.van-action-sheet__item.action-city-item::before,
+.van-action-sheet__item.action-city-add::before {
+  content: "" !important;
+  display: inline-block !important;
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 50% !important;
+  margin-right: 12px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: 15px 15px !important;
+  flex-shrink: 0 !important;
+}
+
+/* 举报面板：去除左侧叹号图标，文字居中对齐 */
+.van-action-sheet__item[class*="action-report-"] {
+  justify-content: center !important;
+}
+.van-action-sheet__item[class*="action-report-"]::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* 转发 - 联系人: 蓝色 */
+.van-action-sheet__item.action-forward-friend::before {
+  background-color: #e3f2fd !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233498db' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E") !important;
+}
+/* 转发 - 圈子: 绿色 */
+.van-action-sheet__item.action-forward-circle::before {
+  background-color: #e8f5ee !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234caf7d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3C/svg%3E") !important;
+}
+/* 返回 - 存为草稿: 绿色 */
+.van-action-sheet__item.action-back-draft::before {
+  background-color: #e8f5ee !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234caf7d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z'/%3E%3Cpolyline points='17 21 17 13 7 13 7 21'/%3E%3Cpolyline points='7 3 7 8 15 8'/%3E%3C/svg%3E") !important;
+}
+/* 返回 - 不保存退出: 红色 */
+.van-action-sheet__item.action-back-discard::before {
+  background-color: #ffebee !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff3b30' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 6 5 6 21 6'/%3E%3Cpath d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'/%3E%3Cline x1='10' y1='11' x2='10' y2='17'/%3E%3Cline x1='14' y1='11' x2='14' y2='17'/%3E%3C/svg%3E") !important;
+}
+/* 城市定位 - 已选: 绿色 */
+.van-action-sheet__item.action-city-item.city-action--selected::before {
+  background-color: #e8f5ee !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234caf7d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E") !important;
+}
+/* 城市定位 - 未选: 灰色 */
+.van-action-sheet__item.action-city-item:not(.city-action--selected)::before {
+  background-color: #eceff1 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23607d8b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E") !important;
+}
+/* 城市定位 - 新增: 橙色 */
+.van-action-sheet__item.action-city-add::before {
+  background-color: #fff3e0 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff6b35' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='12' y1='5' x2='12' y2='19'/%3E%3Cline x1='5' y1='12' x2='19' y2='12'/%3E%3C/svg%3E") !important;
+}
+
+/* ===== ShareSheet 分享面板改为垂直列表样式 ===== */
+.van-share-sheet__options {
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+}
+
+.van-share-sheet__option {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  height: 56px !important;
+  padding: 0 20px !important;
+  gap: 12px !important;
+  border-bottom: 1px solid var(--echo-border) !important;
+  cursor: pointer !important;
+}
+
+.van-share-sheet__option:active {
+  background-color: var(--echo-bg-hover) !important;
+}
+
+.van-share-sheet__option:last-of-type {
+  border-bottom: none !important;
+}
+
+.van-share-sheet__icon {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  margin: 0 !important;
+  background-size: 24px 24px !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.van-share-sheet__name {
+  font-size: 14px !important;
+  color: var(--echo-text) !important;
+  font-weight: 550 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 分享图标的圆形底座颜色设定 */
+.van-share-sheet__icon {
+  background-color: #eceff1 !important;
+}
+.van-share-sheet__icon[class*="wechat"] {
+  background-color: #07c160 !important;
+}
+.van-share-sheet__icon[class*="qq"] {
+  background-color: #12b7f5 !important;
+}
+.van-share-sheet__icon[class*="link"] {
+  background-color: #f3e5f5 !important;
 }
 
 /* ========================================
@@ -555,19 +715,35 @@ a {
   -webkit-backdrop-filter: blur(20px) saturate(120%) !important;
 }
 
-/* 让 Vant 弹窗、动作面板子元素及按钮透明以露出背景磨砂层 */
+/* 让 Vant 对话框居中且宽度固定（与动作面板对齐），防止其在 flex 容器中缩窄 */
+.van-dialog {
+  width: 315px !important;
+  max-width: 90% !important;
+}
+
+/* 让 Vant 弹窗、动作面板子元素及按钮透明以露出背景磨砂层，并取消子元素的重复模糊滤镜 */
 .van-action-sheet__item,
 .van-dialog__header,
 .van-dialog__content,
 .van-dialog__footer,
-.van-dialog .van-button {
+.van-dialog .van-button,
+.van-dialog__button,
+.van-dialog__confirm,
+.van-dialog__cancel {
   background: transparent !important;
   background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .van-action-sheet__item:active,
-.van-dialog .van-button:active {
+.van-dialog .van-button:active,
+.van-dialog__button:active,
+.van-dialog__confirm:active,
+.van-dialog__cancel:active {
   background-color: var(--echo-bg-hover) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* 强制让 Vant 对话框的分割线显示出来，且颜色更深更清晰 */

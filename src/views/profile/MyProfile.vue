@@ -291,8 +291,8 @@ const likedPosts = computed(() => store.getUserLikedPosts())
 function onEditProfile() { router.push('/edit-profile') }
 const showForwardSheet = ref(false)
 const forwardActions = [
-  { name: '联系人', value: 'friend' },
-  { name: '圈子', value: 'circle' }
+  { name: '联系人', value: 'friend', className: 'action-forward-friend' },
+  { name: '圈子', value: 'circle', className: 'action-forward-circle' }
 ]
 
 function onForward() {

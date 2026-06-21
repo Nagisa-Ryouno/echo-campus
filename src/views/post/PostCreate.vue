@@ -252,15 +252,13 @@ function onTagSelect() {
   if (form.topicTags.length) params.set('topicTags', form.topicTags.join(','))
   router.push(`/tag-select?${params.toString()}`)
 }
-
 const topicTagOptions = topicTags
 const showDrafts = ref(false)
 const showBackSheet = ref(false)
 
-// 返回确认面板选项
 const backActions = ref([
-  { name: '存为草稿并退出', color: 'var(--echo-primary)' },
-  { name: '不保存并退出', color: 'var(--echo-danger)' }
+  { name: '存为草稿并退出', value: 'draft', className: 'action-back-draft' },
+  { name: '不保存并退出', value: 'discard', className: 'action-back-discard' }
 ])
 
 const visibilityOptions = [

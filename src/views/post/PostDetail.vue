@@ -394,8 +394,8 @@ function onShare() {
 // 转发
 const showForwardSheet = ref(false)
 const forwardActions = [
-  { name: '联系人', value: 'friend' },
-  { name: '圈子', value: 'circle' }
+  { name: '联系人', value: 'friend', className: 'action-forward-friend' },
+  { name: '圈子', value: 'circle', className: 'action-forward-circle' }
 ]
 
 function onForward() {
@@ -413,12 +413,12 @@ function onForwardSelect(action) {
 // 举报
 const showReport = ref(false)
 const reportActions = [
-  { name: '垃圾广告', value: 'spam' },
-  { name: '色情低俗', value: 'porn' },
-  { name: '政治敏感', value: 'political' },
-  { name: '人身攻击', value: 'attack' },
-  { name: '虚假信息', value: 'fake' },
-  { name: '其他违规', value: 'other' }
+  { name: '垃圾广告', value: 'spam', className: 'action-report-spam' },
+  { name: '色情低俗', value: 'porn', className: 'action-report-porn' },
+  { name: '政治敏感', value: 'political', className: 'action-report-political' },
+  { name: '人身攻击', value: 'attack', className: 'action-report-attack' },
+  { name: '虚假信息', value: 'fake', className: 'action-report-fake' },
+  { name: '其他违规', value: 'other', className: 'action-report-other' }
 ]
 
 function onReportSelect(action) {

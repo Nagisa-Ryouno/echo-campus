@@ -546,9 +546,9 @@ const cityActions = computed(() => {
   const actions = userCities.value.map(city => ({
     name: city,
     value: city,
-    className: city === activeCity.value ? 'city-action--selected' : ''
+    className: 'action-city-item' + (city === activeCity.value ? ' city-action--selected' : '')
   }))
-  actions.push({ name: '+ 新增城市...', value: 'add_city', color: 'var(--echo-primary)' })
+  actions.push({ name: '+ 新增城市...', value: 'add_city', color: 'var(--echo-primary)', className: 'action-city-add' })
   return actions
 })
 
@@ -847,8 +847,8 @@ function goPostDetail(postId) {
 const showForwardSheet = ref(false)
 const forwardPostId = ref(null)
 const forwardActions = [
-  { name: '联系人', value: 'friend' },
-  { name: '圈子', value: 'circle' }
+  { name: '联系人', value: 'friend', className: 'action-forward-friend' },
+  { name: '圈子', value: 'circle', className: 'action-forward-circle' }
 ]
 
 function onForward(postId) {
