@@ -179,13 +179,13 @@
     <!-- 生日选择弹窗 -->
     <van-popup
       v-model:show="showBirthdayPicker"
-      position="bottom"
+      position="center"
       round
       teleport="#phone-screen"
+      class="birthday-picker-popup"
     >
       <van-date-picker
         v-model="birthdayValue"
-        type="date"
         title="选择生日"
         :min-date="new Date(1970, 0, 1)"
         :max-date="new Date()"
@@ -296,7 +296,7 @@ const showTagEditor = ref(false)
 const showLeaveConfirm = ref(false)
 const editorField = ref('')
 const editTemp = ref('')
-const birthdayValue = ref([2000, 0, 1])
+const birthdayValue = ref(['2000', '01', '01'])
 const pendingLeave = ref(false)
 const avatarInput = ref(null)
 const bgInput = ref(null)
@@ -427,17 +427,19 @@ function openBirthdayPicker() {
   if (form.birthday) {
     const parts = form.birthday.split('-')
     birthdayValue.value = [
-      parseInt(parts[0]) || 2000,
-      (parseInt(parts[1]) || 1) - 1,
-      parseInt(parts[2]) || 1
+      parts[0] || '2000',
+      parts[1] || '01',
+      parts[2] || '01'
     ]
+  } else {
+    birthdayValue.value = ['2000', '01', '01']
   }
   showBirthdayPicker.value = true
 }
 
 function onBirthdayConfirm({ selectedValues }) {
   const [year, month, day] = selectedValues
-  form.birthday = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  form.birthday = `${year}-${month}-${day}`
   if (store.currentUser) {
     store.currentUser.birthday = form.birthday
   }
@@ -779,5 +781,11 @@ function onTagSelect(item) {
   border-radius: 8px;
   margin-bottom: 14px;
   line-height: 1.5;
+}
+
+/* ===== 生日弹窗居中宽度 ===== */
+.birthday-picker-popup {
+  width: 310px;
+  overflow: hidden;
 }
 </style>
