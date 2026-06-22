@@ -9,11 +9,6 @@
       </span>
     </div>
 
-    <!-- 提示条 -->
-    <div class="notif-hint">
-      <van-icon name="info-o" size="12" color="#999" />
-      <span>展示最近关注你的用户</span>
-    </div>
 
     <!-- 粉丝列表 -->
     <div class="notif-list" v-if="store.followerNotifs.length">

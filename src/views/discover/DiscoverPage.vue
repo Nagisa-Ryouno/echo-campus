@@ -197,7 +197,7 @@
 
           <!-- 4. 「本校」频道 -->
           <div v-else-if="activeTab === 'school'">
-            <div class="channel-description">来自你所在学校的实时讨论，最有校园感</div>
+            <div class="channel-description">来自你所在学校的实时讨论话题</div>
             <div class="trend-list-density">
               <div
                 v-for="(item, idx) in schoolTrends"
@@ -270,9 +270,11 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAppStore } from '@/stores/app.js'
 import { mockTrends } from '@/mock/trends.js'
 
 const router = useRouter()
+const store = useAppStore()
 
 // ===== 趋势搜索词轮播 =====
 const hotSearchWords = [

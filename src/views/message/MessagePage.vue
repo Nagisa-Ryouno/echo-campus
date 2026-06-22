@@ -87,7 +87,7 @@
       <div class="notif-entry" @click="$router.push('/message/likes')">
         <div class="entry-icon-area">
           <div class="entry-icon-bg" style="background:#fff0f0;">
-            <van-icon name="like-o" size="26" color="#e74c3c" />
+            <van-icon name="like" size="26" color="#e74c3c" />
           </div>
           <span
             v-if="store.unreadLikeCount"

@@ -9,11 +9,6 @@
       </span>
     </div>
 
-    <!-- 提示条 -->
-    <div class="notif-hint">
-      <van-icon name="info-o" size="12" color="#999" />
-      <span>仅展示帖子点赞通知，收藏消息可在对应帖子页面查看</span>
-    </div>
 
     <!-- 通知列表 -->
     <div class="notif-list" v-if="store.likedNotifs.length">

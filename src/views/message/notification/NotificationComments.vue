@@ -9,11 +9,6 @@
       </span>
     </div>
 
-    <!-- 提示条 -->
-    <div class="notif-hint">
-      <van-icon name="info-o" size="12" color="#999" />
-      <span>包含评论、回复与被@的通知</span>
-    </div>
 
     <!-- 通知列表 -->
     <div class="notif-list" v-if="store.commentAtNotifs.length">

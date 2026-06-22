@@ -27,7 +27,7 @@
     >
       <div class="tabbar-icon" v-html="item.icon"></div>
       <!-- 消息红点 -->
-      <div v-if="item.key === 'message' && totalUnread > 0" class="tabbar-badge">
+      <div v-if="item.key === 'message' && store.isLoggedIn && totalUnread > 0" class="tabbar-badge">
         {{ totalUnread > 99 ? '99+' : totalUnread }}
       </div>
       <span class="tabbar-label">{{ item.label }}</span>
