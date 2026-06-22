@@ -36,7 +36,7 @@
               <span>内容可见性</span>
             </div>
             <div class="setting-item-right">
-              <span class="setting-value">帖子/评论/收藏</span>
+              <span class="setting-value">帖子/评论/收藏/圈子</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
           </div>
