@@ -8,8 +8,10 @@
     <div class="login-body">
       <!-- Brand 标识 -->
       <div class="brand-area">
-        <div class="brand-icon">校</div>
-        <h2 class="brand-title">校声 Echo Campus</h2>
+        <div class="brand-logo-wrapper">
+          <img src="/logo.png" class="brand-logo-img" alt="校声" />
+        </div>
+        <h2 class="brand-title">校 声</h2>
         <p class="brand-desc">属于大学生的社交空间</p>
       </div>
 
@@ -149,19 +151,23 @@ function handleLogin() {
   margin-bottom: 32px;
 }
 
-.brand-icon {
+.brand-logo-wrapper {
   width: 72px;
   height: 72px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, var(--echo-primary), #2e8b57);
-  color: #fff;
-  font-size: 36px;
-  font-weight: 700;
+  margin-bottom: 16px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 24px rgba(76, 175, 125, 0.3);
-  margin-bottom: 16px;
+  filter: drop-shadow(0 8px 24px rgba(76, 175, 125, 0.18))
+          drop-shadow(0 2px 6px rgba(76, 175, 125, 0.12));
+}
+
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  transform: scale(1.65);
+  object-fit: contain;
 }
 
 .brand-title {
@@ -169,6 +175,7 @@ function handleLogin() {
   font-weight: 700;
   color: var(--echo-text);
   margin-bottom: 4px;
+  text-align: center;
 }
 
 .brand-desc {
