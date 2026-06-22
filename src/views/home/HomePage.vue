@@ -522,6 +522,11 @@ const channelLabelMap = {
 }
 
 function onChannelSwitch(key) {
+  if (key !== 'recommend') {
+    if (!store.checkAuth('recommend_channel')) {
+      return
+    }
+  }
   if (key === 'city' && activeChannel.value === 'city') {
     showCitySheet.value = true // 二次点击同城打开城市面板
     return
@@ -818,6 +823,7 @@ const meetUsers = computed(() => {
 
 // ===== 帖子互动与自动学习更新积分 =====
 function onPostLike(post) {
+  if (!store.checkAuth('like')) return
   store.toggleLike(post.id)
   if (store.isPostLiked(post.id)) {
     recordTagAction(post.categoryTag, 5) // 点赞累积标签分数
@@ -825,6 +831,7 @@ function onPostLike(post) {
 }
 
 function onPostCollect(post) {
+  if (!store.checkAuth('like')) return
   store.toggleCollect(post.id)
   if (store.isPostCollected(post.id)) {
     recordTagAction(post.categoryTag, 5) // 收藏累积标签分数
@@ -852,6 +859,7 @@ const forwardActions = [
 ]
 
 function onForward(postId) {
+  if (!store.checkAuth('share')) return
   forwardPostId.value = postId
   showForwardSheet.value = true
   store.lockPhoneScroll()
@@ -872,6 +880,7 @@ function getAuthor(uid) {
 }
 
 function goUserProfile(uid) {
+  if (!store.checkAuth('user')) return
   router.push(`/profile/${uid}`)
 }
 
@@ -1043,6 +1052,19 @@ function closeContextMenu() {
 }
 
 function handleMenuSelect(value) {
+  if (value === 'report') {
+    if (!store.checkAuth('user')) return
+  }
+  if (value === 'block') {
+    if (!store.checkAuth('user')) return
+  }
+  if (value === 'forward') {
+    if (!store.checkAuth('share')) return
+  }
+  if (['edit', 'delete', 'permission', 'pin', 'dislike', 'reduce'].includes(value)) {
+    if (!store.checkAuth('interaction')) return
+  }
+  
   const postId = selectedPostId.value
   if (!postId) return
   const post = store.posts.find(p => p.id === postId)

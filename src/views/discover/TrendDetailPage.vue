@@ -9,7 +9,7 @@
         </svg>
       </span>
       <span class="detail-title">热点话题</span>
-      <span class="detail-forward" @click="showForwardSheet = true">
+      <span class="detail-forward" @click="onForward(null)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 18c0-4 4-8 10-8h7" /><polyline points="15 5 20 10 15 15" />
         </svg>
@@ -266,7 +266,7 @@
 
                   <div class="footer-actions-right">
                     <!-- 点赞 -->
-                    <div class="post-card-action" @click.stop="store.toggleLike(post.id)">
+                    <div class="post-card-action" @click.stop="onPostLike(post)">
                       <svg width="16" height="16" viewBox="0 0 24 24" :fill="store.isPostLiked(post.id) ? 'var(--echo-danger)' : 'none'" :stroke="store.isPostLiked(post.id) ? 'var(--echo-danger)' : 'currentColor'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                       <span>{{ post.likeCount }}</span>
                     </div>
@@ -276,7 +276,7 @@
                       <span>{{ post.commentCount }}</span>
                     </div>
                     <!-- 收藏 -->
-                    <div class="post-card-action" @click.stop="store.toggleCollect(post.id)">
+                    <div class="post-card-action" @click.stop="onPostCollect(post)">
                       <svg width="16" height="16" viewBox="0 0 24 24" :fill="store.isPostCollected(post.id) ? 'var(--echo-warning)' : 'none'" :stroke="store.isPostCollected(post.id) ? 'var(--echo-warning)' : 'currentColor'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                       <span>{{ post.collectCount }}</span>
                     </div>
@@ -324,6 +324,7 @@
           v-model="discussInputText"
           class="discuss-input"
           :placeholder="discussReplyTarget ? `回复 ${discussReplyTarget.author?.nickname}...` : '参与话题讨论...'"
+          @focus="onInputFocus"
           @keyup.enter="sendDiscussion"
         />
       </div>
@@ -422,7 +423,8 @@ function getAuthor(uid) {
 }
 
 function goUserProfile(uid) {
-  router.push(`/user/profile/${uid}`)
+  if (!store.checkAuth('user')) return
+  router.push(`/profile/${uid}`)
 }
 
 function clickAuthor(post) {
@@ -509,6 +511,7 @@ function isDiscussLiked(discussId) {
 }
 
 function toggleDiscussLike(discussId) {
+  if (!store.checkAuth('like')) return
   const item = discussList.value.find(d => d.id === discussId)
   if (!item) return
   if (likedDiscussIds.value.has(discussId)) {
@@ -522,11 +525,13 @@ function toggleDiscussLike(discussId) {
 
 // 准备回复讨论观点
 function onReplyDiscuss(discussItem) {
+  if (!store.checkAuth('comment')) return
   discussReplyTarget.value = discussItem
 }
 
 // 发送讨论或回复
 function sendDiscussion() {
+  if (!store.checkAuth('comment')) return
   if (!discussInputText.value.trim()) return
   
   if (discussReplyTarget.value) {
@@ -823,6 +828,19 @@ function closeContextMenu() {
 }
 
 function handleMenuSelect(value) {
+  if (value === 'report_discuss' || value === 'report') {
+    if (!store.checkAuth('user')) return
+  }
+  if (value === 'block_discuss' || value === 'block') {
+    if (!store.checkAuth('user')) return
+  }
+  if (value === 'forward' || value === 'share') {
+    if (!store.checkAuth('share')) return
+  }
+  if (['delete_discuss', 'copy_discuss', 'dislike_discuss', 'edit', 'delete', 'permission', 'pin', 'dislike', 'reduce'].includes(value)) {
+    if (!store.checkAuth('interaction')) return
+  }
+
   // 讨论菜单交互
   if (menuType.value === 'discuss') {
     const item = selectedDiscuss.value
@@ -904,11 +922,13 @@ function goPostDetail(postId) {
 }
 
 function goCircle(circleId) {
+  if (!store.checkAuth('user')) return
   router.push(`/circle/${circleId}`)
 }
 
 // 闭环发帖
 function goPublish() {
+  if (!store.checkAuth('publish')) return
   if (!trend.value) return
   router.push({
     path: '/post/create',
@@ -919,7 +939,22 @@ function goPublish() {
   })
 }
 
-// 转发
+function onPostLike(post) {
+  if (!store.checkAuth('like')) return
+  store.toggleLike(post.id)
+}
+
+function onPostCollect(post) {
+  if (!store.checkAuth('like')) return
+  store.toggleCollect(post.id)
+}
+
+function onInputFocus(e) {
+  if (!store.checkAuth('comment')) {
+    e.target.blur()
+  }
+}
+
 const showForwardSheet = ref(false)
 const forwardPostId = ref(null)
 const forwardActions = [
@@ -928,6 +963,7 @@ const forwardActions = [
 ]
 
 function onForward(postId) {
+  if (!store.checkAuth('share')) return
   forwardPostId.value = postId
   showForwardSheet.value = true
   store.lockPhoneScroll()

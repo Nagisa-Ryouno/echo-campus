@@ -99,6 +99,11 @@ const current = computed(() => {
 const showTabBar = computed(() => route.meta.tabBar !== false)
 
 function onTabClick(tab) {
+  if (['publish', 'message', 'profile'].includes(tab.key)) {
+    if (!store.checkAuth(tab.key)) {
+      return
+    }
+  }
   router.push(tab.route)
 }
 

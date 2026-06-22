@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { useAppStore } from '@/stores/app.js'
 
 const routes = [
   {
@@ -204,8 +205,34 @@ const router = createRouter({
   }
 })
 
+const guestAllowedRoutes = [
+  'Splash',
+  'Login',
+  'Register',
+  'EmailRegister',
+  'StudentIdVerify',
+  'Home',
+  'Discover',
+  'PostDetail',
+  'TrendDetail',
+  'Search'
+]
+
 router.beforeEach((to, from, next) => {
   document.title = to.meta.title ? `${to.meta.title} - 校声` : '校声 - Echo Campus'
+  
+  const store = useAppStore()
+  if (!store.isLoggedIn && !guestAllowedRoutes.includes(to.name)) {
+    let scenario = 'publish'
+    if (to.path.startsWith('/message')) {
+      scenario = 'message'
+    } else if (to.path.startsWith('/profile') || to.path.startsWith('/edit-profile') || to.path.startsWith('/circle')) {
+      scenario = 'profile'
+    }
+    store.checkAuth(scenario)
+    next(false)
+    return
+  }
   next()
 })
 

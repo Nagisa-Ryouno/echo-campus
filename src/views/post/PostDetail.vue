@@ -143,7 +143,7 @@
                   <span
                     class="comment-action"
                     :class="{ 'comment-action--liked': store.isCommentLiked(comment.id) }"
-                    @click="store.toggleCommentLike(comment.id)"
+                    @click="onCommentLike(comment.id)"
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" :fill="store.isCommentLiked(comment.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                     <span class="comment-like-count">{{ comment.likeCount || 0 }}</span>
@@ -186,8 +186,10 @@
       <div class="bottom-input-wrap">
         <input
           v-model="commentText"
+          type="text"
           class="comment-input"
           :placeholder="replyTarget ? `回复 ${replyTargetName}...` : '说点什么...'"
+          @focus="onInputFocus"
           @keyup.enter="onSendComment"
         />
       </div>
@@ -197,7 +199,7 @@
         <div
           class="bottom-action"
           :class="{ 'bottom-action--active': store.isPostLiked(post.id) }"
-          @click="store.toggleLike(post.id)"
+          @click="onPostLike"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" :fill="store.isPostLiked(post.id) ? 'var(--echo-danger)' : 'none'" :stroke="store.isPostLiked(post.id) ? 'var(--echo-danger)' : 'currentColor'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           <span class="action-count" :class="{ 'text-danger': store.isPostLiked(post.id) }">{{ post.likeCount || 0 }}</span>
@@ -206,7 +208,7 @@
         <div
           class="bottom-action"
           :class="{ 'bottom-action--active': store.isPostCollected(post.id) }"
-          @click="store.toggleCollect(post.id)"
+          @click="onPostCollect"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" :fill="store.isPostCollected(post.id) ? 'var(--echo-warning)' : 'none'" :stroke="store.isPostCollected(post.id) ? 'var(--echo-warning)' : 'currentColor'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           <span class="action-count" :class="{ 'text-warning': store.isPostCollected(post.id) }">{{ post.collectCount || 0 }}</span>
@@ -347,6 +349,7 @@ function getCommentAuthor(comment) {
 
 // 发送评论
 function onSendComment() {
+  if (!store.checkAuth('comment')) return
   if (!commentText.value.trim()) return
 
   const parentId = replyTarget.value?.commentId || null
@@ -358,6 +361,7 @@ function onSendComment() {
 
 // 回复某条评论
 function onReply(commentId, replyToId) {
+  if (!store.checkAuth('comment')) return
   replyTarget.value = { commentId, replyToId }
   nextTick(() => {
     const input = document.querySelector('.comment-input')
@@ -366,6 +370,7 @@ function onReply(commentId, replyToId) {
 }
 
 function focusComment() {
+  if (!store.checkAuth('comment')) return
   replyTarget.value = null
   nextTick(() => {
     const input = document.querySelector('.comment-input')
@@ -375,6 +380,7 @@ function focusComment() {
 
 // 关注
 function onFollow() {
+  if (!store.checkAuth('user')) return
   showToast('关注成功')
 }
 
@@ -388,6 +394,7 @@ const shareOptions = [
 ]
 
 function onShare() {
+  if (!store.checkAuth('share')) return
   showShareSheet.value = true
 }
 
@@ -399,6 +406,7 @@ const forwardActions = [
 ]
 
 function onForward() {
+  if (!store.checkAuth('share')) return
   showForwardSheet.value = true
 }
 
@@ -428,6 +436,7 @@ function onReportSelect(action) {
 
 function goUserProfile(uid) {
   if (!uid) return
+  if (!store.checkAuth('user')) return
   router.push(`/profile/${uid}`)
 }
 
@@ -542,7 +551,41 @@ function closeContextMenu() {
   store.unlockPhoneScroll()
 }
 
+function onPostLike() {
+  if (!store.checkAuth('like')) return
+  store.toggleLike(post.value.id)
+}
+
+function onPostCollect() {
+  if (!store.checkAuth('like')) return
+  store.toggleCollect(post.value.id)
+}
+
+function onCommentLike(commentId) {
+  if (!store.checkAuth('like')) return
+  store.toggleCommentLike(commentId)
+}
+
+function onInputFocus(e) {
+  if (!store.checkAuth('comment')) {
+    e.target.blur()
+  }
+}
+
 function handleMenuSelect(value) {
+  if (value === 'report_comment' || value === 'report') {
+    if (!store.checkAuth('user')) return
+  }
+  if (value === 'block_comment' || value === 'block') {
+    if (!store.checkAuth('user')) return
+  }
+  if (value === 'forward_comment' || value === 'forward' || value === 'share') {
+    if (!store.checkAuth('share')) return
+  }
+  if (['edit', 'delete', 'permission', 'pin', 'dislike', 'reduce', 'hide_comment'].includes(value)) {
+    if (!store.checkAuth('interaction')) return
+  }
+
   if (menuType.value === 'comment') {
     const comment = selectedComment.value
     if (!comment) return

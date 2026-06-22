@@ -150,7 +150,7 @@
           v-for="u in filteredUsers"
           :key="u.id"
           class="search-user-item"
-          @click="$router.push(`/profile/${u.id}`)"
+          @click="goUserProfile(u.id)"
         >
           <div class="su-avatar" :style="{ background: u.avatarColor }">{{ u.nickname.slice(0, 1) }}</div>
           <div class="su-info">
@@ -210,7 +210,7 @@
           v-for="u in msgContacts"
           :key="u.id"
           class="search-user-item"
-          @click="$router.push(`/profile/${u.id}`)"
+          @click="goUserProfile(u.id)"
         >
           <div class="su-avatar" :style="{ background: u.avatarColor }">
             <span v-html="highlightMatch(u.nickname.slice(0,1))"></span>
@@ -284,6 +284,11 @@ import { showToast } from 'vant'
 const router = useRouter()
 const route = useRoute()
 const store = useAppStore()
+
+function goUserProfile(uid) {
+  if (!store.checkAuth('user')) return
+  router.push(`/profile/${uid}`)
+}
 
 const { isScrolled } = useScrollCollapse(0)
 

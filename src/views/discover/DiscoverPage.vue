@@ -338,6 +338,11 @@ const currentSubChannelLabel = computed(() => {
 })
 
 function switchTab(key) {
+  if (key !== 'hot') {
+    if (!store.checkAuth('discover_channel')) {
+      return
+    }
+  }
   activeTab.value = key
   if (key === 'more') {
     activeSmallChannel.value = 'photography'

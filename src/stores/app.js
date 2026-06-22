@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
+import { showDialog } from 'vant'
+import router from '@/router'
 import { mockPosts, channels, channelTagMap, allCategoryTags, getPostsByChannel, getPostsByCategoryTag, getPostById } from '@/mock/posts.js'
 import { mockUsers, currentUser as defaultUser } from '@/mock/users.js'
 import { mockComments, getCommentsByPostId, getRepliesByCommentId, getTopLevelComments } from '@/mock/comments.js'
@@ -52,6 +54,49 @@ export const useAppStore = defineStore('app', () => {
   function logout() {
     currentUser.value = null
     isLoggedIn.value = false
+    activeChannel.value = 'recommend'
+  }
+
+  function checkAuth(scenario) {
+    if (isLoggedIn.value) {
+      return true
+    }
+    
+    let message = '该操作需要登录认证后才能使用，去登录？'
+    if (scenario === 'publish') {
+      message = '认证用户才能发布帖子哦！分享你的校园生活、探索更多有趣内容，快去认证/登录吧！'
+    } else if (scenario === 'message') {
+      message = '登录后即可查看消息通知并与同学聊天，快去认证/登录吧！'
+    } else if (scenario === 'profile') {
+      message = '登录后即可进入你的个人主页，管理发布的帖子、草稿箱和个性设置，快去认证/登录吧！'
+    } else if (scenario === 'like') {
+      message = '认证登录后才能进行点赞和收藏操作哦，快去认证/登录吧！'
+    } else if (scenario === 'comment') {
+      message = '认证登录后才能参与评论讨论哦，快去认证/登录吧！'
+    } else if (scenario === 'share') {
+      message = '认证登录后才能转发和分享帖子哦，快去认证/登录吧！'
+    } else if (scenario === 'user') {
+      message = '认证登录后才能查看他人主页、关注或进行用户操作哦，快去认证/登录吧！'
+    } else if (scenario === 'recommend_channel') {
+      message = '登录后即可解锁关注、遇见、本校和同城频道，查看更多精彩校园内容，快去认证/登录吧！'
+    } else if (scenario === 'discover_channel') {
+      message = '登录后即可解锁推荐、本校、同城及更多话题频道，探索更丰富的校园动态，快去认证/登录吧！'
+    } else if (scenario === 'interaction') {
+      message = '认证登录后才能进行内容设置和过滤哦，快去认证/登录吧！'
+    }
+    
+    showDialog({
+      title: '提示',
+      message: message,
+      showCancelButton: true,
+      confirmButtonText: '去登录',
+      cancelButtonText: '取消',
+      teleport: '#phone-screen'
+    }).then(() => {
+      router.push('/login')
+    }).catch(() => {})
+    
+    return false
   }
 
   // ===== 已关注用户列表（Mock）=====
@@ -1101,7 +1146,7 @@ export const useAppStore = defineStore('app', () => {
   return {
     // 用户
     isLoggedIn, currentUser, users,
-    getUserById, login, logout,
+    getUserById, login, logout, checkAuth,
 
     // 关注用户
     followedUserIds, followedUsers,
