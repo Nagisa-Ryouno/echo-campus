@@ -1,5 +1,7 @@
 <template>
-  <Teleport to="#phone-screen">
+  <div class="chat-window-wrapper">
+    <Teleport to="#phone-screen">
+
     <transition name="chat-slide">
       <div v-if="store.isChatOpen && activeChat" class="chat-window-overlay">
         <!-- 头部导航 -->
@@ -139,7 +141,8 @@
         </transition>
       </div>
     </transition>
-  </Teleport>
+      </Teleport>
+  </div>
 </template>
 
 <script setup>

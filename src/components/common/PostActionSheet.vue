@@ -1,5 +1,7 @@
 <template>
-  <Teleport to="#phone-screen">
+  <div class="post-action-sheet-wrapper">
+    <Teleport to="#phone-screen">
+
     <div class="post-action-sheet-root" :class="{ 'is-active': show }">
       <!-- Backdrop with blur -->
       <transition name="sheet-backdrop">
@@ -49,7 +51,8 @@
         </div>
       </transition>
     </div>
-  </Teleport>
+      </Teleport>
+  </div>
 </template>
 
 <script setup>

@@ -1,5 +1,7 @@
 <template>
-  <Teleport to="#phone-screen">
+  <div class="channel-manage-wrapper">
+    <Teleport to="#phone-screen">
+
     <transition name="channel-manage-fade">
       <div v-if="visible" class="cm-overlay" @click.self="onClose">
         <div class="cm-container" @click.stop>
@@ -80,7 +82,8 @@
         </div>
       </div>
     </transition>
-  </Teleport>
+      </Teleport>
+  </div>
 </template>
 
 <script setup>

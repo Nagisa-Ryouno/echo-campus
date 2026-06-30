@@ -1,5 +1,7 @@
 <template>
-  <Teleport to="#phone-screen">
+  <div class="context-menu-wrapper">
+    <Teleport to="#phone-screen">
+
     <div v-if="show" class="context-menu-root">
       <!-- 全屏透明遮罩，点击空白区域立即关闭 -->
       <div class="context-menu-mask" @click="onClose" @touchmove.prevent></div>
@@ -29,7 +31,8 @@
         </div>
       </transition>
     </div>
-  </Teleport>
+      </Teleport>
+  </div>
 </template>
 
 <script setup>
