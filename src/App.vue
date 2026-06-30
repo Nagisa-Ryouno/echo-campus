@@ -3,11 +3,7 @@
   <div v-if="isMobile" id="phone-screen" class="mobile-layout">
     <!-- 页面内容区：正常文档流，不添加任何人工滚动容�?-->
     <div class="mobile-content">
-      <router-view v-slot="{ Component }">
-        <transition name="page-fade" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </router-view>
+      <router-view />
     </div>
     <!-- TabBar：全局 fixed 在视口底部，不进入文档流 -->
     <div v-if="showTabBar" class="mobile-tabbar">
@@ -20,11 +16,7 @@
     <!-- 内容�?-->
     <template #content>
       <div class="app-inner">
-        <router-view v-slot="{ Component }">
-          <transition name="page-fade" mode="out-in">
-            <component :is="Component" />
-          </transition>
-        </router-view>
+        <router-view />
       </div>
     </template>
     <!-- TabBar 固定�?phone-screen 下方，永不滚�?-->
