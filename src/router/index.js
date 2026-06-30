@@ -60,7 +60,7 @@ const routes = [
     path: '/post/:id',
     name: 'PostDetail',
     component: () => import('@/views/post/PostDetail.vue'),
-    meta: { title: '帖子详情', tabBar: false }
+    meta: { title: '帖子详情', tabBar: false, hideTabBar: true }
   },
   {
     path: '/message',
@@ -72,7 +72,7 @@ const routes = [
     path: '/message/anon',
     name: 'AnonMessage',
     component: () => import('@/views/message/AnonMessage.vue'),
-    meta: { title: '匿名消息', tabBar: false }
+    meta: { title: '匿名消息', tabBar: false, hideTabBar: true }
   },
   {
     path: '/message/strangers',
@@ -84,19 +84,19 @@ const routes = [
     path: '/message/likes',
     name: 'NotificationLikes',
     component: () => import('@/views/message/notification/NotificationLikes.vue'),
-    meta: { title: '收到喜欢', tabBar: false }
+    meta: { title: '收到喜欢', tabBar: false, hideTabBar: true }
   },
   {
     path: '/message/comments',
     name: 'NotificationComments',
     component: () => import('@/views/message/notification/NotificationComments.vue'),
-    meta: { title: '评论与@', tabBar: false }
+    meta: { title: '评论与@', tabBar: false, hideTabBar: true }
   },
   {
     path: '/message/fans',
     name: 'NotificationFans',
     component: () => import('@/views/message/notification/NotificationFans.vue'),
-    meta: { title: '新增粉丝', tabBar: false }
+    meta: { title: '新增粉丝', tabBar: false, hideTabBar: true }
   },
   {
     path: '/profile/me',
@@ -108,13 +108,13 @@ const routes = [
     path: '/profile/:uid',
     name: 'UserProfile',
     component: () => import('@/views/profile/UserProfile.vue'),
-    meta: { title: '用户主页', tabBar: false }
+    meta: { title: '用户主页', tabBar: false, hideTabBar: true }
   },
   {
     path: '/trend/:id',
     name: 'TrendDetail',
     component: () => import('@/views/discover/TrendDetailPage.vue'),
-    meta: { title: '热点详情', tabBar: false }
+    meta: { title: '热点详情', tabBar: false, hideTabBar: true }
   },
   {
     path: '/settings',
