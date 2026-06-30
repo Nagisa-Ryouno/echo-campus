@@ -92,13 +92,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useAppStore } from '@/stores/app.js'
+import { showToast } from 'vant'
+import { HEADER_HEIGHT } from '@/constants/layout.js'
 
 const store = useAppStore()
 
-onMounted(() => { store.lockPhoneScroll() })
-onBeforeUnmount(() => { store.unlockPhoneScroll() })
+const circleHeaderHeightCss = computed(() => HEADER_HEIGHT + 'px')
 
 const activeTab = ref('joined')
 
@@ -106,9 +107,6 @@ const tabs = [
   { key: 'joined', label: '已加入' },
   { key: 'recommend', label: '推荐' }
 ]
-
-import { computed } from 'vue'
-import { showToast } from 'vant'
 
 const joinedCircles = computed(() => {
   return store.circles.filter(c => c.joined)
@@ -129,20 +127,23 @@ function onJoin(circleId) {
 <style scoped>
 /* ===== 页面容器：absolute 填满 + flex column ===== */
 .circle-page {
-  position: absolute;
-  inset: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  width: 100%;
+  min-height: 100%;
   background: var(--echo-bg);
 }
 
 /* ===== 返回+标题栏 ===== */
 .circle-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 16px;
+  height: v-bind('circleHeaderHeightCss');
+  padding: 0 16px;
   background: var(--echo-white);
   flex-shrink: 0;
 }
@@ -171,12 +172,13 @@ function onJoin(circleId) {
 
 /* ===== Tab 栏：固定占据真实空间，纯白底+阴影+分割线 ===== */
 .circle-tabs-fixed {
+  position: sticky;
+  top: v-bind('circleHeaderHeightCss');
+  z-index: 90;
   display: flex;
   flex-shrink: 0;
-  background: transparent;
+  background: var(--echo-white);
   border-bottom: 1px solid var(--echo-border);
-  position: relative;
-  z-index: 2;
 }
 
 .circle-tab {
@@ -210,10 +212,6 @@ function onJoin(circleId) {
 /* ===== 可滚动内容区 ===== */
 .circle-scroll-area {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  min-height: 0;
   position: relative;
   z-index: 1;
 }

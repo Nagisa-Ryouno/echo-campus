@@ -1,56 +1,59 @@
 <template>
   <div class="page-root">
+    <!-- 大频道固定定位层 -->
+    <div class="channel-fixed-layer">
+      <!-- 趋势搜索栏 -->
+      <div class="trend-search-bar-wrap" @click="goSearchPage">
+        <div class="trend-search-bar-inner">
+          <span class="search-bar-left">
+            <van-icon name="search" size="15" class="search-bar-icon" />
+            <div class="search-word-carousel">
+              <transition name="search-word-fade" mode="out-in">
+                <span :key="currentWord" class="search-word-text">大家都在搜：{{ currentWord }}</span>
+              </transition>
+            </div>
+          </span>
+          <span class="search-bar-heat-icon">🔥</span>
+        </div>
+      </div>
+
+      <!-- Tab大频道栏 -->
+      <div class="channel-header">
+        <div
+          v-for="tab in tabs"
+          :key="tab.key"
+          class="discover-tab"
+          :class="{ 'discover-tab--active': activeTab === tab.key }"
+          @click="switchTab(tab.key)"
+        >
+          <span>{{ tab.label }}</span>
+          <span v-if="activeTab === tab.key" class="discover-tab-bar"></span>
+        </div>
+      </div>
+
+      <!-- "更多" 子小频道标签流 -->
+      <transition name="drawer-fade">
+        <div v-if="activeTab === 'more'" class="sub-channel-menu">
+          <span
+            v-for="sub in subChannels"
+            :key="sub.key"
+            class="sub-channel-tag"
+            :class="{ 'sub-channel-tag--active': activeSmallChannel === sub.key }"
+            @click="switchSmallChannel(sub.key)"
+          >
+            {{ sub.label }}
+          </span>
+        </div>
+      </transition>
+    </div>
+
+    <!-- 频道层占位层 -->
+    <div class="channel-spacer"></div>
+
     <!-- ═══════════════════════════════════════════ -->
-    <!-- 滚动层：独立 overflow-y:auto                  -->
+    <!-- 滚动层：高度自然延伸（浏览器自带滚动）          -->
     <!-- ═══════════════════════════════════════════ -->
     <div ref="scrollRef" class="scroll-content">
-      
-      <!-- 统一的粘性顶部包装层：z-index: 120 -->
-      <div class="discover-header-wrapper">
-        <!-- 趋势搜索栏 -->
-        <div class="trend-search-bar-wrap" @click="goSearchPage">
-          <div class="trend-search-bar-inner">
-            <span class="search-bar-left">
-              <van-icon name="search" size="15" class="search-bar-icon" />
-              <div class="search-word-carousel">
-                <transition name="search-word-fade" mode="out-in">
-                  <span :key="currentWord" class="search-word-text">大家都在搜：{{ currentWord }}</span>
-                </transition>
-              </div>
-            </span>
-            <span class="search-bar-heat-icon">🔥</span>
-          </div>
-        </div>
-
-        <!-- Tab大频道栏 -->
-        <div class="channel-header">
-          <div
-            v-for="tab in tabs"
-            :key="tab.key"
-            class="discover-tab"
-            :class="{ 'discover-tab--active': activeTab === tab.key }"
-            @click="switchTab(tab.key)"
-          >
-            <span>{{ tab.label }}</span>
-            <span v-if="activeTab === tab.key" class="discover-tab-bar"></span>
-          </div>
-        </div>
-
-        <!-- "更多" 子小频道标签流 -->
-        <transition name="drawer-fade">
-          <div v-if="activeTab === 'more'" class="sub-channel-menu">
-            <span
-              v-for="sub in subChannels"
-              :key="sub.key"
-              class="sub-channel-tag"
-              :class="{ 'sub-channel-tag--active': activeSmallChannel === sub.key }"
-              @click="switchSmallChannel(sub.key)"
-            >
-              {{ sub.label }}
-            </span>
-          </div>
-        </transition>
-      </div>
 
       <!-- 切屏微移与淡入淡出动效 -->
       <transition name="fade-slide" mode="out-in">
@@ -276,6 +279,9 @@ import { mockTrends } from '@/mock/trends.js'
 const router = useRouter()
 const store = useAppStore()
 
+// 发现页的固定高度：搜索栏 (50px) + Tabs (48px) = 98px
+const spacerHeightCss = computed(() => '98px')
+
 // ===== 趋势搜索词轮播 =====
 const hotSearchWords = [
   '期末周',
@@ -403,24 +409,32 @@ function goTrendDetail(trendId) {
 /* 页面根：填充 phone-screen，自身不滚动          */
 /* ═══════════════════════════════════════════ */
 .page-root {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100%;
   background: var(--echo-white);
 }
 
 /* ═══════════════════════════════════════════ */
-/* 粘性顶部包裹容器：集成搜索栏与大Tab             */
+/* 大频道固定定位层                                */
 /* ═══════════════════════════════════════════ */
-.discover-header-wrapper {
-  position: sticky;
-  top: 0;
-  z-index: 120;
+.channel-fixed-layer {
+  position: fixed;
+  top: var(--fixed-header-top);
+  left: 0;
+  width: 100%;
+  z-index: 1000;
   background: rgba(244, 249, 246, 0.9);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--echo-border);
   box-sizing: border-box;
+}
+
+.channel-spacer {
+  height: v-bind('spacerHeightCss');
+  flex-shrink: 0;
 }
 
 /* 趋势搜索栏 */
@@ -582,10 +596,7 @@ function goTrendDetail(trendId) {
 /* 滚动层：独立高密度滚动列表                        */
 /* ═══════════════════════════════════════════ */
 .scroll-content {
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  flex: 1;
   box-sizing: border-box;
 }
 

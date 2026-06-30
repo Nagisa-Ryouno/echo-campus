@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import PhoneShell from '@/components/layout/PhoneShell.vue'
 import TabBar from '@/components/layout/TabBar.vue'
@@ -48,6 +48,16 @@ const checkDevice = () => {
   isMobile.value = window.innerWidth <= 768
 }
 
+watch(isMobile, (newVal) => {
+  if (newVal) {
+    document.documentElement.classList.add('is-mobile')
+    document.documentElement.classList.remove('is-pc')
+  } else {
+    document.documentElement.classList.add('is-pc')
+    document.documentElement.classList.remove('is-mobile')
+  }
+}, { immediate: true })
+
 onMounted(() => {
   checkDevice()
   window.addEventListener('resize', checkDevice)
@@ -57,6 +67,16 @@ onUnmounted(() => {
   window.removeEventListener('resize', checkDevice)
 })
 </script>
+
+<style>
+/* 全局控制顶部偏移变量，PC端由于包含48px刘海状态栏，偏移48px；移动端直接贴顶 0 */
+:root {
+  --fixed-header-top: 48px;
+}
+:root.is-mobile {
+  --fixed-header-top: 0px;
+}
+</style>
 
 <style scoped>
 .app-inner {
@@ -76,19 +96,19 @@ onUnmounted(() => {
 .mobile-layout {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  height: 100dvh; /* 适配移动端浏览器动态高度 */
-  width: 100vw;
-  overflow: hidden;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh; /* 适配移动端浏览器动态高度 */
+  overflow-x: hidden;
 }
 
 .mobile-content {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
 }
 
 .mobile-tabbar {

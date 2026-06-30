@@ -186,12 +186,12 @@ function onShare() {
 
 <style scoped>
 .circle-home-page {
-  position: absolute;
-  inset: 0;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  min-height: 100%;
   background: var(--echo-bg);
-  overflow: hidden;
+  position: relative;
 }
 
 /* 头部大图 */
@@ -209,14 +209,15 @@ function onShare() {
   background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.1) 100%);
 }
 .cover-nav-bar-fixed {
-  position: absolute;
-  top: 12px;
-  left: 16px;
-  right: 16px;
+  position: fixed;
+  top: calc(var(--fixed-header-top) + 12px);
+  left: 0;
+  right: 0;
+  padding: 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  z-index: 100;
+  z-index: 1000;
   pointer-events: none;
 }
 .cover-nav-bar-fixed .cover-icon-btn {
@@ -242,7 +243,6 @@ function onShare() {
 /* 滚动区 */
 .circle-home-scroll {
   flex: 1;
-  overflow-y: auto;
   padding: 0 0 84px; /* 贴顶无内边距，大图贴边 */
   display: flex;
   flex-direction: column;

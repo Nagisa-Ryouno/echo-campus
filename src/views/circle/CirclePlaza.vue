@@ -1,52 +1,55 @@
 <template>
   <div class="plaza-page">
-    <!-- 顶部状态栏占位 & 返回导航 -->
-    <div class="plaza-header">
-      <div class="nav-back" @click="$router.back()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    <!-- 大频道固定定位层 -->
+    <div class="channel-fixed-layer">
+      <!-- 顶部状态栏占位 & 返回导航 -->
+      <div class="plaza-header">
+        <div class="nav-back" @click="$router.back()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </div>
+        <h2 class="plaza-title">圈子广场</h2>
+        <div style="width: 32px;"></div>
       </div>
-      <h2 class="plaza-title">圈子广场</h2>
-      <div style="width: 32px;"></div>
-    </div>
 
-    <!-- 搜索栏 -->
-    <div class="search-bar-wrap">
-      <div class="search-input-box">
-        <van-icon name="search" size="16" color="var(--echo-text-hint)" />
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="搜索圈号/圈名"
-          class="search-input"
-        />
-        <van-icon
-          v-if="searchQuery"
-          name="clear"
-          size="16"
-          color="var(--echo-text-hint)"
-          @click="searchQuery = ''"
-        />
-      </div>
-    </div>
-
-    <!-- 标签横滚栏 & 筛选按钮 -->
-    <div class="tab-filter-bar">
-      <div class="tab-scroll-wrap">
-        <div
-          v-for="cat in categories"
-          :key="cat"
-          class="tab-item"
-          :class="{ active: activeCategory === cat }"
-          @click="activeCategory = cat"
-        >
-          {{ cat }}
+      <!-- 搜索栏 -->
+      <div class="search-bar-wrap">
+        <div class="search-input-box">
+          <van-icon name="search" size="16" color="var(--echo-text-hint)" />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="搜索圈号/圈名"
+            class="search-input"
+          />
+          <van-icon
+            v-if="searchQuery"
+            name="clear"
+            size="16"
+            color="var(--echo-text-hint)"
+            @click="searchQuery = ''"
+          />
         </div>
       </div>
-      <div class="filter-toggle-btn" :class="{ 'is-active': filterVisible }" @click="toggleFilter">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-        </svg>
-        <span class="filter-btn-text">筛选</span>
+
+      <!-- 标签横滚栏 & 筛选按钮 -->
+      <div class="tab-filter-bar">
+        <div class="tab-scroll-wrap">
+          <div
+            v-for="cat in categories"
+            :key="cat"
+            class="tab-item"
+            :class="{ active: activeCategory === cat }"
+            @click="activeCategory = cat"
+          >
+            {{ cat }}
+          </div>
+        </div>
+        <div class="filter-toggle-btn" :class="{ 'is-active': filterVisible }" @click="toggleFilter">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+          </svg>
+          <span class="filter-btn-text">筛选</span>
+        </div>
       </div>
     </div>
 
@@ -145,6 +148,9 @@
       </div>
     </transition>
 
+    <!-- 频道层占位层 -->
+    <div class="channel-spacer"></div>
+
     <!-- 圈子列表 -->
     <div class="circle-list-container">
       <div v-if="filteredCircles.length > 0" class="circles-plaza-list">
@@ -207,7 +213,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app.js'
 import { showToast } from 'vant'
@@ -215,8 +221,8 @@ import { showToast } from 'vant'
 const router = useRouter()
 const store = useAppStore()
 
-onMounted(() => { store.lockPhoneScroll() })
-onBeforeUnmount(() => { store.unlockPhoneScroll() })
+// Spacer height for circle plaza: plaza-header (44px) + search-bar (48px) + tab-filter-bar (40px) = 132px
+const spacerHeightCss = computed(() => '132px')
 
 const searchQuery = ref('')
 const activeCategory = ref('推荐')
@@ -379,12 +385,27 @@ function goCircleDetail(circleId) {
 
 <style scoped>
 .plaza-page {
-  position: absolute;
-  inset: 0;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  min-height: 100%;
   background: var(--echo-bg);
-  overflow: hidden;
+}
+
+/* 大频道固定定位层 */
+.channel-fixed-layer {
+  position: fixed;
+  top: var(--fixed-header-top);
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  background: var(--echo-white);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.channel-spacer {
+  height: v-bind('spacerHeightCss');
+  flex-shrink: 0;
 }
 
 /* 导航栏 */
@@ -606,7 +627,6 @@ function goCircleDetail(circleId) {
 /* 圈子列表 */
 .circle-list-container {
   flex: 1;
-  overflow-y: auto;
   padding: 0 0 20px 0;
 }
 .circles-plaza-list {

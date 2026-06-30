@@ -1,9 +1,9 @@
 <template>
   <div class="page-root">
     <!-- ═══════════════════════════════════════════ -->
-    <!-- 固定层：包括 Logo、一级大频道、二级筛选与排序   -->
+    <!-- 固定层：包括 Logo、一级大频道                   -->
     <!-- ═══════════════════════════════════════════ -->
-    <div class="fixed-header-wrapper" ref="headerRef">
+    <div class="channel-fixed-layer" ref="headerRef">
       <!-- 1. Logo 区：滚动后隐藏 -->
       <div class="logo-header" :class="{ hidden: scrollTop > 10 }">
         <h1 class="home-title">校声</h1>
@@ -33,76 +33,79 @@
           <span v-if="activeChannel === ch.key" class="channel-tab-bar"></span>
         </div>
       </div>
-
-      <!-- 3. 二级排序栏+筛选工具栏：常驻，遇见和关注频道下不展示 -->
-      <div class="filter-sort-bar" v-if="activeChannel !== 'meet' && activeChannel !== 'follow'">
-        <!-- 左侧：最新/最热 二选一 -->
-        <div class="sort-options">
-          <span
-            class="sort-btn"
-            :class="{ 'sort-btn--active': sortMode === 'hot' }"
-            @click="sortMode = 'hot'"
-          >热门</span>
-          <span
-            class="sort-btn"
-            :class="{ 'sort-btn--active': sortMode === 'latest' }"
-            @click="sortMode = 'latest'"
-          >最新</span>
-        </div>
-
-        <!-- 右侧：筛选按钮，带有小向下箭头 -->
-        <div class="filter-actions">
-          <div
-            class="filter-dropdown-btn"
-            :class="{ 'filter-dropdown-btn--active': selectedTags.length > 0 }"
-            @click="openTagDrawer"
-          >
-            <span>{{ selectedTags.length > 0 ? (selectedTags.length === 1 ? selectedTags[0] : `标签(${selectedTags.length})`) : '标签选择' }}</span>
-            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </div>
-
-          <div
-            class="filter-dropdown-btn"
-            :class="{ 'filter-dropdown-btn--active': selectedTime !== 'all' }"
-            @click="openTimeSheet"
-          >
-            <span>{{ timeLabelMap[selectedTime] || '时间筛选' }}</span>
-            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      <!-- 4. 筛选状态汇总条：非默认状态下显示，支持一键清除 -->
-      <div class="filter-status-banner" v-if="activeChannel !== 'meet' && activeChannel !== 'follow' && (selectedTags.length > 0 || selectedTime !== 'all')">
-        <div class="status-tags">
-          <span class="status-tag-item">{{ channelLabelMap[activeChannel] }}</span>
-          <span class="status-tag-item">{{ sortMode === 'hot' ? '热门' : '最新' }}</span>
-          <span class="status-tag-item" v-for="tag in selectedTags" :key="tag">{{ tag }}</span>
-          <span class="status-tag-item" v-if="selectedTime !== 'all'">{{ timeLabelMap[selectedTime] }}</span>
-        </div>
-        <div class="status-reset-btn" @click="resetFilters">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-          <span>清除</span>
-        </div>
-      </div>
     </div>
 
+    <!-- 频道层占位层 -->
+    <div class="channel-spacer"></div>
+
     <!-- ═══════════════════════════════════════════ -->
-    <!-- 滚动层：高度由 padding-top 动态计算自适应     -->
+    <!-- 滚动层：高度自然延伸（浏览器自带滚动）          -->
     <!-- ═══════════════════════════════════════════ -->
     <div
       ref="scrollRef"
       class="scroll-content"
-      :style="{ paddingTop: headerHeight + 'px' }"
-      @scroll="handleScroll"
     >
+      <!-- sticky 过滤器包装层 -->
+      <div class="sticky-filter-wrapper" v-if="activeChannel !== 'meet' && activeChannel !== 'follow'">
+        <!-- 3. 二级排序栏+筛选工具栏：常驻，遇见和关注频道下不展示 -->
+        <div class="filter-sort-bar">
+          <!-- 左侧：最新/最热 二选一 -->
+          <div class="sort-options">
+            <span
+              class="sort-btn"
+              :class="{ 'sort-btn--active': sortMode === 'hot' }"
+              @click="sortMode = 'hot'"
+            >热门</span>
+            <span
+              class="sort-btn"
+              :class="{ 'sort-btn--active': sortMode === 'latest' }"
+              @click="sortMode = 'latest'"
+            >最新</span>
+          </div>
+
+          <!-- 右侧：筛选按钮，带有小向下箭头 -->
+          <div class="filter-actions">
+            <div
+              class="filter-dropdown-btn"
+              :class="{ 'filter-dropdown-btn--active': selectedTags.length > 0 }"
+              @click="openTagDrawer"
+            >
+              <span>{{ selectedTags.length > 0 ? (selectedTags.length === 1 ? selectedTags[0] : `标签(${selectedTags.length})`) : '标签选择' }}</span>
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
+
+            <div
+              class="filter-dropdown-btn"
+              :class="{ 'filter-dropdown-btn--active': selectedTime !== 'all' }"
+              @click="openTimeSheet"
+            >
+              <span>{{ timeLabelMap[selectedTime] || '时间筛选' }}</span>
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. 筛选状态汇总条：非默认状态下显示，支持一键清除 -->
+        <div class="filter-status-banner" v-if="selectedTags.length > 0 || selectedTime !== 'all'">
+          <div class="status-tags">
+            <span class="status-tag-item">{{ channelLabelMap[activeChannel] }}</span>
+            <span class="status-tag-item">{{ sortMode === 'hot' ? '热门' : '最新' }}</span>
+            <span class="status-tag-item" v-for="tag in selectedTags" :key="tag">{{ tag }}</span>
+            <span class="status-tag-item" v-if="selectedTime !== 'all'">{{ timeLabelMap[selectedTime] }}</span>
+          </div>
+          <div class="status-reset-btn" @click="resetFilters">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            <span>清除</span>
+          </div>
+        </div>
+      </div>
       <div class="post-list">
         <!-- A. 遇见频道：用户推荐卡片 -->
         <div v-if="activeChannel === 'meet'" class="meet-users">
@@ -444,21 +447,27 @@ import ContextMenu from '@/components/common/ContextMenu.vue'
 const router = useRouter()
 const store = useAppStore()
 
-// ===== 滚动与动态高度自适应 =====
+import { HEADER_HEIGHT, CHANNEL_HEIGHT } from '@/constants/layout.js'
+
+// ===== 滚动与布局自适应 =====
 const scrollTop = ref(0)
 const scrollRef = ref(null)
 const headerRef = ref(null)
-const headerHeight = ref(100) // 动态自适应初始高度
 
-let resizeObserver = null
+const spacerHeightCss = computed(() => (HEADER_HEIGHT + CHANNEL_HEIGHT) + 'px')
+const stickyTopCss = computed(() => CHANNEL_HEIGHT + 'px')
 
-function handleScroll() {
-  scrollTop.value = scrollRef.value?.scrollTop ?? 0
+const getScrollContainer = () => {
+  const phoneScreen = document.getElementById('phone-screen')
+  return phoneScreen || window
 }
 
-const updateHeaderHeight = () => {
-  if (headerRef.value) {
-    headerHeight.value = headerRef.value.offsetHeight
+const handleGlobalScroll = () => {
+  const container = getScrollContainer()
+  if (container === window) {
+    scrollTop.value = window.scrollY || document.documentElement.scrollTop
+  } else {
+    scrollTop.value = container.scrollTop
   }
 }
 
@@ -477,19 +486,15 @@ onMounted(() => {
     activeCity.value = userCities.value[0] || '北京'
   }
 
-  // 绑定 ResizeObserver，监听高度变化
-  if (headerRef.value) {
-    updateHeaderHeight()
-    resizeObserver = new ResizeObserver(() => {
-      updateHeaderHeight()
-    })
-    resizeObserver.observe(headerRef.value)
-  }
+  // 绑定全局滚动事件
+  const container = getScrollContainer()
+  container.addEventListener('scroll', handleGlobalScroll, { passive: true })
 })
 
 onBeforeUnmount(() => {
-  if (resizeObserver && headerRef.value) {
-    resizeObserver.unobserve(headerRef.value)
+  const container = getScrollContainer()
+  if (container) {
+    container.removeEventListener('scroll', handleGlobalScroll)
   }
 })
 
@@ -535,8 +540,11 @@ function onChannelSwitch(key) {
   if (key !== 'follow') {
     followFilterUid.value = null
   }
-  if (scrollRef.value) {
-    scrollRef.value.scrollTop = 0 // 切换频道后帖子流重归顶部
+  const container = getScrollContainer()
+  if (container === window) {
+    window.scrollTo({ top: 0 })
+  } else {
+    container.scrollTop = 0
   }
 }
 
@@ -1114,21 +1122,37 @@ function handleMenuSelect(value) {
 
 <style scoped>
 .page-root {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100%;
 }
 
 /* ═══════════════════════════════════════════ */
-/* 固定定位容器：包括 Logo、L1、L2 筛选            */
+/* 大频道固定定位层：包括 Logo、L1 频道             */
 /* ═══════════════════════════════════════════ */
-.fixed-header-wrapper {
+.channel-fixed-layer {
   position: fixed;
-  top: 48px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 375px;
+  top: var(--fixed-header-top);
+  left: 0;
+  width: 100%;
   z-index: 1000;
+  background: rgba(244, 249, 246, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--echo-border);
+}
+
+.channel-spacer {
+  height: v-bind('spacerHeightCss');
+  flex-shrink: 0;
+}
+
+/* sticky 过滤器包装层 */
+.sticky-filter-wrapper {
+  position: sticky;
+  top: v-bind('stickyTopCss');
+  z-index: 900;
   background: rgba(244, 249, 246, 0.9);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -1345,10 +1369,7 @@ function handleMenuSelect(value) {
 /* 滚动帖子流区域                                */
 /* ═══════════════════════════════════════════ */
 .scroll-content {
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  flex: 1;
   background: #f6f7f9;
   box-sizing: border-box;
 }

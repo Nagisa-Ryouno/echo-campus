@@ -564,7 +564,6 @@ function onTagSelect(item) {
 /* ===== 滚动区域 ===== */
 .edit-scroll {
   flex: 1;
-  overflow-y: auto;
   padding: 12px 0 40px;
 }
 

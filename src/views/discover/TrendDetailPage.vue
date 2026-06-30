@@ -985,19 +985,18 @@ function onForwardSelect(action) {
 
 <style scoped>
 .page-root {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100%;
   background: #f6f7f9;
 }
 
-/* 顶部固定导航 */
+/* 顶部粘性/固定导航 */
 .detail-header {
-  position: fixed;
-  top: 48px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 375px;
+  position: sticky;
+  top: 0;
+  width: 100%;
   height: 48px;
   background: var(--echo-white);
   display: flex;
@@ -1033,16 +1032,12 @@ function onForwardSelect(action) {
 
 /* 滚动区域 */
 .scroll-content {
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  flex: 1;
   box-sizing: border-box;
-  padding-top: 48px;
 }
 
 .scroll-content.has-discuss-bar {
-  padding-bottom: 56px; /* 为底部的讨论输入框留出空间 */
+  padding-bottom: calc(56px + env(safe-area-inset-bottom)); /* 为底部的讨论输入框留出空间 */
 }
 
 .trend-detail-container {
@@ -1313,16 +1308,17 @@ function onForwardSelect(action) {
 .discussion-bottom-bar {
   position: fixed;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 375px;
-  height: 52px;
+  left: 0;
+  width: 100%;
+  height: calc(52px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
   background: var(--echo-white);
   border-top: 1px solid var(--echo-border);
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 16px;
+  padding-left: 16px;
+  padding-right: 16px;
   box-sizing: border-box;
   z-index: 1000;
 }

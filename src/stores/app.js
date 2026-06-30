@@ -349,12 +349,20 @@ export const useAppStore = defineStore('app', () => {
   // ===== 滚动锁定 =====
   function lockPhoneScroll() {
     const screen = document.getElementById('phone-screen')
-    if (screen) screen.style.overflow = 'hidden'
+    if (screen) {
+      screen.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'hidden'
+    }
   }
 
   function unlockPhoneScroll() {
     const screen = document.getElementById('phone-screen')
-    if (screen) screen.style.removeProperty('overflow')
+    if (screen) {
+      screen.style.removeProperty('overflow')
+    } else {
+      document.body.style.removeProperty('overflow')
+    }
   }
 
   // ===== 消息 & 通知 =====
