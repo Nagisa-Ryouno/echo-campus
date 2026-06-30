@@ -248,4 +248,16 @@ router.beforeEach((to, from, next) => {
   next()
 })
 
+// ★ 监听动态 chunk 加载失败错误并自动刷新页面（应对 Vite 重新构建后浏览器缓存的旧 index.html 引用了已失效 hash 文件的场景）
+router.onError((error) => {
+  const message = error?.message || ''
+  if (
+    message.includes('Failed to fetch dynamically imported module') ||
+    message.includes('Importing a module script failed')
+  ) {
+    console.warn('检测到新版本资源 hash 不匹配，正在强制刷新页面以同步最新资产:', error)
+    window.location.reload()
+  }
+})
+
 export default router
