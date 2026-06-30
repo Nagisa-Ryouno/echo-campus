@@ -43,10 +43,14 @@ import TabBar from '@/components/layout/TabBar.vue'
 const route = useRoute()
 const showTabBar = computed(() => route.meta.tabBar === true)
 
-const isMobile = ref(false)
-
 const checkDevice = () => {
-  isMobile.value = window.innerWidth <= 768
+  return typeof window !== 'undefined' ? window.innerWidth <= 768 : false;
+}
+
+const isMobile = ref(checkDevice())
+
+const updateDevice = () => {
+  isMobile.value = checkDevice()
 }
 
 watch(isMobile, (newVal) => {
@@ -60,12 +64,12 @@ watch(isMobile, (newVal) => {
 }, { immediate: true })
 
 onMounted(() => {
-  checkDevice()
-  window.addEventListener('resize', checkDevice)
+  updateDevice()
+  window.addEventListener('resize', updateDevice)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', checkDevice)
+  window.removeEventListener('resize', updateDevice)
 })
 </script>
 
