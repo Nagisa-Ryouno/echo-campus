@@ -351,22 +351,28 @@ export const useAppStore = defineStore('app', () => {
   let _scrollLockCount = 0
 
   function lockPhoneScroll() {
-    const screen = document.getElementById('phone-screen')
-    if (screen) {
-      // PC端：锁定 phone-screen 的滚动容器
-      _scrollLockCount++
-      screen.style.overflow = 'hidden'
+    const isPC = document.documentElement.classList.contains('is-pc')
+    if (isPC) {
+      const screen = document.getElementById('phone-screen')
+      if (screen) {
+        // PC端：锁定 phone-screen 的滚动容器
+        _scrollLockCount++
+        screen.style.overflow = 'hidden'
+      }
     }
     // 移动端：不锁定 body！移动端使用 fixed z-index 层遮盖，不需要 overflow:hidden
     // 锁定 body 会导致路由切换时卡死，因为 fixed 元素需要 body 可滚动
   }
 
   function unlockPhoneScroll() {
-    const screen = document.getElementById('phone-screen')
-    if (screen) {
-      _scrollLockCount = Math.max(0, _scrollLockCount - 1)
-      if (_scrollLockCount === 0) {
-        screen.style.removeProperty('overflow')
+    const isPC = document.documentElement.classList.contains('is-pc')
+    if (isPC) {
+      const screen = document.getElementById('phone-screen')
+      if (screen) {
+        _scrollLockCount = Math.max(0, _scrollLockCount - 1)
+        if (_scrollLockCount === 0) {
+          screen.style.removeProperty('overflow')
+        }
       }
     }
     // 移动端：无需操作（从未锁定）

@@ -225,6 +225,14 @@ router.beforeEach((to, from, next) => {
 
   // ★ 路由切换时强制清除所有滚动锁定，防止弹窗未关闭导致的页面卡死
   store.forceUnlockScroll()
+  try {
+    const overlays = document.querySelectorAll('.van-overlay, .van-popup, .van-dialog, .van-toast, #echo-global-error-overlay');
+    overlays.forEach(el => el.remove());
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('pointer-events');
+  } catch (e) {
+    console.error('Failed to clear overlays:', e);
+  }
 
   if (!store.isLoggedIn && !guestAllowedRoutes.includes(to.name)) {
     let scenario = 'publish'

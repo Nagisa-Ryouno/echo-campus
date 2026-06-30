@@ -458,8 +458,12 @@ const spacerHeightCss = computed(() => (HEADER_HEIGHT + CHANNEL_HEIGHT) + 'px')
 const stickyTopCss = computed(() => CHANNEL_HEIGHT + 'px')
 
 const getScrollContainer = () => {
-  const phoneScreen = document.getElementById('phone-screen')
-  return phoneScreen || window
+  const isPC = document.documentElement.classList.contains('is-pc')
+  if (isPC) {
+    const phoneScreen = document.getElementById('phone-screen')
+    if (phoneScreen) return phoneScreen
+  }
+  return window
 }
 
 const handleGlobalScroll = () => {

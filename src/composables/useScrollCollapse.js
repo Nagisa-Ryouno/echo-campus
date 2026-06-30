@@ -48,22 +48,25 @@ export function useScrollCollapse(threshold = 1) {
   }
 
   onMounted(() => {
-    // PC 端：监听 phone-screen 容器
-    scrollEl =
-      document.getElementById('phone-screen') ||
-      document.querySelector('.phone-screen')
+    const isPC = document.documentElement.classList.contains('is-pc')
+    if (isPC) {
+      scrollEl =
+        document.getElementById('phone-screen') ||
+        document.querySelector('.phone-screen')
 
-    if (scrollEl) {
-      // PC 端：监听 phone-screen
-      isWindowScroll = false
-      scrollEl.addEventListener('scroll', onScroll, { passive: true })
-      scrollY.value = scrollEl.scrollTop
-    } else {
-      // 移动端：监听 window 滚动
-      isWindowScroll = true
-      window.addEventListener('scroll', onScroll, { passive: true })
-      scrollY.value = window.scrollY || document.documentElement.scrollTop
+      if (scrollEl) {
+        // PC 端：监听 phone-screen
+        isWindowScroll = false
+        scrollEl.addEventListener('scroll', onScroll, { passive: true })
+        scrollY.value = scrollEl.scrollTop
+        return
+      }
     }
+
+    // 移动端：监听 window 滚动
+    isWindowScroll = true
+    window.addEventListener('scroll', onScroll, { passive: true })
+    scrollY.value = window.scrollY || document.documentElement.scrollTop
   })
 
   onBeforeUnmount(() => {
