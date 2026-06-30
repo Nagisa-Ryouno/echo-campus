@@ -38,7 +38,7 @@
       v-model:show="showForwardSheet"
       title="转发"
       :actions="forwardActions"
-      teleport="#phone-screen"
+      teleport="body"
       @select="onForwardSelect"
       cancel-text="取消"
     />

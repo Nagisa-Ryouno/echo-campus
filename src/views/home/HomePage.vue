@@ -397,7 +397,7 @@
       v-model:show="showCitySheet"
       title="选择同城定位"
       :actions="cityActions"
-      teleport="#phone-screen"
+      teleport="body"
       cancel-text="取消"
       @select="onCitySelect"
     />
@@ -407,7 +407,7 @@
       v-model:show="showAddCityDialog"
       title="新增关注城市"
       show-cancel-button
-      teleport="#phone-screen"
+      teleport="body"
       @confirm="handleAddCity"
     >
       <div style="padding: 16px 20px;">
@@ -420,7 +420,7 @@
       v-model:show="showForwardSheet"
       title="转发"
       :actions="forwardActions"
-      teleport="#phone-screen"
+      teleport="body"
       @select="onForwardSelect"
       cancel-text="取消"
     />

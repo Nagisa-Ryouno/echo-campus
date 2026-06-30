@@ -222,6 +222,10 @@ router.beforeEach((to, from, next) => {
   document.title = to.meta.title ? `${to.meta.title} - 校声` : '校声 - Echo Campus'
   
   const store = useAppStore()
+
+  // ★ 路由切换时强制清除所有滚动锁定，防止弹窗未关闭导致的页面卡死
+  store.forceUnlockScroll()
+
   if (!store.isLoggedIn && !guestAllowedRoutes.includes(to.name)) {
     let scenario = 'publish'
     if (to.path.startsWith('/message')) {

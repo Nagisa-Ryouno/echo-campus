@@ -645,7 +645,7 @@ function handleMenuSelect(value) {
 .post-detail-page {
   min-height: 100%;
   background: var(--echo-bg);
-  padding-top: 48px;
+  /* header 为 sticky，不需要 padding-top 占位 */
   /* 32px(bottom偏移) + 10px(padding-top) + 48px(按钮组高度) + 10px(padding-bottom) + 12px(安全余量) = 112px */
   padding-bottom: 112px;
 }
@@ -657,12 +657,10 @@ function handleMenuSelect(value) {
   justify-content: space-between;
   padding: 12px 16px;
   background: var(--echo-white);
-  position: fixed;
-  top: 48px;
+  position: sticky;
+  top: 0;
   left: 0;
-  right: 0;
   width: 100%;
-  max-width: 375px;
   z-index: 200;
   box-shadow: 0 1px 0 var(--echo-border);
   box-sizing: border-box;
@@ -1053,7 +1051,6 @@ function handleMenuSelect(value) {
   left: 0;
   right: 0;
   width: 100%;
-  max-width: 375px;
   display: flex;
   align-items: center;
   gap: 16px;

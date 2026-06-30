@@ -148,7 +148,7 @@
     <van-popup
       v-model:show="showDrafts"
       position="bottom"
-      teleport="#phone-screen"
+      teleport="body"
       :style="{ height: '50%', borderRadius: '16px 16px 0 0' }"
     >
       <div class="draft-panel">
@@ -181,7 +181,7 @@
       @select="onBackAction"
       cancel-text="继续编辑"
       close-on-click-action
-      teleport="#phone-screen"
+      teleport="body"
     />
   </div>
 </template>

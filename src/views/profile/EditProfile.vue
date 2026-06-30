@@ -173,7 +173,7 @@
       :actions="genderOptions"
       cancel-text="取消"
       @select="onGenderSelect"
-      teleport="#phone-screen"
+      teleport="body"
     />
 
     <!-- 生日选择弹窗 -->
@@ -181,7 +181,7 @@
       v-model:show="showBirthdayPicker"
       position="center"
       round
-      teleport="#phone-screen"
+      teleport="body"
       class="birthday-picker-popup"
     >
       <van-date-picker
@@ -200,7 +200,7 @@
       :actions="regionOptions"
       cancel-text="取消"
       @select="onRegionSelect"
-      teleport="#phone-screen"
+      teleport="body"
     />
 
     <!-- 标签编辑面板 -->
@@ -209,7 +209,7 @@
       :actions="tagActions"
       cancel-text="完成"
       @select="onTagSelect"
-      teleport="#phone-screen"
+      teleport="body"
     />
 
     <!-- 头像/背景图上传（隐藏input） -->

@@ -347,22 +347,40 @@ export const useAppStore = defineStore('app', () => {
   }
 
   // ===== 滚动锁定 =====
+  // 使用计数器防止 lock/unlock 不匹配导致的永久冻结
+  let _scrollLockCount = 0
+
   function lockPhoneScroll() {
     const screen = document.getElementById('phone-screen')
     if (screen) {
+      // PC端：锁定 phone-screen 的滚动容器
+      _scrollLockCount++
       screen.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'hidden'
     }
+    // 移动端：不锁定 body！移动端使用 fixed z-index 层遮盖，不需要 overflow:hidden
+    // 锁定 body 会导致路由切换时卡死，因为 fixed 元素需要 body 可滚动
   }
 
   function unlockPhoneScroll() {
     const screen = document.getElementById('phone-screen')
     if (screen) {
-      screen.style.removeProperty('overflow')
-    } else {
-      document.body.style.removeProperty('overflow')
+      _scrollLockCount = Math.max(0, _scrollLockCount - 1)
+      if (_scrollLockCount === 0) {
+        screen.style.removeProperty('overflow')
+      }
     }
+    // 移动端：无需操作（从未锁定）
+  }
+
+  // 紧急解锁：强制清除所有锁（用于路由切换时的安全保障）
+  function forceUnlockScroll() {
+    _scrollLockCount = 0
+    const screen = document.getElementById('phone-screen')
+    if (screen) {
+      screen.style.removeProperty('overflow')
+    }
+    // 移动端安全清理（防御性）
+    document.body.style.removeProperty('overflow')
   }
 
   // ===== 消息 & 通知 =====
@@ -1183,7 +1201,7 @@ export const useAppStore = defineStore('app', () => {
     drafts, saveDraft, removeDraft, createPost, deletePost,
 
     // 滚动锁
-    lockPhoneScroll, unlockPhoneScroll,
+    lockPhoneScroll, unlockPhoneScroll, forceUnlockScroll,
 
     // 消息 & 通知
     likedNotifs, commentAtNotifs, followerNotifs,
